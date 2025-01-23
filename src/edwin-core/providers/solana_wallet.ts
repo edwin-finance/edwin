@@ -11,4 +11,12 @@ export class SolanaWallet extends EdwinWallet {
         this.wallet = Keypair.fromSecretKey(bs58.decode(privateKey));
         this.wallet_address = this.wallet.publicKey;
     }
+
+    async getConnection(customRpcEndpoint?: string): Promise<Connection> {
+        return new Connection(customRpcEndpoint || 'https://api.mainnet-beta.solana.com', 'confirmed');
+    }
+
+    getPublicKey(): PublicKey {
+        return this.wallet_address;
+    }
 }

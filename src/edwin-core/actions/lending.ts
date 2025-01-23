@@ -19,32 +19,21 @@ export class SupplyAction implements EdwinAction {
         console.log(
             `Supplying: ${params.amount} ${params.asset} to ${params.protocol} on ${params.chain})`
         );
-
         try {
-            console.log(`Getting lending protocol for: ${params.protocol}`);
             // Get the appropriate protocol service based on the protocol name
             const lendingProtocol = getLendingProtocol(params.protocol);
             if (!lendingProtocol) {
                 throw new Error(`Unsupported protocol: ${params.protocol}`);
             }
-            console.log(`Successfully got lending protocol: ${params.protocol}`);
-
-            console.log(`Getting wallet provider for chain: ${params.chain}`);
             // Check which wallet is required by the protocol and if it is supported by the provider
             const walletProvider = this.provider.getWallet(params.chain);
             if (!walletProvider || !(walletProvider instanceof EdwinWallet)) {
                 throw new Error(`Unsupported wallet provider: ${params.protocol}`);
             }
-            console.log(`Successfully got wallet provider for chain: ${params.chain}`);
-
-            console.log(`Checking if chain ${params.chain} is supported by protocol ${params.protocol}`);
             // Check if the chain is supported by the protocol
             if (!lendingProtocol.supportedChains.includes(params.chain)) {
                 throw new Error(`Unsupported chain: ${params.chain}`);
             }
-            console.log(`Chain ${params.chain} is supported by protocol ${params.protocol}`);
-
-            console.log(`Executing supply operation with protocol ${params.protocol}`);
             // Use the protocol-specific supply implementation
             return await lendingProtocol.supply(params, walletProvider);
         } catch (error: any) {
