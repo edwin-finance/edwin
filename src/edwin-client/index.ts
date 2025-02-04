@@ -3,6 +3,8 @@ import { EdwinEVMWallet, EdwinSolanaWallet, EdwinWallet } from '../edwin-core/wa
 import { initializeProtocols } from './protocols_client';
 import { initializeActions, ActionMap } from './actions_client';
 
+export { getEdwinTools } from './langchain';
+
 export class Edwin {
     private wallets: Record<string, EdwinWallet> = {};
     public protocols: Record<string, DeFiProtocol>;
