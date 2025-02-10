@@ -14,6 +14,7 @@ import {
     SearchTweetsAction,
     GetActiveBinAction,
 } from '../edwin-core/actions';
+import { Edwin } from '.';
 
 export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
     supply: SupplyAction,
@@ -36,7 +37,7 @@ export type ActionMap = {
     [K in SupportedActions]: InstanceType<(typeof ACTION_MAP)[K]>;
 };
 
-export function initializeActions(edwin: any, enabledActions: string[]): ActionMap {
+export function initializeActions(edwin: Edwin, enabledActions: string[]): ActionMap {
     return enabledActions.reduce((acc, actionName) => {
         const ActionClass = ACTION_MAP[actionName as SupportedActions];
         if (!ActionClass) {
