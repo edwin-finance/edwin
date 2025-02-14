@@ -275,7 +275,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             let attempts = 0;
             const MAX_ATTEMPTS = 3;
-            let result: { positionAddress: string, liquidityAdded: [number, number] } | undefined;
+            let result: { positionAddress: string; liquidityAdded: [number, number] } | undefined;
             while (attempts < MAX_ATTEMPTS) {
                 try {
                     result = await this.innerAddLiquidity(poolAddress, amount, amountB);
@@ -289,14 +289,15 @@ export class MeteoraProtocol implements IDEXProtocol {
 
                         if (attempts < MAX_ATTEMPTS && result?.positionAddress) {
                             await withRetry(
-                                async () => this.removeLiquidity({
-                                    chain: 'solana',
-                                    poolAddress,
-                                    shouldClosePosition: true,
-                                    positionAddress: result!.positionAddress,
-                                }),
+                                async () =>
+                                    this.removeLiquidity({
+                                        chain: 'solana',
+                                        poolAddress,
+                                        shouldClosePosition: true,
+                                        positionAddress: result!.positionAddress,
+                                    }),
                                 'Meteora remove liquidity'
-                            );   
+                            );
                         }
                         continue;
                     }
