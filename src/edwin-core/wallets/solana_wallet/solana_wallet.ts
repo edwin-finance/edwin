@@ -60,7 +60,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     async getBalanceByPublicKey(mintAddress: string): Promise<number> {
         const connection = this.getConnection();
-        
+
         if (mintAddress === NATIVE_SOL_MINT) {
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
