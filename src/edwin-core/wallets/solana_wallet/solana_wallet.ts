@@ -59,17 +59,17 @@ export class EdwinSolanaWallet extends EdwinWallet {
     async getBalanceByPublicKey(mintAddress: string): Promise<number> {
         const connection = this.getConnection();
         const tokenMint = new PublicKey(mintAddress);
-        
+
         // Find all token accounts owned by this wallet
         const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
             mint: tokenMint,
         });
-        
+
         // If no token account exists, return 0 balance
         if (tokenAccounts.value.length === 0) {
             return 0;
         }
-        
+
         // Get balance from the first token account
         const tokenAccount = tokenAccounts.value[0];
         const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
@@ -248,7 +248,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
     async verifyBalanceByPublicKey(mintAddress: string, amount: number): Promise<void> {
         const balance = await this.getBalanceByPublicKey(mintAddress);
         if (balance < amount) {
-            const symbol = await this.getTokenAddress(mintAddress) || mintAddress;
+            const symbol = (await this.getTokenAddress(mintAddress)) || mintAddress;
             throw new InsufficientBalanceError(amount, balance, symbol);
         }
     }
