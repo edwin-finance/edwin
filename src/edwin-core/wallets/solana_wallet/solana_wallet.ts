@@ -56,6 +56,26 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return token ? token.address : null;
     }
 
+    async getBalanceByPublicKey(mintAddress: string): Promise<number> {
+        const connection = this.getConnection();
+        const tokenMint = new PublicKey(mintAddress);
+        
+        // Find all token accounts owned by this wallet
+        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
+            mint: tokenMint,
+        });
+        
+        // If no token account exists, return 0 balance
+        if (tokenAccounts.value.length === 0) {
+            return 0;
+        }
+        
+        // Get balance from the first token account
+        const tokenAccount = tokenAccounts.value[0];
+        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
+        return tokenAccountBalance.value.uiAmount || 0;
+    }
+
     async getBalance(symbol: string = 'SOL'): Promise<number> {
         const connection = this.getConnection();
         if (!symbol || symbol.toLowerCase() === 'sol') {
@@ -68,19 +88,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
         if (!tokenAddress) {
             throw new Error(`Token ${symbol} not found`);
         }
-        const tokenMint = new PublicKey(tokenAddress);
-        // Find all token accounts owned by this wallet
-        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
-            mint: tokenMint,
-        });
-        // If no token account exists, return 0 balance
-        if (tokenAccounts.value.length === 0) {
-            return 0;
-        }
-        // Get balance from the first token account
-        const tokenAccount = tokenAccounts.value[0];
-        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
-        return tokenAccountBalance.value.uiAmount || 0;
+
+        return this.getBalanceByPublicKey(tokenAddress);
     }
 
     // Function to gracefully wait for transaction confirmation
@@ -232,6 +241,14 @@ export class EdwinSolanaWallet extends EdwinWallet {
     async verifyBalance(symbol: string, amount: number): Promise<void> {
         const balance = await this.getBalance(symbol);
         if (balance < amount) {
+            throw new InsufficientBalanceError(amount, balance, symbol);
+        }
+    }
+
+    async verifyBalanceByPublicKey(mintAddress: string, amount: number): Promise<void> {
+        const balance = await this.getBalanceByPublicKey(mintAddress);
+        if (balance < amount) {
+            const symbol = await this.getTokenAddress(mintAddress) || mintAddress;
             throw new InsufficientBalanceError(amount, balance, symbol);
         }
     }
