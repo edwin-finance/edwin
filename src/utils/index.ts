@@ -1,6 +1,5 @@
 import edwinLogger from './logger';
 
-const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
 
 /**
@@ -24,9 +23,9 @@ export function safeJsonStringify(obj: any): string {
  * @param context A description of the operation
  * @returns The result of the operation
  */
-async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
+async function withRetry<T>(operation: () => Promise<T>, context: string, maxRetries: number = 3): Promise<T> {
     let lastError: Error;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await operation();
         } catch (error: unknown) {
@@ -40,9 +39,9 @@ async function withRetry<T>(operation: () => Promise<T>, context: string): Promi
                 throw error;
             }
 
-            if (attempt === MAX_RETRIES) {
-                edwinLogger.error(`${context} failed after ${MAX_RETRIES} attempts:`, error);
-                throw new Error(`${context} failed after ${MAX_RETRIES} retries: ${lastError.message}`);
+            if (attempt === maxRetries) {
+                edwinLogger.error(`${context} failed after ${maxRetries} attempts:`, error);
+                throw new Error(`${context} failed after ${maxRetries} retries: ${lastError.message}`);
             }
 
             const delay = INITIAL_DELAY * attempt;
