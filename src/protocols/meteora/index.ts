@@ -219,7 +219,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 strategy: {
                     maxBinId,
                     minBinId,
-                    strategyType: StrategyType.SpotImBalanced,
+                    strategyType: StrategyType.BidAskImBalanced,
                 },
             });
             signers.push(newBalancePosition as Keypair);
