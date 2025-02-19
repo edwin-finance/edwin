@@ -5,3 +5,4 @@ export { MeteoraProtocol } from './meteora';
 export { UniswapProtocol } from './uniswap';
 export { JupiterProtocol } from './jupiter';
 export { CookieSwarmClient } from './cookie';
+export { EOracleClient } from './eoracle';

@@ -7,6 +7,7 @@ import {
     UniswapProtocol,
     JupiterProtocol,
     CookieSwarmClient,
+    EOracleClient,
 } from '../protocols';
 import { EdwinEVMWallet, EdwinSolanaWallet } from '../edwin-core/wallets';
 
@@ -30,6 +31,10 @@ export function initializeProtocols(
 
     if (process.env.COOKIE_API_KEY) {
         protocols['cookie'] = new CookieSwarmClient(process.env.COOKIE_API_KEY);
+    }
+
+    if (process.env.EORACLE_API_KEY) {
+        protocols['eoracle'] = new EOracleClient(process.env.EORACLE_API_KEY);
     }
 
     return protocols;

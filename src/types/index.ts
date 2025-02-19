@@ -113,3 +113,7 @@ export interface EdwinAction {
     execute: (params: any) => Promise<any>;
     // Future feature: pass input schema to params to enforce correct input
 }
+
+export interface IEOracleProtocol extends DeFiProtocol {
+    getPrice(symbol: string): Promise<string>;
+}
