@@ -14,6 +14,7 @@ import {
     GetAgentsPagedAction,
     SearchTweetsAction,
     GetActiveBinAction,
+    GetPriceAction,
 } from '../edwin-core/actions';
 import { Edwin } from '.';
 
@@ -32,6 +33,7 @@ export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
     getAgentByContract: GetAgentByContractAction,
     getAgentsPaged: GetAgentsPagedAction,
     searchTweets: SearchTweetsAction,
+    getPrice: GetPriceAction,
 };
 
 export type SupportedActions = keyof typeof ACTION_MAP;
