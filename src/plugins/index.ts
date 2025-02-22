@@ -5,3 +5,4 @@ export * from './meteora';
 export * from './uniswap';
 export * from './jupiter';
 export * from './cookie';
+export * from './eoracle';

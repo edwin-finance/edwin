@@ -8,6 +8,7 @@ import { LuloPlugin } from '../plugins/lulo/luloPlugin';
 import { MeteoraPlugin } from '../plugins/meteora/meteoraPlugin';
 import { JupiterPlugin } from '../plugins/jupiter/jupiterPlugin';
 import { CookiePlugin } from '../plugins/cookie/cookiePlugin';
+import { EoraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
@@ -28,6 +29,7 @@ interface EdwinPlugins {
     meteora?: MeteoraPlugin;
     jupiter?: JupiterPlugin;
     cookie?: CookiePlugin;
+    eoracle?: EoraclePlugin;
 }
 
 export class Edwin {

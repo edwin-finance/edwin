@@ -1,5 +1,6 @@
-import { IEOracleProtocol, SupportedChain } from '../../types/index';
+import { SupportedChain } from '../../core/types';
 import edwinLogger from '../../utils/logger';
+import { EdwinService } from '../../core/classes/edwinToolProvider';
 
 interface PriceResponse {
     feed_id: string;
@@ -18,13 +19,14 @@ interface EOracleResponse<T> {
     error: string | null;
 }
 
-export class EOracleClient implements IEOracleProtocol {
+export class EOracleClient extends EdwinService {
     private apiKey: string;
     private baseUrl: string;
     private feedCache = new Map<string, string>();
     supportedChains: SupportedChain[] = ['base'];
 
     constructor(apiKey: string) {
+        super();
         if (!process.env.EORACLE_API_URL) {
             throw new Error('EORACLE_API_URL environment variable is not set');
         }

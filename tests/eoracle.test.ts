@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { Edwin } from '../src';
 import edwinLogger from '../src/utils/logger';
 import dotenv from 'dotenv';
+import { EOracleClient } from '../src/plugins/eoracle/eoracleService';
 
 dotenv.config();
 
@@ -14,7 +14,8 @@ const createMockResponse = (data: any) => new Response(
 );
 
 describe('EOracleSystem Integration', () => {
-    let edwin: Edwin;
+    let eoracle: EOracleClient;
+
     const mockFeeds = {
         success: true,
         data: [
@@ -36,9 +37,7 @@ describe('EOracleSystem Integration', () => {
         process.env.EORACLE_API_URL = 'https://api.eoracle.test';
         process.env.EORACLE_API_KEY = 'test-api-key';
 
-        edwin = new Edwin({
-            actions: ['getPrice'],
-        });
+        eoracle = new EOracleClient('test-api-key');
 
         vi.spyOn(global, 'fetch').mockImplementation(vi.fn());
     });
@@ -49,9 +48,7 @@ describe('EOracleSystem Integration', () => {
                 .mockResolvedValueOnce(createMockResponse(mockFeeds))
                 .mockResolvedValueOnce(createMockResponse(mockPrice));
 
-            const result = await edwin.actions.getPrice.execute({
-                symbol: 'BTC/USD',
-            });
+            const result = await eoracle.getPrice('BTC/USD');
 
             const parsed = JSON.parse(result);
             expect(parsed).toEqual({
@@ -78,13 +75,9 @@ describe('EOracleSystem Integration', () => {
                 .mockResolvedValueOnce(createMockResponse(mockPrice))
                 .mockResolvedValueOnce(createMockResponse(mockPrice));
 
-            await edwin.actions.getPrice.execute({
-                symbol: 'BTC/USD',
-            });
+            await eoracle.getPrice('BTC/USD');
 
-            await edwin.actions.getPrice.execute({
-                symbol: 'BTC/USD',
-            });
+            await eoracle.getPrice('BTC/USD');
 
             expect(fetch).toHaveBeenCalledTimes(3);
         }, 30000);
@@ -95,9 +88,7 @@ describe('EOracleSystem Integration', () => {
             vi.mocked(fetch).mockResolvedValueOnce(createMockResponse(mockFeeds));
 
             await expect(
-                edwin.actions.getPrice.execute({
-                    symbol: 'UNKNOWN/USD',
-                })
+                eoracle.getPrice('UNKNOWN/USD')
             ).rejects.toThrow('No feed found for symbol: UNKNOWN/USD');
         });
 
@@ -110,9 +101,7 @@ describe('EOracleSystem Integration', () => {
             const loggerSpy = vi.spyOn(edwinLogger, 'error');
 
             await expect(
-                edwin.actions.getPrice.execute({
-                    symbol: 'BTC/USD',
-                })
+                eoracle.getPrice('BTC/USD')
             ).rejects.toThrow('EOracleAPI request failed: Unauthorized');
 
             expect(loggerSpy).toHaveBeenCalledWith(
@@ -132,9 +121,7 @@ describe('EOracleSystem Integration', () => {
                 }));
 
             await expect(
-                edwin.actions.getPrice.execute({
-                    symbol: 'BTC/USD',
-                })
+                eoracle.getPrice('BTC/USD')
             ).rejects.toThrow('Failed to get price for BTC/USD');
         });
 
@@ -144,9 +131,7 @@ describe('EOracleSystem Integration', () => {
             const loggerSpy = vi.spyOn(edwinLogger, 'error');
 
             await expect(
-                edwin.actions.getPrice.execute({
-                    symbol: 'BTC/USD',
-                })
+                eoracle.getPrice('BTC/USD')
             ).rejects.toThrow();
 
             expect(loggerSpy).toHaveBeenCalledWith(
