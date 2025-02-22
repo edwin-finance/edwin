@@ -7,7 +7,7 @@ const INITIAL_DELAY = 1000;
  * @param obj The object to stringify
  * @returns JSON string with BigInt values converted to strings
  */
-export function safeJsonStringify(obj: any): string {
+export function safeJsonStringify(obj: object): string {
     return JSON.stringify(obj, (_, value) => {
         // Handle both BigInt and BigInt constructor values
         if (typeof value === 'bigint' || value?.constructor?.name === 'BigInt') {

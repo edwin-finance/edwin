@@ -8,10 +8,3 @@ export class InsufficientBalanceError extends Error {
         this.name = 'InsufficientBalanceError';
     }
 }
-
-export class MeteoraStatisticalBugError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'MeteoraStatisticalBugError';
-    }
-}

@@ -1,0 +1,28 @@
+{
+    "name": "edwin-cli-chat-agent",
+    "version": "0.1.0",
+    "description": "CLI chat agent example using Edwin SDK",
+    "main": "chat-agent.ts",
+    "scripts": {
+        "start": "ts-node chat-agent.ts",
+        "build": "tsc",
+        "dev": "ts-node-dev --respawn chat-agent.ts"
+    },
+    "dependencies": {
+        "@langchain/core": "^0.1.0",
+        "@langchain/langgraph": "0.2.48",
+        "@langchain/openai": "^0.0.14",
+        "dotenv": "^16.4.1",
+        "edwin-sdk": "file:../..",
+        "ts-node": "^10.9.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.16",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.3.3"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "private": true
+}

@@ -1,28 +1,27 @@
 import { config } from 'dotenv';
-config(); // Load test environment variables from .env file
+config();
 
 import { describe, expect, it } from 'vitest';
-import { Edwin, EdwinConfig } from '../src';
+import { JupiterService } from '../src/plugins/jupiter/jupiterService';
+import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wallet';
 
 describe('Jupiter Swap Test', () => {
-    const edwinConfig: EdwinConfig = {
-        solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['swap'],
-    };
-    const edwin = new Edwin(edwinConfig);
+    if (!process.env.SOLANA_PRIVATE_KEY) {
+        throw new Error('SOLANA_PRIVATE_KEY is not set');
+    }
+    const wallet = new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY);
+    const jupiter = new JupiterService(wallet);
 
     it('should swap USDC to SOL and back', async () => {
         // Initial balances
-        const initialSolBalance = await edwin.getBalance('solana');
-        const initialUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
+        const initialSolBalance = await wallet.getBalance();
+        const initialUsdcBalance = await wallet.getBalance('usdc');
         console.log('Initial balances:');
         console.log('SOL:', initialSolBalance);
         console.log('USDC:', initialUsdcBalance);
 
         // First swap: USDC to SOL
-        const swapResult1 = await edwin.actions.swap.execute({
-            protocol: 'jupiter',
-            chain: 'solana',
+        const swapResult1 = await jupiter.swap({
             asset: 'usdc',
             assetB: 'sol',
             amount: '1', // 1 USDC
@@ -30,8 +29,8 @@ describe('Jupiter Swap Test', () => {
         console.log('Swap 1 (USDC -> SOL) output amount:', swapResult1);
 
         // Check balances after first swap
-        const midSolBalance = await edwin.getBalance('solana');
-        const midUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
+        const midSolBalance = await wallet.getBalance();
+        const midUsdcBalance = await wallet.getBalance('usdc');
         console.log('\nBalances after first swap:');
         console.log('SOL:', midSolBalance);
         console.log('USDC:', midUsdcBalance);
@@ -40,9 +39,7 @@ describe('Jupiter Swap Test', () => {
 
         // Second swap: SOL back to USDC
         const solSwapBack = swapResult1;
-        const swapResult2 = await edwin.actions.swap.execute({
-            protocol: 'jupiter',
-            chain: 'solana',
+        const swapResult2 = await jupiter.swap({
             asset: 'sol',
             assetB: 'usdc',
             amount: solSwapBack.toString(), // Swap a smaller amount of SOL back
@@ -50,8 +47,8 @@ describe('Jupiter Swap Test', () => {
         console.log('\nSwap 2 (SOL -> USDC) output amount:', swapResult2);
 
         // Final balances
-        const finalSolBalance = await edwin.getBalance('solana');
-        const finalUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
+        const finalSolBalance = await wallet.getBalance();
+        const finalUsdcBalance = await wallet.getBalance('usdc');
         console.log('\nFinal balances:');
         console.log('SOL:', finalSolBalance);
         console.log('USDC:', finalUsdcBalance);

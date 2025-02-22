@@ -52,4 +52,4 @@ Contributions are welcome! Please visit our [Contributing Guide](https://docs.ed
 
 ## License
 
-MIT
+GPL

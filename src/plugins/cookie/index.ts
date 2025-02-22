@@ -1,0 +1,1 @@
+export { cookie } from './cookiePlugin';

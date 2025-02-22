@@ -1,0 +1,1 @@
+export { lido } from './lidoPlugin';

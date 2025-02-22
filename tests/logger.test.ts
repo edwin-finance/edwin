@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { Edwin } from '../src/edwin-client';
+import { describe, it } from 'vitest';
 import edwinLogger from '../src/utils/logger';
 import dotenv from 'dotenv';
 
