@@ -152,7 +152,8 @@ export class JupiterProtocol implements ISwapProtocol {
         // Fetch the parsed transaction details (make sure to set the proper options)
         const txInfo = await withRetry(
             () => connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 }),
-            'Get parsed transaction'
+            'Get parsed transaction',
+            20
         );
         if (!txInfo || !txInfo.meta) {
             throw new Error('Could not fetch transaction details');

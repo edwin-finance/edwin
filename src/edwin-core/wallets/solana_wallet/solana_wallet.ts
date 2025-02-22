@@ -15,6 +15,8 @@ import edwinLogger from '../../../utils/logger';
 import { InsufficientBalanceError } from '../../../errors';
 import { withRetry } from '../../../utils';
 
+const NATIVE_SOL_MINT = 'So11111111111111111111111111111111111111112';
+
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
@@ -56,31 +58,38 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return token ? token.address : null;
     }
 
-    async getBalance(symbol: string = 'SOL'): Promise<number> {
+    async getBalanceByPublicKey(mintAddress: string): Promise<number> {
         const connection = this.getConnection();
-        if (!symbol || symbol.toLowerCase() === 'sol') {
-            // Get SOL balance
+
+        if (mintAddress === NATIVE_SOL_MINT) {
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
 
-        // Get token balance
+        const tokenMint = new PublicKey(mintAddress);
+        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
+            mint: tokenMint,
+        });
+
+        if (tokenAccounts.value.length === 0) {
+            return 0;
+        }
+
+        const tokenAccount = tokenAccounts.value[0];
+        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
+        return tokenAccountBalance.value.uiAmount || 0;
+    }
+
+    async getBalance(symbol: string = 'SOL'): Promise<number> {
+        if (!symbol || symbol.toLowerCase() === 'sol') {
+            return this.getBalanceByPublicKey(NATIVE_SOL_MINT);
+        }
+
         const tokenAddress = await this.getTokenAddress(symbol);
         if (!tokenAddress) {
             throw new Error(`Token ${symbol} not found`);
         }
-        const tokenMint = new PublicKey(tokenAddress);
-        // Find all token accounts owned by this wallet
-        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
-            mint: tokenMint,
-        });
-        // If no token account exists, return 0 balance
-        if (tokenAccounts.value.length === 0) {
-            return 0;
-        }
-        // Get balance from the first token account
-        const tokenAccount = tokenAccounts.value[0];
-        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
-        return tokenAccountBalance.value.uiAmount || 0;
+
+        return this.getBalanceByPublicKey(tokenAddress);
     }
 
     // Function to gracefully wait for transaction confirmation
@@ -232,6 +241,14 @@ export class EdwinSolanaWallet extends EdwinWallet {
     async verifyBalance(symbol: string, amount: number): Promise<void> {
         const balance = await this.getBalance(symbol);
         if (balance < amount) {
+            throw new InsufficientBalanceError(amount, balance, symbol);
+        }
+    }
+
+    async verifyBalanceByPublicKey(mintAddress: string, amount: number): Promise<void> {
+        const balance = await this.getBalanceByPublicKey(mintAddress);
+        if (balance < amount) {
+            const symbol = (await this.getTokenAddress(mintAddress)) || mintAddress;
             throw new InsufficientBalanceError(amount, balance, symbol);
         }
     }

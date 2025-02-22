@@ -159,6 +159,10 @@ export class MeteoraProtocol implements IDEXProtocol {
             async () => DLMM.create(connection, new PublicKey(poolAddress)),
             'Meteora create pool'
         );
+
+        await this.wallet.verifyBalanceByPublicKey(dlmmPool.tokenX.publicKey.toString(), Number(amount));
+        await this.wallet.verifyBalanceByPublicKey(dlmmPool.tokenY.publicKey.toString(), Number(amountB));
+
         // Wrap the position check in retry logic
         const positionInfo = await withRetry(
             async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
@@ -193,7 +197,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 strategy: {
                     maxBinId,
                     minBinId,
-                    strategyType: StrategyType.SpotImBalanced,
+                    strategyType: StrategyType.BidAskImBalanced,
                 },
             });
         } else {
@@ -215,7 +219,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 strategy: {
                     maxBinId,
                     minBinId,
-                    strategyType: StrategyType.SpotImBalanced,
+                    strategyType: StrategyType.BidAskImBalanced,
                 },
             });
             signers.push(newBalancePosition as Keypair);
