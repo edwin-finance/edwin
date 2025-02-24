@@ -2,6 +2,7 @@ export interface AddLiquidityParameters {
     poolAddress?: string;
     amount: string;
     amountB: string;
+    rangeInterval?: number;
 }
 
 export interface RemoveLiquidityParameters {

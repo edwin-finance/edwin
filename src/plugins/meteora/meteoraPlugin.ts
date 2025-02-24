@@ -23,6 +23,7 @@ export class MeteoraPlugin extends EdwinPlugin {
                     amount: z.number().positive(),
                     amountB: z.number().positive(),
                     poolAddress: z.string().min(1),
+                    rangeInterval: z.number().optional(),
                 }),
                 execute: async (params: AddLiquidityParameters) => {
                     return await meteoraProtocol.addLiquidity(params);

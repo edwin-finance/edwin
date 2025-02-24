@@ -149,7 +149,8 @@ export class MeteoraProtocol {
     private async innerAddLiquidity(
         poolAddress: string,
         amount: string,
-        amountB: string
+        amountB: string,
+        rangeInterval: number = 10
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const connection = this.wallet.getConnection();
         const dlmmPool = await withRetry(
@@ -200,7 +201,6 @@ export class MeteoraProtocol {
         } else {
             // Create new position
             edwinLogger.debug(`Opening new position`);
-            const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
             const minBinId = activeBin.binId - rangeInterval;
             const maxBinId = activeBin.binId + rangeInterval;
 
@@ -257,7 +257,7 @@ export class MeteoraProtocol {
     async addLiquidity(
         params: AddLiquidityParameters
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
-        const { amount, amountB, poolAddress } = params;
+        const { amount, amountB, poolAddress, rangeInterval } = params;
         edwinLogger.info(
             `Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`
         );
@@ -276,7 +276,7 @@ export class MeteoraProtocol {
             let result: { positionAddress: string; liquidityAdded: [number, number] } | undefined;
             while (attempts < MAX_ATTEMPTS) {
                 try {
-                    result = await this.innerAddLiquidity(poolAddress, amount, amountB);
+                    result = await this.innerAddLiquidity(poolAddress, amount, amountB, rangeInterval);
                     return result;
                 } catch (error) {
                     if (error instanceof MeteoraStatisticalBugError) {
