@@ -171,6 +171,9 @@ export class MeteoraProtocol {
         const activeBin = await withRetry(async () => dlmmPool.getActiveBin(), 'Meteora get active bin');
         const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
         const [totalXAmount, totalYAmount] = await calculateAmounts(amount, amountB, activeBinPricePerToken, dlmmPool);
+        if (totalXAmount.isZero() && totalYAmount.isZero()) {
+            throw new TypeError('Total liquidity trying to add is 0');
+        }
         edwinLogger.debug(`Adding liquidity with Total X amount: ${totalXAmount}, Total Y amount: ${totalYAmount}`);
 
         let tx;
