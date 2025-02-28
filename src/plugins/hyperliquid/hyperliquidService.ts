@@ -150,7 +150,7 @@ export class HyperLiquidService extends EdwinService {
 
             // Get current position
             const positions = await this.exchange.fetchPositions([asset]);
-            const position = positions.find(pos => pos.symbol === asset);
+            const position = positions.find((pos: Record<string, unknown>) => pos.symbol === asset);
 
             if (!position) {
                 throw new Error(`No open position found for ${asset}`);
@@ -205,7 +205,7 @@ export class HyperLiquidService extends EdwinService {
         try {
             const positionsData = await this.exchange.fetchPositions();
             // Convert to Record<string, unknown>[]
-            const positions: Record<string, unknown>[] = positionsData.map(pos => ({ ...pos }));
+            const positions: Record<string, unknown>[] = positionsData.map((pos: Record<string, unknown>) => ({ ...pos }));
             return positions;
         } catch (error) {
             edwinLogger.error(`Error fetching positions from HyperLiquid: ${error}`);
