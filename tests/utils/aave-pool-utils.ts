@@ -33,7 +33,7 @@ export async function getERC20(tokenAddress: string) {
 
 // Supply tokens to AAVE
 export async function supplyToAave(
-    signer,
+    signer: any,
     tokenAddress: string,
     amount: string,
     onBehalfOf?: string

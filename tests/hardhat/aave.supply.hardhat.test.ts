@@ -9,12 +9,12 @@ import { getERC20, getAavePool, supplyToAave } from '../utils/aave-pool-utils';
 const hre = require('hardhat');
 
 describe('AAVE Supply Function Integration Test', function () {
-    let signer;
-    let wallet;
-    let aaveService;
-    let usdcToken;
-    let aavePool;
-    let aUsdcToken;
+    let signer: any;
+    let wallet: EdwinEVMWallet;
+    let aaveService: AaveService;
+    let usdcToken: Contract;
+    let aavePool: Contract;
+    let aUsdcToken: Contract;
 
     before(async function () {
         // This test requires forking the Base network
