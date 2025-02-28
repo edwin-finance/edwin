@@ -62,9 +62,11 @@
         "axios": "^1.7.9",
         "bn.js": "^5.2.1",
         "bs58": "^6.0.0",
+        "ccxt": "^4.4.63",
         "dotenv": "^16.4.7",
         "eslint-config-prettier": "^10.0.1",
         "ethers": "^5.7.2",
+        "hyperliquid": "^1.6.2",
         "prettier": "^3.4.2",
         "viem": "^2.23.5",
         "winston": "^3.17.0"
