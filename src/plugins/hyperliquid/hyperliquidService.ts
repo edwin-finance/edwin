@@ -1,4 +1,5 @@
 import ccxt from 'ccxt';
+import { Hyperliquid } from 'hyperliquid';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import edwinLogger from '../../utils/logger';
@@ -16,7 +17,8 @@ import {
  */
 export class HyperLiquidService extends EdwinService {
     private wallet: EdwinEVMWallet;
-    private exchange: any; // Using any type for CCXT exchange
+    private exchange: ccxt.Exchange; // Using ccxt.Exchange type instead of any
+    private hyperliquid: Hyperliquid;
 
     /**
      * Creates a new HyperLiquidService
@@ -32,6 +34,13 @@ export class HyperLiquidService extends EdwinService {
             secret: '', // Will be set when needed
             enableRateLimit: true,
         });
+
+        // Initialize the HyperLiquid SDK with the wallet's private key
+        this.hyperliquid = new Hyperliquid({
+            privateKey: wallet.evmPrivateKey,
+            enableWs: false, // Disable WebSocket for now
+            testnet: false, // Use mainnet by default
+        });
     }
 
     /**
@@ -43,19 +52,32 @@ export class HyperLiquidService extends EdwinService {
         try {
             edwinLogger.info(`Depositing ${params.amount} ${params.asset} to HyperLiquid`);
 
-            // Get deposit address
+            // Get deposit address from HyperLiquid
             const depositAddress = await this.exchange.fetchDepositAddress(params.asset);
 
-            // In a real implementation, we would use the wallet to send funds to this address
-            // For now, we'll just log the address and return a mock result
-            edwinLogger.info(`Deposit address for ${params.asset}: ${JSON.stringify(depositAddress)}`);
+            if (!depositAddress || !depositAddress.address) {
+                throw new Error(`Failed to get deposit address for ${params.asset}`);
+            }
+
+            // Get wallet client for the transaction
+            const walletClient = this.wallet.getWalletClient('arbitrum');
+
+            // Create transaction parameters
+            const txParams = {
+                to: depositAddress.address as `0x${string}`,
+                value: BigInt(params.amount * 10 ** 18), // Convert to wei
+                chain: this.wallet.getChainConfigs('arbitrum'),
+            };
+
+            // Send the transaction
+            const txHash = await walletClient.sendTransaction(txParams);
 
             const result = {
                 success: true,
                 amount: params.amount,
                 asset: params.asset,
                 address: depositAddress.address,
-                txId: 'mock-tx-id', // In a real implementation, this would be the transaction hash
+                txHash: txHash,
             };
 
             edwinLogger.info(`Deposit successful: ${JSON.stringify(result)}`);
@@ -75,13 +97,11 @@ export class HyperLiquidService extends EdwinService {
         try {
             edwinLogger.info(`Withdrawing ${params.amount} ${params.asset} from HyperLiquid`);
 
-            // In a real implementation, we would need to provide a destination address
-            // For now, we'll use a mock address
-            const address = '0x1234567890abcdef1234567890abcdef12345678';
+            // Get the wallet address
+            const address = this.wallet.getAddress();
 
-            const withdrawResult = await this.exchange.withdraw(params.asset, params.amount, address, {
-                network: 'EVM', // Specify the network if needed
-            });
+            // Use the HyperLiquid SDK to initiate the withdrawal
+            const withdrawResult = await this.hyperliquid.exchange.initiateWithdrawal(address, params.amount);
 
             // Convert to Record<string, unknown>
             const result: Record<string, unknown> = {
@@ -110,17 +130,26 @@ export class HyperLiquidService extends EdwinService {
 
             // Set leverage if specified
             if (leverage > 1) {
-                await this.exchange.setLeverage(leverage, asset);
+                await this.hyperliquid.exchange.updateLeverage(
+                    asset,
+                    'cross', // Use cross margin by default
+                    leverage
+                );
                 edwinLogger.info(`Set leverage to ${leverage}x for ${asset}`);
             }
 
             // Determine order type and side
-            const side = positionType === PositionType.LONG ? 'buy' : 'sell';
-            const type = orderType === OrderType.LIMIT ? 'limit' : 'market';
+            const is_buy = positionType === PositionType.LONG;
+            const order_type = orderType === OrderType.LIMIT ? { limit: { tif: 'Gtc' } } : { market: {} };
 
-            // Create the order
-            const orderResult = await this.exchange.createOrder(asset, type, side, size, price || undefined, {
-                reduceOnly: reduceOnly,
+            // Create the order using the HyperLiquid SDK
+            const orderResult = await this.hyperliquid.exchange.placeOrder({
+                coin: asset,
+                is_buy: is_buy,
+                sz: size,
+                limit_px: price || 0, // Use 0 for market orders
+                order_type: order_type,
+                reduce_only: reduceOnly,
             });
 
             // Convert to Record<string, unknown>
@@ -149,24 +178,32 @@ export class HyperLiquidService extends EdwinService {
             edwinLogger.info(`Closing position for ${asset} (${percentage}%)`);
 
             // Get current position
-            const positions = await this.exchange.fetchPositions([asset]);
-            const position = positions.find((pos: Record<string, unknown>) => pos['symbol'] === asset);
+            const positions = await this.hyperliquid.info.getUserPositions(this.wallet.getAddress());
+            const position = positions.find(
+                (pos: Record<string, unknown>) =>
+                    (pos['coin'] as string) === asset || (pos['symbol'] as string) === asset
+            );
 
             if (!position) {
                 throw new Error(`No open position found for ${asset}`);
             }
 
             // Calculate amount to close based on percentage
-            const contracts = (position['contracts'] as number) || 0;
-            const closeAmount = contracts * (percentage / 100);
+            const size = (position['size'] as number) || 0;
+            const closeSize = size * (percentage / 100);
 
             // Determine side (opposite of current position)
-            const side = (position['side'] as string) === 'long' ? 'sell' : 'buy';
-            const type = orderType === OrderType.LIMIT ? 'limit' : 'market';
+            const is_buy = (position['side'] as string) === 'short';
+            const order_type = orderType === OrderType.LIMIT ? { limit: { tif: 'Gtc' } } : { market: {} };
 
-            // Create the order
-            const orderResult = await this.exchange.createOrder(asset, type, side, closeAmount, price || undefined, {
-                reduceOnly: true,
+            // Create the order using the HyperLiquid SDK
+            const orderResult = await this.hyperliquid.exchange.placeOrder({
+                coin: asset,
+                is_buy: is_buy,
+                sz: closeSize,
+                limit_px: price || 0, // Use 0 for market orders
+                order_type: order_type,
+                reduce_only: true,
             });
 
             // Convert to Record<string, unknown>
@@ -189,7 +226,7 @@ export class HyperLiquidService extends EdwinService {
      */
     async getBalance(): Promise<Record<string, unknown>> {
         try {
-            const balance = await this.exchange.fetchBalance();
+            const balance = await this.hyperliquid.info.getUserBalances(this.wallet.getAddress());
             return balance;
         } catch (error) {
             edwinLogger.error(`Error fetching balance from HyperLiquid: ${error}`);
@@ -203,9 +240,7 @@ export class HyperLiquidService extends EdwinService {
      */
     async getPositions(): Promise<Record<string, unknown>[]> {
         try {
-            const positionsData = await this.exchange.fetchPositions();
-            // Convert to Record<string, unknown>[]
-            const positions: Record<string, unknown>[] = positionsData.map((pos: Record<string, unknown>) => ({ ...pos }));
+            const positions = await this.hyperliquid.info.getUserPositions(this.wallet.getAddress());
             return positions;
         } catch (error) {
             edwinLogger.error(`Error fetching positions from HyperLiquid: ${error}`);
