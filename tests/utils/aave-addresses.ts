@@ -1,0 +1,14 @@
+// AAVE V3 contract addresses on Base network
+export const AAVE_ADDRESSES = {
+    // Pool contract address on Base
+    POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+    // Pool address provider
+    POOL_ADDRESSES_PROVIDER: '0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D',
+    // Common tokens on Base
+    USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    ETH: '0x4200000000000000000000000000000000000006',
+    WETH: '0x4200000000000000000000000000000000000006',
+    DAI: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+    // AAVE token addresses (aTokens)
+    aUSDC: '0x7c8fF2f9B7836F0310bE3B2C905c97D15b8C7bDB',
+};
