@@ -150,18 +150,18 @@ export class HyperLiquidService extends EdwinService {
 
             // Get current position
             const positions = await this.exchange.fetchPositions([asset]);
-            const position = positions.find((pos: Record<string, unknown>) => pos.symbol === asset);
+            const position = positions.find((pos: Record<string, unknown>) => pos['symbol'] === asset);
 
             if (!position) {
                 throw new Error(`No open position found for ${asset}`);
             }
 
             // Calculate amount to close based on percentage
-            const contracts = position.contracts || 0;
+            const contracts = (position['contracts'] as number) || 0;
             const closeAmount = contracts * (percentage / 100);
 
             // Determine side (opposite of current position)
-            const side = position.side === 'long' ? 'sell' : 'buy';
+            const side = (position['side'] as string) === 'long' ? 'sell' : 'buy';
             const type = orderType === OrderType.LIMIT ? 'limit' : 'market';
 
             // Create the order
