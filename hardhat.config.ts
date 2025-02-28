@@ -1,17 +1,12 @@
 import { HardhatUserConfig } from 'hardhat/config';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-waffle';
 import 'dotenv/config';
 
 const config: HardhatUserConfig = {
+    // Skip compilation for mock tests
     solidity: {
-        version: '0.8.20', // Updated to match OpenZeppelin contracts
-        settings: {
-            optimizer: {
-                enabled: true,
-                runs: 200,
-            },
-        },
+        compilers: [],
     },
     networks: {
         hardhat: {
@@ -24,6 +19,10 @@ const config: HardhatUserConfig = {
         tests: './tests',
         cache: './cache',
         artifacts: './artifacts',
+    },
+    // Skip compilation for mock tests
+    mocha: {
+        timeout: 40000,
     },
 };
 

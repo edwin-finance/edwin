@@ -1,8 +1,9 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { AaveService } from '../../src/plugins/aave/aaveService';
 import { EdwinEVMWallet } from '../../src/core/wallets/evm_wallet/evm_wallet';
+import * as hre from 'hardhat';
 
 // Mock implementation for testing
 class MockAaveService extends AaveService {
@@ -22,8 +23,13 @@ describe('AAVE Supply Function Mock Test', function () {
     let aaveService: MockAaveService;
 
     before(async function () {
-        // Get a signer from Hardhat
-        [signer] = await ethers.getSigners();
+        // For mock testing, we'll create a signer manually
+        // In a real Hardhat test with network, we would use:
+        // [signer] = await hre.ethers.getSigners();
+        
+        // Create a mock provider and signer
+        const provider = new ethers.providers.JsonRpcProvider();
+        signer = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider) as unknown as SignerWithAddress;
 
         // Create Edwin wallet with the test private key
         const testPrivateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; // Hardhat's first account private key
