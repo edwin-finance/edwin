@@ -4,14 +4,24 @@ import '@nomiclabs/hardhat-waffle';
 import 'dotenv/config';
 
 const config: HardhatUserConfig = {
-    // Skip compilation for mock tests
     solidity: {
+        version: '0.8.20', // Updated to match OpenZeppelin contracts
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 200,
+            },
+        },
+        // Skip compilation to avoid network issues
         compilers: [],
     },
     networks: {
         hardhat: {
-            // Using local development network for now
-            // We'll mock the AAVE interactions in our tests
+            // Enable forking from Base network for AAVE integration tests
+            forking: {
+                url: process.env.BASE_FORK_URL || 'https://mainnet.base.org',
+                blockNumber: 5000000, // Use a specific block number for deterministic tests
+            },
         },
     },
     paths: {
@@ -20,9 +30,8 @@ const config: HardhatUserConfig = {
         cache: './cache',
         artifacts: './artifacts',
     },
-    // Skip compilation for mock tests
     mocha: {
-        timeout: 40000,
+        timeout: 60000, // Increased timeout for network requests
     },
 };
 

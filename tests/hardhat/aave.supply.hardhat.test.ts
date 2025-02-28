@@ -1,71 +1,77 @@
 import { expect } from 'chai';
 import { Contract } from 'ethers';
-import { ethers } from 'ethers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { AaveService } from '../../src/plugins/aave/aaveService';
 import { EdwinEVMWallet } from '../../src/core/wallets/evm_wallet/evm_wallet';
-import { AaveV3Base } from '@bgd-labs/aave-address-book';
-import * as hre from 'hardhat';
+import { AAVE_ADDRESSES } from '../utils/aave-addresses';
+import { getERC20, getAavePool, supplyToAave } from '../utils/aave-pool-utils';
 
-// Mock implementation for testing
-class MockAaveService extends AaveService {
-    constructor(wallet: EdwinEVMWallet) {
-        super(wallet);
-    }
-
-    async supply(params: { chain: string; amount: number; asset: string }): Promise<string> {
-        // Mock implementation that simulates a successful supply
-        return `Successfully supplied ${params.amount} ${params.asset} to Aave, transaction signature: 0x1234567890abcdef`;
-    }
-}
+// We'll use require for hardhat to avoid TypeScript import issues
+const hre = require('hardhat');
 
 describe('AAVE Supply Function Integration Test', function () {
-    let signer: SignerWithAddress;
-    let wallet: EdwinEVMWallet;
-    let aaveService: MockAaveService;
-    let mockToken: Contract;
-
-    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    let signer;
+    let wallet;
+    let aaveService;
+    let usdcToken;
+    let aavePool;
+    let aUsdcToken;
 
     before(async function () {
-        // For mock testing, we'll create a signer manually
-        // In a real Hardhat test with network, we would use:
-        // [signer] = await hre.ethers.getSigners();
-        
-        // Create a mock provider and signer
-        const provider = new ethers.providers.JsonRpcProvider();
-        signer = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider) as unknown as SignerWithAddress;
+        // This test requires forking the Base network
+        // Skip if not in a forked environment
+        if (!process.env.BASE_FORK_URL) {
+            console.log('Skipping test: BASE_FORK_URL not set');
+            this.skip();
+        }
 
-        // In a real test, we would create the contract factory using:
-        // const MockERC20 = await hre.ethers.getContractFactory('MockERC20', signer);
-        
-        // For mock testing, we'll create a mock contract directly
-        mockToken = {
-            balanceOf: async () => ethers.utils.parseUnits('100', 6),
-            mint: async () => true,
-            transfer: async () => true,
-            deployed: async () => mockToken
-        } as unknown as Contract;
-        // These lines are now handled by the mock contract creation above
+        // Get ethers and network from hardhat
+        const { ethers, network } = hre;
 
-        // Mint some tokens to the signer
-        await mockToken.mint(signer.address, ethers.utils.parseUnits('100', 6));
+        // Get signers from Hardhat
+        [signer] = await ethers.getSigners();
 
-        // Create Edwin wallet with the test private key
+        // Create Edwin wallet with the signer's private key
+        // For testing purposes, we'll use a hardcoded private key
         const testPrivateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; // Hardhat's first account private key
-        wallet = new EdwinEVMWallet(testPrivateKey as `0x${string}`);
+        wallet = new EdwinEVMWallet(testPrivateKey);
 
-        // Initialize mock AAVE service
-        aaveService = new MockAaveService(wallet);
+        // Initialize AAVE service with the wallet
+        aaveService = new AaveService(wallet);
+
+        // Get contract instances
+        usdcToken = await getERC20(AAVE_ADDRESSES.USDC);
+        aavePool = await getAavePool();
+        aUsdcToken = await getERC20(AAVE_ADDRESSES.aUSDC);
+
+        // Fund the signer with USDC
+        // In a forked environment, we need to impersonate an account with USDC
+        const whaleAddress = '0x7a16ff8270133f063aab6c9977183d9e72835428'; // USDC whale on Base
+        await network.provider.send('hardhat_impersonateAccount', [whaleAddress]);
+        const whale = await ethers.getSigner(whaleAddress);
+        
+        // Transfer USDC to the test signer
+        const usdcWhale = usdcToken.connect(whale);
+        const decimals = await usdcToken.decimals();
+        const amount = ethers.utils.parseUnits('1000', decimals); // 1000 USDC
+        await usdcWhale.transfer(signer.address, amount);
+        
+        // Stop impersonating
+        await network.provider.send('hardhat_stopImpersonatingAccount', [whaleAddress]);
     });
 
     it('should supply USDC to AAVE and verify balance changes', async function () {
-        // Get initial balance
-        const initialBalance = await mockToken.balanceOf(signer.address);
-        console.log(`Initial USDC balance: ${ethers.utils.formatUnits(initialBalance, 6)}`);
+        // Get ethers from hardhat
+        const { ethers } = hre;
+        
+        // Get initial balances
+        const initialUsdcBalance = await usdcToken.balanceOf(signer.address);
+        const initialAUsdcBalance = await aUsdcToken.balanceOf(signer.address);
+        
+        console.log(`Initial USDC balance: ${ethers.utils.formatUnits(initialUsdcBalance, 6)}`);
+        console.log(`Initial aUSDC balance: ${ethers.utils.formatUnits(initialAUsdcBalance, 6)}`);
 
-        // Supply tokens to AAVE
-        const supplyAmount = 10; // 10 USDC
+        // Supply USDC to AAVE using the Edwin SDK
+        const supplyAmount = 100; // 100 USDC
         const result = await aaveService.supply({
             chain: 'base',
             amount: supplyAmount,
@@ -74,26 +80,24 @@ describe('AAVE Supply Function Integration Test', function () {
 
         console.log(`Supply result: ${result}`);
 
-        // In a real test, we would verify the balance changes
-        // For this mock test, we'll just verify that the supply function returns the expected result
-        expect(result).to.include(`Successfully supplied ${supplyAmount} usdc to Aave`);
-        expect(result).to.include('transaction signature');
-    });
+        // Get final balances
+        const finalUsdcBalance = await usdcToken.balanceOf(signer.address);
+        const finalAUsdcBalance = await aUsdcToken.balanceOf(signer.address);
+        
+        console.log(`Final USDC balance: ${ethers.utils.formatUnits(finalUsdcBalance, 6)}`);
+        console.log(`Final aUSDC balance: ${ethers.utils.formatUnits(finalAUsdcBalance, 6)}`);
 
-    // This test demonstrates how we would verify balance changes in a real test
-    it('demonstrates balance verification for AAVE supply', async function () {
-        // Initial balance
-        const initialBalance = await mockToken.balanceOf(signer.address);
+        // Verify balance changes
+        const usdcDecrease = initialUsdcBalance.sub(finalUsdcBalance);
+        const aUsdcIncrease = finalAUsdcBalance.sub(initialAUsdcBalance);
+        
+        console.log(`USDC decrease: ${ethers.utils.formatUnits(usdcDecrease, 6)}`);
+        console.log(`aUSDC increase: ${ethers.utils.formatUnits(aUsdcIncrease, 6)}`);
 
-        // Simulate token transfer (as would happen in a real AAVE supply)
-        const supplyAmount = ethers.utils.parseUnits('10', 6); // 10 USDC with 6 decimals
-        await mockToken.transfer(AaveV3Base.POOL, supplyAmount);
-
-        // Final balance
-        const finalBalance = await mockToken.balanceOf(signer.address);
-
-        // Verify balance change
-        expect(initialBalance.sub(finalBalance).toString()).to.equal(supplyAmount.toString());
-        console.log(`Balance decreased by ${ethers.utils.formatUnits(supplyAmount, 6)} USDC as expected`);
+        // Verify that USDC balance decreased by the supply amount
+        expect(ethers.utils.formatUnits(usdcDecrease, 6)).to.equal(supplyAmount.toString());
+        
+        // Verify that aUSDC balance increased (may not be exactly the same amount due to exchange rate)
+        expect(aUsdcIncrease.gt(0)).to.be.true;
     });
 });
