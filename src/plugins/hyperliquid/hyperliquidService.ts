@@ -1,4 +1,4 @@
-import * as ccxt from 'ccxt';
+import ccxt from 'ccxt';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import edwinLogger from '../../utils/logger';
@@ -16,7 +16,7 @@ import {
  */
 export class HyperLiquidService extends EdwinService {
     private wallet: EdwinEVMWallet;
-    private exchange: ccxt.hyperliquid;
+    private exchange: any; // Using any type for CCXT exchange
 
     /**
      * Creates a new HyperLiquidService
