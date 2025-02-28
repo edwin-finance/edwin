@@ -79,9 +79,15 @@ export class HyperLiquidService extends EdwinService {
             // For now, we'll use a mock address
             const address = '0x1234567890abcdef1234567890abcdef12345678';
 
-            const result = await this.exchange.withdraw(params.asset, params.amount, address, {
+            const withdrawResult = await this.exchange.withdraw(params.asset, params.amount, address, {
                 network: 'EVM', // Specify the network if needed
             });
+
+            // Convert to Record<string, unknown>
+            const result: Record<string, unknown> = {
+                ...withdrawResult,
+                success: true,
+            };
 
             edwinLogger.info(`Withdrawal successful: ${JSON.stringify(result)}`);
             return result;
@@ -113,9 +119,15 @@ export class HyperLiquidService extends EdwinService {
             const type = orderType === OrderType.LIMIT ? 'limit' : 'market';
 
             // Create the order
-            const result = await this.exchange.createOrder(asset, type, side, size, price || undefined, {
+            const orderResult = await this.exchange.createOrder(asset, type, side, size, price || undefined, {
                 reduceOnly: reduceOnly,
             });
+
+            // Convert to Record<string, unknown>
+            const result: Record<string, unknown> = {
+                ...orderResult,
+                success: true,
+            };
 
             edwinLogger.info(`Position opened successfully: ${JSON.stringify(result)}`);
             return result;
@@ -145,16 +157,23 @@ export class HyperLiquidService extends EdwinService {
             }
 
             // Calculate amount to close based on percentage
-            const closeAmount = position.contracts * (percentage / 100);
+            const contracts = position.contracts || 0;
+            const closeAmount = contracts * (percentage / 100);
 
             // Determine side (opposite of current position)
             const side = position.side === 'long' ? 'sell' : 'buy';
             const type = orderType === OrderType.LIMIT ? 'limit' : 'market';
 
             // Create the order
-            const result = await this.exchange.createOrder(asset, type, side, closeAmount, price || undefined, {
+            const orderResult = await this.exchange.createOrder(asset, type, side, closeAmount, price || undefined, {
                 reduceOnly: true,
             });
+
+            // Convert to Record<string, unknown>
+            const result: Record<string, unknown> = {
+                ...orderResult,
+                success: true,
+            };
 
             edwinLogger.info(`Position closed successfully: ${JSON.stringify(result)}`);
             return result;
@@ -184,7 +203,9 @@ export class HyperLiquidService extends EdwinService {
      */
     async getPositions(): Promise<Record<string, unknown>[]> {
         try {
-            const positions = await this.exchange.fetchPositions();
+            const positionsData = await this.exchange.fetchPositions();
+            // Convert to Record<string, unknown>[]
+            const positions: Record<string, unknown>[] = positionsData.map(pos => ({ ...pos }));
             return positions;
         } catch (error) {
             edwinLogger.error(`Error fetching positions from HyperLiquid: ${error}`);

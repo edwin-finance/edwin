@@ -76,7 +76,7 @@ describe('HyperLiquidService', () => {
                 amount: 1000,
                 asset: 'USDC',
                 address: 'mock-deposit-address',
-                txId: 'mock-tx-id'
+                txId: 'mock-tx-id',
             });
         });
     });
@@ -90,7 +90,7 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                txHash: 'mock-tx-hash'
+                txHash: 'mock-tx-hash',
             });
         });
     });
