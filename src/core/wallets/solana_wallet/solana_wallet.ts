@@ -203,14 +203,10 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return data.result; // Transaction signature returned by Jito
     }
 
-    async getTransactionTokenBalanceChange(signature: string, asset: string, commitment: Finality = 'confirmed') {
+    async getTransactionTokenBalanceChange(signature: string, mint: string, commitment: Finality = 'confirmed') {
         //    - For SOL, check lamport balance changes (and add back the fee).
         //    - For SPL tokens, check the token account balance changes.
         let actualOutputAmount: number;
-        const mint = await this.getTokenAddress(asset);
-        if (!mint) {
-            throw new Error(`Token ${asset} not found`);
-        }
         const connection = this.getConnection();
         // Fetch the parsed transaction details (make sure to set the proper options)
         const txInfo = await withRetry(
@@ -224,8 +220,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
         if (!txInfo || !txInfo.meta) {
             throw new Error('Could not fetch transaction details');
         }
-        // Check if the output asset is SOL. This check may vary depending on your wallet's representation.
-        if (asset.toLowerCase() === 'sol') {
+        // Check if the output mint is SOL (using the native SOL mint address)
+        if (mint === NATIVE_SOL_MINT) {
             // SOL changes are reflected in lamport balances.
             const accountKeys = txInfo.transaction.message.accountKeys;
             const walletIndex = accountKeys.findIndex(key => key.pubkey.toString() === this.getAddress());

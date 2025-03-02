@@ -20,8 +20,8 @@ export class JupiterPlugin extends EdwinPlugin {
                 name: 'jupiter_swap',
                 description: 'Swap tokens using Jupiter aggregator',
                 schema: z.object({
-                    asset: z.string().min(1),
-                    assetB: z.string().min(1),
+                    inputMint: z.string().min(1),
+                    outputMint: z.string().min(1),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: SwapParameters) => {

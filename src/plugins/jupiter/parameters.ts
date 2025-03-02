@@ -1,5 +1,5 @@
 export interface SwapParameters {
-    asset: string;
-    assetB: string;
-    amount: string;
+    inputMint: string;
+    outputMint: string;
+    amount: string | number;
 }
