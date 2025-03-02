@@ -78,7 +78,7 @@ describe('Jupiter Swap Test', () => {
         const swapResult1 = await jupiter.swap({
             inputMint: SOL_MINT,
             outputMint: USDC_MINT,
-            amount: 0.1, // 0.1 SOL
+            amount: 0.01, // 0.01 SOL
         });
         console.log('Swap 1 (SOL -> USDC) output amount:', swapResult1);
 
