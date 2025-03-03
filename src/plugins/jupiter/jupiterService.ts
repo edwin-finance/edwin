@@ -99,19 +99,14 @@ export class JupiterService {
     }
 
     async swap(params: SwapParameters): Promise<number> {
-        const { asset, assetB, amount } = params;
-        if (!asset || !assetB || !amount) {
-            throw new Error('Invalid swap params. Need: asset, assetB, amount');
-        }
-        const inputMint = await this.wallet.getTokenAddress(asset);
-        const outputMint = await this.wallet.getTokenAddress(assetB);
-        if (!inputMint || !outputMint) {
-            throw new Error(`Invalid asset: ${asset} or ${assetB}`);
+        const { inputMint, outputMint, amount } = params;
+        if (!inputMint || !outputMint || !amount) {
+            throw new Error('Invalid swap params. Need: inputMint, outputMint, amount');
         }
 
         const balance = await this.wallet.getBalance(inputMint);
         if (balance < Number(amount)) {
-            throw new InsufficientBalanceError(Number(amount), balance, asset);
+            throw new InsufficientBalanceError(Number(amount), balance, inputMint);
         }
 
         // 1. Get quote from Jupiter
@@ -148,10 +143,8 @@ export class JupiterService {
         // 7. Wait for confirmation
         await this.wallet.waitForConfirmationGracefully(connection, signature);
 
-        // 8. Retrieve the actual output amount based on the output asset type:
-        //    - For SOL, check lamport balance changes (and add back the fee).
-        //    - For SPL tokens, check the token account balance changes.
-        return await this.wallet.getTransactionTokenBalanceChange(signature, assetB);
+        // 8. Retrieve the actual output amount based on the output mint
+        return await this.wallet.getTransactionTokenBalanceChange(signature, outputMint);
     }
 
     async getQuote(params: JupiterQuoteParameters): Promise<JupiterQuoteResponse> {
