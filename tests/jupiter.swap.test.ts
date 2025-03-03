@@ -13,7 +13,7 @@ describe('Jupiter Swap Test', () => {
     const jupiter = new JupiterService(wallet);
 
     // USDC mint address on Solana
-    const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; 
+    const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
     const SOL_MINT = 'So11111111111111111111111111111111111111112'; // Native SOL mint address
 
     it('should swap USDC to SOL and back', async () => {
