@@ -7,3 +7,4 @@ export * from './jupiter';
 export * from './cookie';
 export * from './eoracle';
 export * from './storyprotocol';
+export * from './hyperliquid';
