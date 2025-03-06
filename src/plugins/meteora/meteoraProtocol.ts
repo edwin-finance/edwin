@@ -286,38 +286,28 @@ export class MeteoraProtocol {
                 throw new Error('Pool address is required for Meteora liquidity provision');
             }
 
-            let attempts = 0;
-            const MAX_ATTEMPTS = 5;
-            let result: { positionAddress: string; liquidityAdded: [number, number] } | undefined;
-            while (attempts < MAX_ATTEMPTS) {
-                try {
-                    result = await this.innerAddLiquidity(poolAddress, amount, amountB, rangeInterval);
-                    return result;
-                } catch (error) {
-                    if (error instanceof MeteoraStatisticalBugError) {
-                        attempts++;
-                        edwinLogger.info(
-                            `Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`
+            try {
+                const result = await this.innerAddLiquidity(poolAddress, amount, amountB, rangeInterval);
+                return result;
+            } catch (error) {
+                if (error instanceof MeteoraStatisticalBugError) {
+                    edwinLogger.info('Encountered Meteora statistical bug, closing position before raising error...');
+                    try {
+                        await withRetry(
+                            async () =>
+                                this.removeLiquidity({
+                                    poolAddress,
+                                    positionAddress: error.positionAddress,
+                                    shouldClosePosition: true,
+                                }),
+                            'Meteora remove liquidity'
                         );
-
-                        if (attempts < MAX_ATTEMPTS) {
-                            await withRetry(
-                                async () =>
-                                    this.removeLiquidity({
-                                        poolAddress,
-                                        positionAddress: error.positionAddress,
-                                        shouldClosePosition: true,
-                                    }),
-                                'Meteora remove liquidity'
-                            );
-                        }
-                        continue;
+                    } catch (closeError) {
+                        edwinLogger.error('Failed to close position:', closeError);
                     }
-                    throw error;
                 }
+                throw error;
             }
-
-            throw new Error(`Failed to add liquidity after ${MAX_ATTEMPTS} attempts due to statistical bug`);
         } catch (error: unknown) {
             edwinLogger.error('Meteora add liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
