@@ -12,10 +12,10 @@ import {
 import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from './errors';
 import {
-    AddLiquidityParametersType,
-    RemoveLiquidityParametersType,
-    PoolParametersType,
-    GetPoolsParametersType,
+    AddLiquidityParameters,
+    RemoveLiquidityParameters,
+    PoolParameters,
+    GetPoolsParameters,
 } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 interface MeteoraPoolResult {
@@ -81,7 +81,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getPools(params: GetPoolsParametersType): Promise<MeteoraPoolOutput[]> {
+    async getPools(params: GetPoolsParameters): Promise<MeteoraPoolOutput[]> {
         const { asset, assetB } = params;
         const limit = 10;
         if (!asset || !assetB) {
@@ -110,7 +110,7 @@ export class MeteoraProtocol {
         }));
     }
 
-    async getPositionsFromPool(params: PoolParametersType): Promise<Array<LbPosition>> {
+    async getPositionsFromPool(params: PoolParameters): Promise<Array<LbPosition>> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getPositionsFromPool');
@@ -139,7 +139,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getActiveBin(params: PoolParametersType): Promise<BinLiquidity> {
+    async getActiveBin(params: PoolParameters): Promise<BinLiquidity> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getActiveBin');
@@ -275,7 +275,7 @@ export class MeteoraProtocol {
     }
 
     async addLiquidity(
-        params: AddLiquidityParametersType
+        params: AddLiquidityParameters
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const { amount, amountB, poolAddress, rangeInterval } = params;
         edwinLogger.info(
@@ -325,7 +325,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async claimFees(params: PoolParametersType): Promise<string> {
+    async claimFees(params: PoolParameters): Promise<string> {
         const { poolAddress } = params;
 
         try {
@@ -369,7 +369,7 @@ Fees claimed:
     }
 
     async removeLiquidity(
-        params: RemoveLiquidityParametersType
+        params: RemoveLiquidityParameters
     ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
         const { poolAddress, positionAddress, shouldClosePosition } = params;
         try {
