@@ -287,7 +287,12 @@ export class MeteoraProtocol {
             }
 
             try {
-                const result = await this.innerAddLiquidity(poolAddress, amount, amountB, rangeInterval);
+                const result = await this.innerAddLiquidity(
+                    poolAddress,
+                    amount.toString(),
+                    amountB.toString(),
+                    rangeInterval
+                );
                 return result;
             } catch (error) {
                 if (error instanceof MeteoraStatisticalBugError) {

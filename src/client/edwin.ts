@@ -13,7 +13,6 @@ import { eoracle, EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
     solanaPrivateKey?: string;
-    plugins: string[];
 }
 
 interface EdwinWallets {
@@ -76,5 +75,9 @@ export class Edwin {
             }
         }
         return tools;
+    }
+
+    async getPortfolio(): Promise<string> {
+        return "";
     }
 }

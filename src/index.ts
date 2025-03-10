@@ -19,3 +19,6 @@ export * from './plugins/eoracle';
 // Export client
 export { Edwin } from './client/edwin';
 export type { EdwinConfig } from './client';
+
+// Export adapters
+export * from './adapters';
