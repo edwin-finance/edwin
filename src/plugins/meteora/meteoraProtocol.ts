@@ -11,12 +11,7 @@ import {
 } from './utils';
 import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from './errors';
-import {
-    AddLiquidityParameters,
-    RemoveLiquidityParameters,
-    PoolParameters,
-    GetPoolsParameters,
-} from './parameters';
+import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
