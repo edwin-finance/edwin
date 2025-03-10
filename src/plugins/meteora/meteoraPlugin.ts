@@ -1,9 +1,19 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { MeteoraProtocol } from './meteoraProtocol';
 import { EdwinSolanaWallet } from '../../core/wallets';
-import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
+import {
+    // Import schemas with Schema suffix
+    AddLiquidityParametersSchema,
+    RemoveLiquidityParametersSchema,
+    PoolParametersSchema,
+    GetPoolsParametersSchema,
+    // Import types with clean names
+    AddLiquidityParameters,
+    RemoveLiquidityParameters,
+    PoolParameters,
+    GetPoolsParameters,
+} from './parameters';
 
 export class MeteoraPlugin extends EdwinPlugin {
     constructor(wallet: EdwinSolanaWallet) {
@@ -19,12 +29,7 @@ export class MeteoraPlugin extends EdwinPlugin {
             meteoraAddLiquidity: {
                 name: 'meteora_add_liquidity',
                 description: 'Add liquidity to a Meteora pool',
-                schema: z.object({
-                    amount: z.number().positive(),
-                    amountB: z.number().positive(),
-                    poolAddress: z.string().min(1),
-                    rangeInterval: z.number().optional(),
-                }),
+                schema: AddLiquidityParametersSchema.schema,
                 execute: async (params: AddLiquidityParameters) => {
                     return await meteoraProtocol.addLiquidity(params);
                 },
@@ -32,11 +37,7 @@ export class MeteoraPlugin extends EdwinPlugin {
             meteoraRemoveLiquidity: {
                 name: 'meteora_remove_liquidity',
                 description: 'Remove liquidity from a Meteora pool',
-                schema: z.object({
-                    poolAddress: z.string().min(1),
-                    positionAddress: z.string().optional(),
-                    shouldClosePosition: z.boolean().optional(),
-                }),
+                schema: RemoveLiquidityParametersSchema.schema,
                 execute: async (params: RemoveLiquidityParameters) => {
                     return await meteoraProtocol.removeLiquidity(params);
                 },
@@ -44,10 +45,7 @@ export class MeteoraPlugin extends EdwinPlugin {
             meteoraClaimFees: {
                 name: 'meteora_claim_fees',
                 description: 'Claim fees from a Meteora pool',
-                schema: z.object({
-                    chain: z.string().min(1),
-                    poolAddress: z.string().min(1),
-                }),
+                schema: PoolParametersSchema.schema,
                 execute: async (params: PoolParameters) => {
                     return await meteoraProtocol.claimFees(params);
                 },
@@ -55,9 +53,7 @@ export class MeteoraPlugin extends EdwinPlugin {
             meteoraGetPools: {
                 name: 'meteora_get_pools',
                 description: 'Get all pools on a Solana chain',
-                schema: z.object({
-                    chain: z.string().min(1),
-                }),
+                schema: GetPoolsParametersSchema.schema,
                 execute: async (params: GetPoolsParameters) => {
                     return await meteoraProtocol.getPools(params);
                 },

@@ -11,7 +11,12 @@ import {
 } from './utils';
 import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from './errors';
-import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
+import {
+    AddLiquidityParametersType,
+    RemoveLiquidityParametersType,
+    PoolParametersType,
+    GetPoolsParametersType,
+} from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -76,7 +81,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getPools(params: GetPoolsParameters): Promise<MeteoraPoolOutput[]> {
+    async getPools(params: GetPoolsParametersType): Promise<MeteoraPoolOutput[]> {
         const { asset, assetB } = params;
         const limit = 10;
         if (!asset || !assetB) {
@@ -105,7 +110,7 @@ export class MeteoraProtocol {
         }));
     }
 
-    async getPositionsFromPool(params: PoolParameters): Promise<Array<LbPosition>> {
+    async getPositionsFromPool(params: PoolParametersType): Promise<Array<LbPosition>> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getPositionsFromPool');
@@ -134,7 +139,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getActiveBin(params: PoolParameters): Promise<BinLiquidity> {
+    async getActiveBin(params: PoolParametersType): Promise<BinLiquidity> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getActiveBin');
@@ -270,7 +275,7 @@ export class MeteoraProtocol {
     }
 
     async addLiquidity(
-        params: AddLiquidityParameters
+        params: AddLiquidityParametersType
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const { amount, amountB, poolAddress, rangeInterval } = params;
         edwinLogger.info(
@@ -287,7 +292,12 @@ export class MeteoraProtocol {
             }
 
             try {
-                const result = await this.innerAddLiquidity(poolAddress, amount, amountB, rangeInterval);
+                const result = await this.innerAddLiquidity(
+                    poolAddress,
+                    amount.toString(),
+                    amountB.toString(),
+                    rangeInterval
+                );
                 return result;
             } catch (error) {
                 if (error instanceof MeteoraStatisticalBugError) {
@@ -315,7 +325,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async claimFees(params: PoolParameters): Promise<string> {
+    async claimFees(params: PoolParametersType): Promise<string> {
         const { poolAddress } = params;
 
         try {
@@ -359,7 +369,7 @@ Fees claimed:
     }
 
     async removeLiquidity(
-        params: RemoveLiquidityParameters
+        params: RemoveLiquidityParametersType
     ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
         const { poolAddress, positionAddress, shouldClosePosition } = params;
         try {
