@@ -78,6 +78,6 @@ export class Edwin {
     }
 
     async getPortfolio(): Promise<string> {
-        return "";
+        return '';
     }
 }
