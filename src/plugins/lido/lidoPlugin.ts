@@ -18,6 +18,7 @@ export class LidoPlugin extends EdwinPlugin {
                 name: 'lido_stake',
                 description: 'Stake ETH in Lido',
                 schema: z.object({
+                    asset: z.string().min(1).optional(),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: StakeParameters) => {
@@ -28,6 +29,7 @@ export class LidoPlugin extends EdwinPlugin {
                 name: 'lido_unstake',
                 description: 'Unstake ETH from Lido',
                 schema: z.object({
+                    asset: z.string().min(1).optional(),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: StakeParameters) => {
@@ -38,7 +40,7 @@ export class LidoPlugin extends EdwinPlugin {
                 name: 'lido_claim_rewards',
                 description: 'Claim staking rewards from Lido',
                 schema: z.object({
-                    asset: z.string().min(1),
+                    asset: z.string().min(1).optional(),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: StakeParameters) => {

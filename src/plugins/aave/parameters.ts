@@ -1,13 +1,13 @@
 import { SupportedChain } from '../../core/types';
 
 export interface SupplyParameters {
-    chain: SupportedChain;
+    chain?: SupportedChain;
     asset: string;
     amount: number;
 }
 
 export interface WithdrawParameters {
-    chain: SupportedChain;
+    chain?: SupportedChain;
     asset: string;
     amount: number;
 }

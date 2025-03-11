@@ -18,7 +18,7 @@ export class AavePlugin extends EdwinPlugin {
                 name: 'aave_supply',
                 description: 'Supply assets to Aave protocol',
                 schema: z.object({
-                    chain: z.string().min(1),
+                    chain: z.string().min(1).optional(),
                     asset: z.string().min(1),
                     amount: z.number().positive(),
                 }),
@@ -30,7 +30,7 @@ export class AavePlugin extends EdwinPlugin {
                 name: 'aave_withdraw',
                 description: 'Withdraw assets from Aave protocol',
                 schema: z.object({
-                    chain: z.string().min(1),
+                    chain: z.string().min(1).optional(),
                     asset: z.string().min(1),
                     amount: z.number().positive(),
                 }),

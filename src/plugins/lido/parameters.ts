@@ -1,4 +1,4 @@
 export interface StakeParameters {
-    asset: string;
+    asset?: string;
     amount: number;
 }
