@@ -1,11 +1,11 @@
 import { Pool, EthereumTransactionTypeExtended } from '@aave/contract-helpers';
-import { 
-    AaveV3Base, 
-    AaveV3Ethereum, 
-    AaveV3Polygon, 
+import {
+    AaveV3Base,
+    AaveV3Ethereum,
+    AaveV3Polygon,
     AaveV3Sepolia,
     AaveV3Arbitrum,
-    AaveV3BNB
+    AaveV3BNB,
 } from '@bgd-labs/aave-address-book';
 import { ethers, providers } from 'ethers';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
@@ -24,13 +24,13 @@ interface AaveError extends Error {
 
 // Define an interface with only the properties we need
 interface AaveAddressBook {
-  POOL: string;
-  WETH_GATEWAY: string;
-  ASSETS: {
-    [key: string]: {
-      UNDERLYING: string;
+    POOL: string;
+    WETH_GATEWAY: string;
+    ASSETS: {
+        [key: string]: {
+            UNDERLYING: string;
+        };
     };
-  };
 }
 
 export class AaveService extends EdwinService {
@@ -54,7 +54,7 @@ export class AaveService extends EdwinService {
     }
 
     private getAddressBook(chain: SupportedEVMChain): AaveAddressBook {
-        switch(chain.toLowerCase()) {
+        switch (chain.toLowerCase()) {
             case 'base':
                 return AaveV3Base;
             case 'basesepolia':
@@ -123,7 +123,7 @@ export class AaveService extends EdwinService {
 
             // Get the address book for the current chain
             const addressBook = this.getAddressBook(aaveChain);
-            
+
             const pool = new Pool(ethers_wallet.provider, {
                 POOL: addressBook.POOL,
                 WETH_GATEWAY: addressBook.WETH_GATEWAY,
@@ -218,7 +218,7 @@ export class AaveService extends EdwinService {
 
             // Get the address book for the current chain
             const addressBook = this.getAddressBook(aaveChain);
-            
+
             const pool = new Pool(ethers_wallet.provider, {
                 POOL: addressBook.POOL,
                 WETH_GATEWAY: addressBook.WETH_GATEWAY,
