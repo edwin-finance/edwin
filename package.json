@@ -6,7 +6,7 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "pnpm format && pnpm lint && tsup",
-        "test": "vitest",
+        "test": "vitest run",
         "lint": "eslint src --max-warnings 0",
         "prepare": "npm run build",
         "format": "prettier -c .prettierrc --write \"**/*.{ts,js,cjs,json,md}\"",
