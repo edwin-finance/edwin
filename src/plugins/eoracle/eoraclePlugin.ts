@@ -1,8 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { EOracleService } from './eoracleService';
-import { PriceParameters } from './parameters';
+import { PriceParametersSchema, PriceParameters } from './parameters';
 
 export class EOraclePlugin extends EdwinPlugin {
     constructor(apiKey: string) {
@@ -18,9 +17,7 @@ export class EOraclePlugin extends EdwinPlugin {
             eoracleGetPrice: {
                 name: 'eoracle_get_price',
                 description: 'Get price information for a given symbol',
-                schema: z.object({
-                    symbol: z.string().min(1),
-                }),
+                schema: PriceParametersSchema.schema,
                 execute: async (params: PriceParameters) => {
                     return await eoracleService.getPrice(params.symbol);
                 },

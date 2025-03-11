@@ -1,9 +1,14 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { StoryProtocolService } from './storyProtocolService';
 import { EdwinEVMWallet } from '../../core/wallets';
 import {
+    RegisterIPAssetParametersSchema,
+    AttachTermsParametersSchema,
+    MintLicenseTokenParametersSchema,
+    RegisterDerivativeParametersSchema,
+    PayIPAssetParametersSchema,
+    ClaimRevenueParametersSchema,
     RegisterIPAssetParameters,
     AttachTermsParameters,
     MintLicenseTokenParameters,
@@ -26,13 +31,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             registerIPAsset: {
                 name: 'register_ip_asset',
                 description: 'Register an IP asset on Story Protocol',
-                schema: z.object({
-                    name: z.string().min(1),
-                    description: z.string().min(1),
-                    mediaUrl: z.string().url(),
-                    contentHash: z.string().min(1),
-                    externalUrl: z.string().url().optional(),
-                }),
+                schema: RegisterIPAssetParametersSchema.schema,
                 execute: async (params: RegisterIPAssetParameters) => {
                     return await storyProtocolService.registerIPAsset(params);
                 },
@@ -40,11 +39,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             attachTerms: {
                 name: 'attach_terms',
                 description: 'Attach terms to an IP asset on Story Protocol',
-                schema: z.object({
-                    ipId: z.string().min(1),
-                    termsUrl: z.string().url(),
-                    termsHash: z.string().min(1),
-                }),
+                schema: AttachTermsParametersSchema.schema,
                 execute: async (params: AttachTermsParameters) => {
                     return await storyProtocolService.attachTerms(params);
                 },
@@ -52,12 +47,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             mintLicenseToken: {
                 name: 'mint_license_token',
                 description: 'Mint a license token for an IP asset on Story Protocol',
-                schema: z.object({
-                    ipId: z.string().min(1),
-                    licenseTermsUrl: z.string().url(),
-                    licenseTermsHash: z.string().min(1),
-                    mintTo: z.string().min(1),
-                }),
+                schema: MintLicenseTokenParametersSchema.schema,
                 execute: async (params: MintLicenseTokenParameters) => {
                     return await storyProtocolService.mintLicenseToken(params);
                 },
@@ -65,15 +55,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             registerDerivative: {
                 name: 'register_derivative',
                 description: 'Register a derivative IP asset on Story Protocol',
-                schema: z.object({
-                    parentIpId: z.string().min(1),
-                    name: z.string().min(1),
-                    description: z.string().min(1),
-                    mediaUrl: z.string().url(),
-                    contentHash: z.string().min(1),
-                    externalUrl: z.string().url().optional(),
-                    isCommercial: z.boolean(),
-                }),
+                schema: RegisterDerivativeParametersSchema.schema,
                 execute: async (params: RegisterDerivativeParameters) => {
                     return await storyProtocolService.registerDerivative(params);
                 },
@@ -81,10 +63,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             payIPAsset: {
                 name: 'pay_ip_asset',
                 description: 'Pay royalty to an IP asset on Story Protocol',
-                schema: z.object({
-                    ipId: z.string().min(1),
-                    amount: z.string().min(1),
-                }),
+                schema: PayIPAssetParametersSchema.schema,
                 execute: async (params: PayIPAssetParameters) => {
                     return await storyProtocolService.payIPAsset(params);
                 },
@@ -92,9 +71,7 @@ export class StoryProtocolPlugin extends EdwinPlugin {
             claimRevenue: {
                 name: 'claim_revenue',
                 description: 'Claim revenue from an IP asset on Story Protocol',
-                schema: z.object({
-                    ipId: z.string().min(1),
-                }),
+                schema: ClaimRevenueParametersSchema.schema,
                 execute: async (params: ClaimRevenueParameters) => {
                     return await storyProtocolService.claimRevenue(params);
                 },

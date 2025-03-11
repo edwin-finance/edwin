@@ -1,9 +1,8 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { LidoProtocol } from './lidoProtocol';
 import { EdwinEVMWallet } from '../../core/wallets';
-import { StakeParameters } from './parameters';
+import { StakeParametersSchema, StakeParameters } from './parameters';
 
 export class LidoPlugin extends EdwinPlugin {
     constructor(wallet: EdwinEVMWallet) {
@@ -17,9 +16,7 @@ export class LidoPlugin extends EdwinPlugin {
             lidoStake: {
                 name: 'lido_stake',
                 description: 'Stake ETH in Lido',
-                schema: z.object({
-                    amount: z.number().positive(),
-                }),
+                schema: StakeParametersSchema.schema,
                 execute: async (params: StakeParameters) => {
                     return await lidoProtocol.stake(params);
                 },
@@ -27,9 +24,7 @@ export class LidoPlugin extends EdwinPlugin {
             lidoUnstake: {
                 name: 'lido_unstake',
                 description: 'Unstake ETH from Lido',
-                schema: z.object({
-                    amount: z.number().positive(),
-                }),
+                schema: StakeParametersSchema.schema,
                 execute: async (params: StakeParameters) => {
                     return await lidoProtocol.unstake(params);
                 },
@@ -37,10 +32,7 @@ export class LidoPlugin extends EdwinPlugin {
             lidoClaimRewards: {
                 name: 'lido_claim_rewards',
                 description: 'Claim staking rewards from Lido',
-                schema: z.object({
-                    asset: z.string().min(1),
-                    amount: z.number().positive(),
-                }),
+                schema: StakeParametersSchema.schema,
                 execute: async (params: StakeParameters) => {
                     return await lidoProtocol.claimRewards(params);
                 },
