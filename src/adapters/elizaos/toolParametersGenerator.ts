@@ -68,13 +68,13 @@ function generateParameterDescriptions(schema: z.ZodTypeAny): string {
 /**
  * Generates a JSON template from a schema
  */
-function generateJsonTemplate(schema: z.ZodTypeAny): Record<string, any> {
+function generateJsonTemplate(schema: z.ZodTypeAny): Record<string, unknown> {
     if (schema._def?.typeName !== 'ZodObject') {
         return {};
     }
 
     const shape = schema._def.shape();
-    const template: Record<string, any> = {};
+    const template: Record<string, unknown> = {};
 
     Object.entries<z.ZodTypeAny>(shape).forEach(([key, value]) => {
         template[key] = getPlaceholderValue(value);
@@ -110,7 +110,7 @@ function getTypeString(schema: z.ZodTypeAny): string {
 /**
  * Creates an appropriate placeholder value for the JSON template
  */
-function getPlaceholderValue(schema: z.ZodTypeAny): any {
+function getPlaceholderValue(schema: z.ZodTypeAny): unknown {
     const typeName = schema._def?.typeName;
 
     switch (typeName) {
@@ -126,7 +126,7 @@ function getPlaceholderValue(schema: z.ZodTypeAny): any {
             return ['<items>'];
         case 'ZodObject': {
             const shape = schema._def.shape();
-            const result: Record<string, any> = {};
+            const result: Record<string, unknown> = {};
             Object.entries<z.ZodTypeAny>(shape).forEach(([key, value]) => {
                 result[key] = getPlaceholderValue(value);
             });

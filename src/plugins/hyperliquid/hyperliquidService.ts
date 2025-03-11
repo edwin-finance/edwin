@@ -1,5 +1,6 @@
 import * as ccxt from 'ccxt';
-import { Hyperliquid } from 'hyperliquid';
+import { Hyperliquid, OrderType as HyperliquidOrderType } from 'hyperliquid';
+import { TransactionRequest } from 'viem';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import edwinLogger from '../../utils/logger';
@@ -65,14 +66,13 @@ export class HyperLiquidService extends EdwinService {
             const walletClient = this.wallet.getWalletClient('arbitrum');
 
             // Create transaction parameters
-            // Use a more generic approach to avoid type issues
-            const txParams: any = {
+            const txParams: TransactionRequest = {
                 to: depositAddress.address as `0x${string}`,
                 value: BigInt(params.amount * 10 ** 18), // Convert to wei
             };
 
             // Send the transaction
-            const txHash = await walletClient.sendTransaction(txParams as any);
+            const txHash = await walletClient.sendTransaction(txParams);
 
             const result = {
                 success: true,
@@ -150,7 +150,7 @@ export class HyperLiquidService extends EdwinService {
                 is_buy: is_buy,
                 sz: size,
                 limit_px: price || 0, // Use 0 for market orders
-                order_type: sdk_order_type as any, // Type assertion to bypass type checking
+                order_type: sdk_order_type as HyperliquidOrderType,
                 reduce_only: reduceOnly,
             });
 
@@ -183,7 +183,7 @@ export class HyperLiquidService extends EdwinService {
             // In a real implementation, we would use the HyperLiquid SDK's appropriate method
             const positions = await this.exchange.fetchPositions([asset]);
             // Use type assertion to handle the positions array
-            const position = (positions as any[]).find(pos => pos.symbol === asset);
+            const position = (positions as ccxt.Position[]).find(pos => pos.symbol === asset);
 
             if (!position) {
                 throw new Error(`No open position found for ${asset}`);
@@ -204,7 +204,7 @@ export class HyperLiquidService extends EdwinService {
                 is_buy: is_buy,
                 sz: closeSize,
                 limit_px: price || 0, // Use 0 for market orders
-                order_type: sdk_order_type as any, // Type assertion to bypass type checking
+                order_type: sdk_order_type as HyperliquidOrderType,
                 reduce_only: true,
             });
 
@@ -248,7 +248,7 @@ export class HyperLiquidService extends EdwinService {
             // In a real implementation, we would use the HyperLiquid SDK's appropriate method
             const positions = await this.exchange.fetchPositions();
             // Convert to Record<string, unknown>[] using a more explicit approach
-            return (positions as any[]).map(pos => ({ ...pos }) as Record<string, unknown>);
+            return (positions as ccxt.Position[]).map(pos => ({ ...pos }) as Record<string, unknown>);
         } catch (error) {
             edwinLogger.error(`Error fetching positions from HyperLiquid: ${error}`);
             throw error;
