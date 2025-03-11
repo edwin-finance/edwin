@@ -15,6 +15,8 @@ export * from './plugins/uniswap';
 export * from './plugins/jupiter';
 export * from './plugins/cookie';
 export * from './plugins/eoracle';
+export * from './plugins/storyprotocol';
+export * from './plugins/hyperliquid';
 
 // Export client
 export { Edwin } from './client/edwin';

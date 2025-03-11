@@ -1,4 +1,4 @@
-import { StoryClient, WIP_TOKEN_ADDRESS } from '@story-protocol/core-sdk';
+import { StoryClient, WIP_TOKEN_ADDRESS, RegisterPILTermsRequest } from '@story-protocol/core-sdk';
 import { createWalletClient, http, toHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
@@ -12,6 +12,7 @@ import {
     PayIPAssetParameters,
     ClaimRevenueParameters,
 } from './parameters';
+import { LicensingConfig } from '@story-protocol/core-sdk/dist/declarations/src/types/common';
 
 export class StoryProtocolService {
     supportedChains: SupportedChain[] = ['sepolia'];
@@ -102,9 +103,9 @@ export class StoryProtocolService {
             tokenId: BigInt(1),
             licenseTermsData: [
                 {
-                    // Using 'any' type for mock implementation since we don't have access to the actual SDK types
-                    terms: {} as any,
-                    licensingConfig: {} as any,
+                    // Using 'unknown' type for mock implementation since we don't have access to the actual SDK types
+                    terms: {} as RegisterPILTermsRequest,
+                    licensingConfig: {} as LicensingConfig,
                 },
             ],
             ipMetadata: {

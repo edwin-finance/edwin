@@ -65,14 +65,23 @@ export class HyperLiquidService extends EdwinService {
             // Get wallet client for the transaction
             const walletClient = this.wallet.getWalletClient('arbitrum');
 
+            if (!walletClient.account) {
+                throw new Error('Wallet not connected or no account available');
+            }
+
             // Create transaction parameters
             const txParams: TransactionRequest = {
                 to: depositAddress.address as `0x${string}`,
                 value: BigInt(params.amount * 10 ** 18), // Convert to wei
             };
 
-            // Send the transaction
-            const txHash = await walletClient.sendTransaction(txParams);
+            // Send the transaction with explicit typing
+            const txHash = await walletClient.sendTransaction({
+                account: walletClient.account,
+                chain: walletClient.chain,
+                to: txParams.to,
+                value: txParams.value,
+            });
 
             const result = {
                 success: true,
