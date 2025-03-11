@@ -106,7 +106,7 @@ export class AaveService extends EdwinService {
             throw new Error('Amount is required');
         }
         try {
-            const aaveChain = this.getAaveChain(chain);
+            const aaveChain = this.getAaveChain(chain as SupportedChain);
             this.wallet.switchChain(aaveChain);
             edwinLogger.info(`Switched to chain: ${chain}`);
             const walletClient = this.wallet.getWalletClient(aaveChain);
@@ -203,7 +203,7 @@ export class AaveService extends EdwinService {
             throw new Error('Amount is required');
         }
         try {
-            const aaveChain = this.getAaveChain(chain);
+            const aaveChain = this.getAaveChain(chain as SupportedChain);
             this.wallet.switchChain(aaveChain);
             edwinLogger.info(`Switched to chain: ${chain}`);
             const walletClient = this.wallet.getWalletClient(aaveChain);
