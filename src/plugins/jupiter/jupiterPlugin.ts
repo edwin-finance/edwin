@@ -1,9 +1,8 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { JupiterService } from './jupiterService';
 import { EdwinSolanaWallet } from '../../core/wallets';
-import { SwapParameters } from './parameters';
+import { SwapParametersSchema, SwapParameters } from './parameters';
 
 export class JupiterPlugin extends EdwinPlugin {
     constructor(wallet: EdwinSolanaWallet) {
@@ -19,11 +18,7 @@ export class JupiterPlugin extends EdwinPlugin {
             jupiterSwap: {
                 name: 'jupiter_swap',
                 description: 'Swap tokens using Jupiter aggregator',
-                schema: z.object({
-                    inputMint: z.string().min(1),
-                    outputMint: z.string().min(1),
-                    amount: z.number().positive(),
-                }),
+                schema: SwapParametersSchema.schema,
                 execute: async (params: SwapParameters) => {
                     return await jupiterService.swap(params);
                 },

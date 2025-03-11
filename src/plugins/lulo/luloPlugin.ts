@@ -1,9 +1,8 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { LuloProtocol } from './luloProtocol';
 import { EdwinSolanaWallet } from '../../core/wallets';
-import { SupplyParameters, WithdrawParameters } from './parameters';
+import { SupplyParametersSchema, WithdrawParametersSchema, SupplyParameters, WithdrawParameters } from './parameters';
 
 export class LuloPlugin extends EdwinPlugin {
     constructor(wallet: EdwinSolanaWallet) {
@@ -17,10 +16,7 @@ export class LuloPlugin extends EdwinPlugin {
             luloSupply: {
                 name: 'lulo_supply',
                 description: 'Supply assets to Lulo protocol',
-                schema: z.object({
-                    asset: z.string().min(1),
-                    amount: z.number().positive(),
-                }),
+                schema: SupplyParametersSchema.schema,
                 execute: async (params: SupplyParameters) => {
                     return await luloProtocol.supply(params);
                 },
@@ -28,10 +24,7 @@ export class LuloPlugin extends EdwinPlugin {
             luloWithdraw: {
                 name: 'lulo_withdraw',
                 description: 'Withdraw assets from Lulo protocol',
-                schema: z.object({
-                    asset: z.string().min(1),
-                    amount: z.number().positive(),
-                }),
+                schema: WithdrawParametersSchema.schema,
                 execute: async (params: WithdrawParameters) => {
                     return await luloProtocol.withdraw(params);
                 },

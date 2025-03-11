@@ -1,9 +1,20 @@
-export interface SupplyParameters {
-    asset: string;
-    amount: number;
-}
+import { z } from 'zod';
+import { createParameterSchema } from '../../core/utils/createParameterSchema';
 
-export interface WithdrawParameters {
-    asset: string;
-    amount: number;
-}
+export const SupplyParametersSchema = createParameterSchema(
+    z.object({
+        asset: z.string().min(1).describe('The asset to supply'),
+        amount: z.number().positive().describe('The amount to supply'),
+    })
+);
+
+export const WithdrawParametersSchema = createParameterSchema(
+    z.object({
+        asset: z.string().min(1).describe('The asset to withdraw'),
+        amount: z.number().positive().describe('The amount to withdraw'),
+    })
+);
+
+// Export clean parameter types
+export type SupplyParameters = typeof SupplyParametersSchema.type;
+export type WithdrawParameters = typeof WithdrawParametersSchema.type;

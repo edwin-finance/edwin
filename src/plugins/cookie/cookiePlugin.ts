@@ -1,8 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { z } from 'zod';
 import { CookieSwarmClient } from './cookieClient';
-import { AgentParameters, SearchParameters } from './parameters';
+import { AgentParametersSchema, SearchParametersSchema, AgentParameters, SearchParameters } from './parameters';
 
 export class CookiePlugin extends EdwinPlugin {
     constructor(apiKey: string) {
@@ -18,11 +17,7 @@ export class CookiePlugin extends EdwinPlugin {
             cookieGetAgent: {
                 name: 'cookie_get_agent',
                 description: 'Get agent information by Twitter username or contract address',
-                schema: z.object({
-                    username: z.string().optional(),
-                    contractAddress: z.string().optional(),
-                    interval: z.enum(['_3Days', '_7Days']),
-                }),
+                schema: AgentParametersSchema.schema,
                 execute: async (params: AgentParameters) => {
                     if (params.username) {
                         return await cookieClient.getAgentByTwitter(params);
@@ -33,11 +28,7 @@ export class CookiePlugin extends EdwinPlugin {
             cookieSearchTweets: {
                 name: 'cookie_search_tweets',
                 description: 'Search tweets within a date range',
-                schema: z.object({
-                    query: z.string(),
-                    from: z.string(),
-                    to: z.string(),
-                }),
+                schema: SearchParametersSchema.schema,
                 execute: async (params: SearchParameters) => {
                     return await cookieClient.searchTweets(params);
                 },
