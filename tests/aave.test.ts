@@ -9,7 +9,7 @@ describe('Edwin AAVE test', () => {
     it('Test supply action', async () => {
         const evmPrivateKey = process.env.EVM_PRIVATE_KEY;
         if (!evmPrivateKey) {
-            throw new Error('EVM_PRIVATE_KEY or SOLANA_PRIVATE_KEY is not set');
+            throw new Error('EVM_PRIVATE_KEY is not set');
         }
 
         const wallet = new EdwinEVMWallet(evmPrivateKey as `0x${string}`);
