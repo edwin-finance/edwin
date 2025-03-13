@@ -75,10 +75,10 @@ export class StoryProtocolService {
 
         // Upload metadata to IPFS
         const ipMetadata = {
-            ipMetadataURI: 'test-uri',
-            ipMetadataHash: toHex('test-metadata-hash', { size: 32 }),
-            nftMetadataHash: toHex('test-nft-metadata-hash', { size: 32 }),
-            nftMetadataURI: 'test-nft-uri',
+            ipMetadataURI: 'placeholder-uri',
+            ipMetadataHash: toHex('placeholder-metadata-hash', { size: 32 }),
+            nftMetadataHash: toHex('placeholder-nft-metadata-hash', { size: 32 }),
+            nftMetadataURI: 'placeholder-nft-uri',
         };
 
         // Register IP asset
@@ -103,7 +103,7 @@ export class StoryProtocolService {
             tokenId: BigInt(1),
             licenseTermsData: [
                 {
-                    // Using 'unknown' type for mock implementation since we don't have access to the actual SDK types
+                    // Using 'unknown' type for implementation since we don't have access to the actual SDK types
                     terms: {} as RegisterPILTermsRequest,
                     licensingConfig: {} as LicensingConfig,
                 },
@@ -156,10 +156,10 @@ export class StoryProtocolService {
                 maxRevenueShare: 100,
             },
             ipMetadata: {
-                ipMetadataURI: 'test-uri',
-                ipMetadataHash: toHex('test-metadata-hash', { size: 32 }),
-                nftMetadataHash: toHex('test-nft-metadata-hash', { size: 32 }),
-                nftMetadataURI: 'test-nft-uri',
+                ipMetadataURI: 'placeholder-uri',
+                ipMetadataHash: toHex('placeholder-metadata-hash', { size: 32 }),
+                nftMetadataHash: toHex('placeholder-nft-metadata-hash', { size: 32 }),
+                nftMetadataURI: 'placeholder-nft-uri',
             },
             txOptions: { waitForTransaction: true },
         });

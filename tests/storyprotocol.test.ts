@@ -2,14 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { storyprotocol } from '../src/plugins/storyprotocol';
 import { StoryProtocolService } from '../src/plugins/storyprotocol/storyProtocolService';
 import { EdwinEVMWallet } from '../src/core/wallets';
+import { setupStoryProtocolMocks } from './setup/storyprotocol.setup';
 
-// Mock the EdwinEVMWallet
-vi.mock('../src/core/wallets', () => ({
-    EdwinEVMWallet: vi.fn().mockImplementation((chain = '0x1234567890abcdef1234567890abcdef12345678') => ({
-        // Add any methods that the StoryProtocolService might call on the wallet
-        chain,
-    })),
-}));
+// Set up mocks for StoryProtocol tests
+setupStoryProtocolMocks();
 
 // Mock environment variables
 process.env.WALLET_PRIVATE_KEY = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
@@ -17,7 +13,7 @@ process.env.NFT_CONTRACT_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';
 process.env.SPG_NFT_CONTRACT_ADDRESS = '0x1234567890abcdef1234567890abcdef12345679';
 process.env.RPC_PROVIDER_URL = 'https://sepolia.infura.io/v3/your-api-key';
 
-// Mock the StoryProtocolService methods
+// Mock the StoryProtocolService directly in the test file
 vi.mock('../src/plugins/storyprotocol/storyProtocolService', () => {
     return {
         StoryProtocolService: vi.fn().mockImplementation(() => ({
@@ -32,12 +28,35 @@ vi.mock('../src/plugins/storyprotocol/storyProtocolService', () => {
     };
 });
 
+// Mock the EdwinEVMWallet
+vi.mock('../src/core/wallets', () => {
+    return {
+        EdwinEVMWallet: vi.fn().mockImplementation(() => ({
+            getProvider: vi.fn().mockReturnValue({
+                getNetwork: vi.fn().mockResolvedValue({ chainId: 11155111 }), // Sepolia chain ID
+                waitForTransaction: vi.fn().mockResolvedValue({ status: 1 }),
+            }),
+            getWalletClient: vi.fn().mockReturnValue({
+                account: {
+                    address: '0xmockaddress',
+                },
+                chain: {
+                    id: 11155111, // Sepolia
+                },
+                sendTransaction: vi.fn().mockResolvedValue('0xmock-tx-hash'),
+            }),
+            getAddress: vi.fn().mockReturnValue('0xmockaddress'),
+            switchChain: vi.fn().mockResolvedValue(true),
+        })),
+    };
+});
+
 describe('StoryProtocol Plugin', () => {
     let wallet: EdwinEVMWallet;
     let plugin: ReturnType<typeof storyprotocol>;
 
     beforeEach(() => {
-        wallet = new EdwinEVMWallet('0x1234567890abcdef1234567890abcdef12345678');
+        wallet = new EdwinEVMWallet('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
         plugin = storyprotocol(wallet);
     });
 

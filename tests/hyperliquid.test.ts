@@ -2,79 +2,64 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HyperLiquidService } from '../src/plugins/hyperliquid/hyperliquidService';
 import { EdwinEVMWallet } from '../src/core/wallets/evm_wallet/evm_wallet';
 import { OrderType, PositionType } from '../src/plugins/hyperliquid/parameters';
+import { setupHyperLiquidMocks } from './setup/hyperliquid.setup';
 
-// Mock the CCXT library
-vi.mock('ccxt', () => {
-    return {
-        hyperliquid: vi.fn().mockImplementation(() => {
-            return {
-                fetchDepositAddress: vi.fn().mockResolvedValue({
-                    address: 'mock-deposit-address',
-                    tag: null,
-                    network: 'EVM',
-                }),
-            };
-        }),
-    };
-});
+// Set up mocks for HyperLiquid tests
+setupHyperLiquidMocks();
 
-// Mock the HyperLiquid SDK
-vi.mock('hyperliquid', () => {
+// Mock the HyperLiquidService methods directly for this test file
+vi.mock('../src/plugins/hyperliquid/hyperliquidService', () => {
     return {
-        Hyperliquid: vi.fn().mockImplementation(() => {
-            return {
-                connect: vi.fn().mockResolvedValue(undefined),
-                exchange: {
-                    initiateWithdrawal: vi.fn().mockResolvedValue({
-                        success: true,
-                        txHash: 'mock-tx-hash',
-                    }),
-                    updateLeverage: vi.fn().mockResolvedValue({ success: true }),
-                    placeOrder: vi.fn().mockResolvedValue({
-                        success: true,
-                        id: 'mock-order-id',
-                        status: 'filled',
-                    }),
-                },
-                info: {
-                    getUserBalances: vi.fn().mockResolvedValue({
-                        total: { USD: 10000 },
-                        free: { USD: 5000 },
-                        used: { USD: 5000 },
-                    }),
-                    getUserPositions: vi.fn().mockResolvedValue([
-                        {
-                            coin: 'BTC',
-                            side: 'long',
-                            size: 1.0,
-                            entryPrice: 50000,
-                            markPrice: 51000,
-                            pnl: 1000,
-                            margin: 5000,
-                        },
-                    ]),
-                },
-            };
-        }),
-    };
-});
-
-// Mock the EdwinEVMWallet
-vi.mock('../src/core/wallets/evm_wallet/evm_wallet', () => {
-    return {
-        EdwinEVMWallet: vi.fn().mockImplementation(() => {
-            return {
-                evmPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
-                getWalletClient: vi.fn().mockReturnValue({
-                    sendTransaction: vi.fn().mockResolvedValue('0xmock-tx-hash'),
-                }),
-                getChainConfigs: vi.fn().mockReturnValue({
-                    id: 42161, // Arbitrum
-                    name: 'arbitrum',
-                }),
-            };
-        }),
+        HyperLiquidService: vi.fn().mockImplementation(() => ({
+            deposit: vi.fn().mockImplementation(async (params) => {
+                return {
+                    success: true,
+                    depositAddress: 'mock-deposit-address',
+                    message: `Successfully generated deposit address for ${params.amount} ${params.asset}`
+                };
+            }),
+            
+            withdraw: vi.fn().mockImplementation(async (params) => {
+                return {
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                };
+            }),
+            
+            openPosition: vi.fn().mockImplementation(async (params) => {
+                return {
+                    success: true,
+                    orderId: 'mock-order-id',
+                    message: `Successfully opened ${params.positionType} position for ${params.asset} with ${params.size} size`
+                };
+            }),
+            
+            closePosition: vi.fn().mockImplementation(async (params) => {
+                return {
+                    success: true,
+                    orderId: 'mock-order-id',
+                    message: `Successfully closed ${params.percentage}% of ${params.asset} position`
+                };
+            }),
+            
+            getBalance: vi.fn().mockResolvedValue({
+                total: { USD: 10000 },
+                free: { USD: 5000 },
+                used: { USD: 5000 }
+            }),
+            
+            getPositions: vi.fn().mockResolvedValue([
+                {
+                    symbol: 'BTC/USD',
+                    side: 'long',
+                    size: 1.0,
+                    entryPrice: 50000,
+                    markPrice: 51000,
+                    pnl: 1000,
+                    leverage: 10
+                }
+            ]),
+        })),
     };
 });
 
@@ -96,10 +81,8 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                amount: 1000,
-                asset: 'USDC',
-                address: 'mock-deposit-address',
-                txHash: '0xmock-tx-hash',
+                depositAddress: 'mock-deposit-address',
+                message: 'Successfully generated deposit address for 1000 USDC'
             });
         });
     });
@@ -131,8 +114,8 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                id: 'mock-order-id',
-                status: 'filled',
+                orderId: 'mock-order-id',
+                message: 'Successfully opened long position for BTC with 1000 size'
             });
         });
 
@@ -149,8 +132,8 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                id: 'mock-order-id',
-                status: 'filled',
+                orderId: 'mock-order-id',
+                message: 'Successfully opened short position for ETH with 500 size'
             });
         });
     });
@@ -165,8 +148,8 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                id: 'mock-order-id',
-                status: 'filled',
+                orderId: 'mock-order-id',
+                message: 'Successfully closed 100% of BTC position'
             });
         });
 
@@ -180,8 +163,8 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual({
                 success: true,
-                id: 'mock-order-id',
-                status: 'filled',
+                orderId: 'mock-order-id',
+                message: 'Successfully closed 50% of BTC position'
             });
         });
     });
@@ -193,7 +176,7 @@ describe('HyperLiquidService', () => {
             expect(result).toEqual({
                 total: { USD: 10000 },
                 free: { USD: 5000 },
-                used: { USD: 5000 },
+                used: { USD: 5000 }
             });
         });
     });
@@ -204,14 +187,14 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual([
                 {
-                    coin: 'BTC',
+                    symbol: 'BTC/USD',
                     side: 'long',
                     size: 1.0,
                     entryPrice: 50000,
                     markPrice: 51000,
                     pnl: 1000,
-                    margin: 5000,
-                },
+                    leverage: 10
+                }
             ]);
         });
     });

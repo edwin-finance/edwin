@@ -18,14 +18,17 @@ import {
 } from './parameters';
 
 export class StoryProtocolPlugin extends EdwinPlugin {
+    private storyProtocolService: StoryProtocolService;
+    
     constructor(wallet: EdwinEVMWallet) {
-        super('storyprotocol', [new StoryProtocolService(wallet)]);
+        const service = new StoryProtocolService(wallet);
+        super('storyprotocol', [service]);
+        this.storyProtocolService = service;
     }
 
     getTools(): Record<string, EdwinTool> {
-        const storyProtocolService = this.toolProviders.find(
-            provider => provider instanceof StoryProtocolService
-        ) as StoryProtocolService;
+        // Use the stored service instance instead of trying to find it
+        const storyProtocolService = this.storyProtocolService;
 
         return {
             registerIPAsset: {

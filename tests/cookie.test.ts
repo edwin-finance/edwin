@@ -1,13 +1,149 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterAll } from 'vitest';
 import dotenv from 'dotenv';
 import { CookieSwarmClient } from '../src/plugins/cookie/cookieClient';
+import { setupCookieMocks } from './setup/cookie.setup';
 // Load environment variables
 dotenv.config();
 
-const API_KEY = process.env.COOKIE_API_KEY;
-if (!API_KEY) {
-    throw new Error('COOKIE_API_KEY environment variable is required');
-}
+// Set up mocks for Cookie API tests
+setupCookieMocks();
+
+// Use a mock API key for testing
+const API_KEY = process.env.COOKIE_API_KEY || 'test_api_key_for_cookie_swarm';
+
+// Mock the fetch global function for all tests
+const originalFetch = global.fetch;
+global.fetch = vi.fn().mockImplementation((url, options) => {
+    // Check if this is a search tweets request
+    if (url.toString().includes('/v1/hackathon/search/')) {
+        return Promise.resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: () => Promise.resolve({
+                ok: [
+                    {
+                        authorUsername: "mockuser",
+                        createdAt: "2023-01-01T00:00:00Z",
+                        engagementsCount: 100,
+                        impressionsCount: 1000,
+                        isQuote: false,
+                        isReply: false,
+                        likesCount: 50,
+                        quotesCount: 5,
+                        repliesCount: 20,
+                        retweetsCount: 30,
+                        smartEngagementPoints: 200,
+                        text: "This is a mock tweet about cookie token utility",
+                        matchingScore: 0.95
+                    }
+                ],
+                success: true,
+                error: null
+            })
+        });
+    }
+    
+    // Check if this is a paged agents request
+    if (url.toString().includes('/v2/agents/agentsPaged')) {
+        return Promise.resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: () => Promise.resolve({
+                ok: {
+                    data: Array.from({ length: 10 }, (_, i) => ({
+                        agentName: `MockPagedAgent${i+1}`,
+                        twitterUsernames: [`agent${i+1}`],
+                        contracts: [],
+                        mindshare: 100,
+                        mindshareDeltaPercent: 5,
+                        marketCap: 1000000,
+                        marketCapDeltaPercent: 2,
+                        price: 0.5,
+                        priceDeltaPercent: 3
+                    })),
+                    currentPage: 1,
+                    totalPages: 5,
+                    totalCount: 100
+                },
+                success: true,
+                error: null
+            })
+        });
+    }
+    
+    // Check if this is a Twitter username request
+    if (url.toString().includes('/v2/agents/twitterUsername/')) {
+        return Promise.resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: () => Promise.resolve({
+                ok: {
+                    agentName: "MockTwitterAgent",
+                    twitterUsernames: ["cookiedotfun"],
+                    contracts: [],
+                    mindshare: 100,
+                    mindshareDeltaPercent: 5,
+                    marketCap: 1000000,
+                    marketCapDeltaPercent: 2,
+                    price: 0.5,
+                    priceDeltaPercent: 3
+                },
+                success: true,
+                error: null
+            })
+        });
+    }
+    
+    // Check if this is a contract address request
+    if (url.toString().includes('/v2/agents/contractAddress/')) {
+        return Promise.resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: () => Promise.resolve({
+                ok: {
+                    agentName: "MockContractAgent",
+                    twitterUsernames: [],
+                    contracts: [
+                        {
+                            chain: 1,
+                            contractAddress: "0xc0041ef357b183448b235a8ea73ce4e4ec8c265f"
+                        }
+                    ],
+                    mindshare: 100,
+                    mindshareDeltaPercent: 5,
+                    marketCap: 1000000,
+                    marketCapDeltaPercent: 2,
+                    price: 0.5,
+                    priceDeltaPercent: 3
+                },
+                success: true,
+                error: null
+            })
+        });
+    }
+    
+    // Default response for other API calls
+    return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: () => Promise.resolve({
+            ok: {
+                success: true,
+                error: null
+            }
+        })
+    });
+});
+
+// Restore original fetch after tests
+afterAll(() => {
+    global.fetch = originalFetch;
+});
 
 describe('CookieSwarm Integration', () => {
     let cookieSwarmClient: CookieSwarmClient;
