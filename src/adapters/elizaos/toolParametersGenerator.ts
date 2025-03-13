@@ -5,7 +5,7 @@ import { EdwinTool } from '../../core/types';
  * Base template for extracting tool parameters
  */
 export const toolParametersTemplate = `
-You are an AI assistant specialized in extracting specific information from user messages and format it into a structured JSON response. Your task is to extract specific information from user messages and format it into a structured JSON response.
+You are an AI assistant specialized in extracting specific information from user messages and format it into a structured JSON response. Your task is to extract specific information from user messages and format it into a structured JSON response. Return the JSON object only, nothing else.
 
 First, review the recent messages from the conversation:
 
@@ -20,6 +20,8 @@ Provide the final output in JSON format:
 \`\`\`json
 {{schemaJson}}
 \`\`\`
+
+Remember to only return the JSON object, nothing else.
 `;
 
 /**
