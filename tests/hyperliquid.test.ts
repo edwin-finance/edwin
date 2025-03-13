@@ -2,81 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HyperLiquidService } from '../src/plugins/hyperliquid/hyperliquidService';
 import { EdwinEVMWallet } from '../src/core/wallets/evm_wallet/evm_wallet';
 import { OrderType, PositionType } from '../src/plugins/hyperliquid/parameters';
+import { setupHyperLiquidMocks } from './setup/hyperliquid.setup';
 
-// Mock the CCXT library
-vi.mock('ccxt', () => {
-    return {
-        hyperliquid: vi.fn().mockImplementation(() => {
-            return {
-                fetchDepositAddress: vi.fn().mockResolvedValue({
-                    address: 'mock-deposit-address',
-                    tag: null,
-                    network: 'EVM',
-                }),
-            };
-        }),
-    };
-});
-
-// Mock the HyperLiquid SDK
-vi.mock('hyperliquid', () => {
-    return {
-        Hyperliquid: vi.fn().mockImplementation(() => {
-            return {
-                connect: vi.fn().mockResolvedValue(undefined),
-                exchange: {
-                    initiateWithdrawal: vi.fn().mockResolvedValue({
-                        success: true,
-                        txHash: 'mock-tx-hash',
-                    }),
-                    updateLeverage: vi.fn().mockResolvedValue({ success: true }),
-                    placeOrder: vi.fn().mockResolvedValue({
-                        success: true,
-                        id: 'mock-order-id',
-                        status: 'filled',
-                    }),
-                },
-                info: {
-                    getUserBalances: vi.fn().mockResolvedValue({
-                        total: { USD: 10000 },
-                        free: { USD: 5000 },
-                        used: { USD: 5000 },
-                    }),
-                    getUserPositions: vi.fn().mockResolvedValue([
-                        {
-                            coin: 'BTC',
-                            side: 'long',
-                            size: 1.0,
-                            entryPrice: 50000,
-                            markPrice: 51000,
-                            pnl: 1000,
-                            margin: 5000,
-                        },
-                    ]),
-                },
-            };
-        }),
-    };
-});
-
-// Mock the EdwinEVMWallet
-vi.mock('../src/core/wallets/evm_wallet/evm_wallet', () => {
-    return {
-        EdwinEVMWallet: vi.fn().mockImplementation(() => {
-            return {
-                evmPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
-                getWalletClient: vi.fn().mockReturnValue({
-                    sendTransaction: vi.fn().mockResolvedValue('0xmock-tx-hash'),
-                }),
-                getChainConfigs: vi.fn().mockReturnValue({
-                    id: 42161, // Arbitrum
-                    name: 'arbitrum',
-                }),
-            };
-        }),
-    };
-});
+// Set up mocks for HyperLiquid tests
+setupHyperLiquidMocks();
 
 describe('HyperLiquidService', () => {
     let hyperLiquidService: HyperLiquidService;

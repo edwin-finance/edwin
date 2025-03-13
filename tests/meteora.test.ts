@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { safeJsonStringify } from '../src/utils';
 import edwinLogger from '../src/utils/logger';
 import { calculateAmounts, extractBalanceChanges } from '../src/plugins/meteora/utils';
+import { setupMeteoraMocks } from './setup/meteora.setup';
+
+// Set up mocks for Meteora tests
+setupMeteoraMocks();
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
 import { EdwinSolanaWallet } from '../src/core/wallets';
@@ -42,7 +46,7 @@ describe('Meteora test', () => {
         const result = await meteora.addLiquidity({
             poolAddress: topPoolAddress,
             amount: 'auto',
-            amountB: '2',
+            amountB: 2, // Using number instead of string to match parameter type
         });
         // Verify liquidity was added correctly
         expect(result.liquidityAdded).toBeDefined();

@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import dotenv from 'dotenv';
 import { CookieSwarmClient } from '../src/plugins/cookie/cookieClient';
+import { setupCookieMocks } from './setup/cookie.setup';
 // Load environment variables
 dotenv.config();
 
-const API_KEY = process.env.COOKIE_API_KEY;
-if (!API_KEY) {
-    throw new Error('COOKIE_API_KEY environment variable is required');
-}
+// Set up mocks for Cookie API tests
+setupCookieMocks();
+
+// Use a mock API key for testing
+const API_KEY = process.env.COOKIE_API_KEY || 'test_api_key_for_cookie_swarm';
 
 describe('CookieSwarm Integration', () => {
     let cookieSwarmClient: CookieSwarmClient;

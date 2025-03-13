@@ -4,6 +4,10 @@ config();
 import { describe, expect, it } from 'vitest';
 import { JupiterService } from '../src/plugins/jupiter/jupiterService';
 import { EdwinSolanaWallet } from '../src/core/wallets';
+import { setupJupiterMocks } from './setup/jupiter.setup';
+
+// Set up mocks for Jupiter tests
+setupJupiterMocks();
 
 describe('Jupiter Swap Test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { storyprotocol } from '../src/plugins/storyprotocol';
 import { StoryProtocolService } from '../src/plugins/storyprotocol/storyProtocolService';
 import { EdwinEVMWallet } from '../src/core/wallets';
+import { setupStoryProtocolMocks } from './setup/storyprotocol.setup';
+
+// Set up mocks for StoryProtocol tests
+setupStoryProtocolMocks();
 
 // Mock the EdwinEVMWallet
 vi.mock('../src/core/wallets', () => ({

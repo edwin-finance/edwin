@@ -4,6 +4,10 @@ config(); // Load test environment variables from .env file
 import { describe, it, expect } from 'vitest';
 import { EdwinEVMWallet } from '../src/core/wallets/evm_wallet/evm_wallet';
 import { AaveService } from '../src/plugins/aave/aaveService';
+import { setupAaveMocks } from './setup/aave.setup';
+
+// Set up mocks for AAVE tests
+setupAaveMocks();
 
 describe('Edwin AAVE test', () => {
     it('Test supply action', async () => {
