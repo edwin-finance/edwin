@@ -42,7 +42,7 @@ describe('Meteora test', () => {
         const result = await meteora.addLiquidity({
             poolAddress: topPoolAddress,
             amount: 'auto',
-            amountB: '2',
+            amountB: 2, // Changed from string to number
         });
         // Verify liquidity was added correctly
         expect(result.liquidityAdded).toBeDefined();
@@ -68,7 +68,8 @@ describe('Meteora test', () => {
         edwinLogger.info('🚀 ~ it ~ initial positions:', positions);
 
         if (!positions || positions.size === 0) {
-            return it.skip('No positions found to close - skipping test');
+            edwinLogger.info('No positions found to close - skipping test');
+            return; // Just return early instead of using it.skip
         }
 
         // Remove liquidity from first position found
