@@ -7,6 +7,27 @@ import { EdwinWallet } from '../wallet';
 import { ethers, providers } from 'ethers';
 import edwinLogger from '../../../utils/logger';
 
+// Minimal ERC-20 ABI for balanceOf function
+const erc20Abi = [
+    {
+        name: 'balanceOf',
+        type: 'function',
+        inputs: [{ name: 'owner', type: 'address' }],
+        outputs: [{ name: 'balance', type: 'uint256' }],
+        stateMutability: 'view',
+    },
+    {
+        name: 'decimals',
+        type: 'function',
+        inputs: [],
+        outputs: [{ name: '', type: 'uint8' }],
+        stateMutability: 'view',
+    },
+];
+
+// Special address for representing native ETH
+const NATIVE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
 export const _SupportedEVMChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
 
 export class EdwinEVMWallet extends EdwinWallet {
@@ -160,5 +181,51 @@ export class EdwinEVMWallet extends EdwinWallet {
                 custom: customRpc,
             },
         };
+    }
+
+    /**
+     * Get token balance for a specific token address on a given chain
+     * @param chainName The chain name (e.g., 'base', 'mainnet')
+     * @param tokenAddress The token contract address or symbol
+     * @returns Formatted token balance as a string
+     */
+    async getTokenBalance(chainName: SupportedEVMChain, tokenAddress: `0x${string}`): Promise<string> {
+        try {
+            const client = this.getPublicClient(chainName);
+
+            // If it's native ETH (or equivalent)
+            if (tokenAddress === NATIVE_ETH_ADDRESS) {
+                const balance = await client.getBalance({ address: this.account.address });
+                return formatUnits(balance, 18); // Native coins always have 18 decimals
+            }
+
+            // For ERC-20 tokens
+            // First, get the token decimals
+            let decimals = 18; // Default to 18 if we can't get decimals
+            try {
+                decimals = (await client.readContract({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: 'decimals',
+                })) as number;
+            } catch (error) {
+                edwinLogger.warn(`Could not get decimals for token ${tokenAddress}, defaulting to 18. Error: ${error}`);
+            }
+
+            // Then get the balance
+            const balance = await client.readContract({
+                address: tokenAddress,
+                abi: erc20Abi,
+                functionName: 'balanceOf',
+                args: [this.account.address],
+            });
+            if (typeof balance !== 'bigint') {
+                throw new Error(`Invalid balance returned from contract. Expected bigint, got ${typeof balance}`);
+            }
+            return formatUnits(balance as bigint, decimals);
+        } catch (error) {
+            edwinLogger.error('Error getting token balance:', error);
+            throw error;
+        }
     }
 }

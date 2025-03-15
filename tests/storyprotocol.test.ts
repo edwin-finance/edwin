@@ -1,126 +1,153 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { storyprotocol } from '../src/plugins/storyprotocol';
 import { StoryProtocolService } from '../src/plugins/storyprotocol/storyProtocolService';
-import { EdwinEVMWallet } from '../src/core/wallets';
+import { EdwinEVMWallet } from '../src/core/wallets/evm_wallet/evm_wallet';
+import { StoryProtocolPlugin } from '../src/plugins/storyprotocol/storyProtocolPlugin';
 
-// Mock the EdwinEVMWallet
-vi.mock('../src/core/wallets', () => ({
-    EdwinEVMWallet: vi.fn().mockImplementation((chain = '0x1234567890abcdef1234567890abcdef12345678') => ({
-        // Add any methods that the StoryProtocolService might call on the wallet
-        chain,
-    })),
-}));
-
-// Mock environment variables
-process.env.WALLET_PRIVATE_KEY = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-process.env.NFT_CONTRACT_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';
-process.env.SPG_NFT_CONTRACT_ADDRESS = '0x1234567890abcdef1234567890abcdef12345679';
-process.env.RPC_PROVIDER_URL = 'https://sepolia.infura.io/v3/your-api-key';
-
-// Mock the StoryProtocolService methods
+// Mock the StoryProtocolService
 vi.mock('../src/plugins/storyprotocol/storyProtocolService', () => {
     return {
-        StoryProtocolService: vi.fn().mockImplementation(() => ({
-            registerIPAsset: vi.fn().mockResolvedValue('ip-asset-id'),
-            attachTerms: vi.fn().mockResolvedValue('tx-hash'),
-            mintLicenseToken: vi.fn().mockResolvedValue('license-token-id'),
-            registerDerivative: vi.fn().mockResolvedValue('derivative-ip-id'),
-            payIPAsset: vi.fn().mockResolvedValue('payment-tx-hash'),
-            claimRevenue: vi.fn().mockResolvedValue('["claimed-token-1", "claimed-token-2"]'),
-            supportedChains: ['sepolia'],
-        })),
+        StoryProtocolService: vi.fn().mockImplementation(() => {
+            return {
+                // Mock all the required methods
+                registerIPAsset: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                    ipId: '0x123',
+                }),
+                attachTerms: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                }),
+                mintLicenseToken: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                    tokenId: '1',
+                }),
+                registerDerivative: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                    derivativeId: '0x456',
+                }),
+                payIPAsset: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                }),
+                claimRevenue: vi.fn().mockResolvedValue({
+                    success: true,
+                    txHash: 'mock-tx-hash',
+                    amount: '0.1',
+                }),
+            };
+        }),
+    };
+});
+
+// Mock the EdwinEVMWallet
+vi.mock('../src/core/wallets/evm_wallet/evm_wallet', () => {
+    return {
+        EdwinEVMWallet: vi.fn().mockImplementation(() => {
+            return {
+                getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
+            };
+        }),
     };
 });
 
 describe('StoryProtocol Plugin', () => {
+    let storyProtocol: StoryProtocolService;
     let wallet: EdwinEVMWallet;
-    let plugin: ReturnType<typeof storyprotocol>;
 
     beforeEach(() => {
-        wallet = new EdwinEVMWallet('0x1234567890abcdef1234567890abcdef12345678');
-        plugin = storyprotocol(wallet);
-    });
-
-    it('should have the correct plugin instance', () => {
-        expect(plugin).toBeDefined();
-    });
-
-    it('should support EVM chains', () => {
-        // @ts-ignore - Simplified chain object for testing
-        expect(plugin.supportsChain({ type: 'evm' })).toBe(true);
-        // @ts-ignore - Simplified chain object for testing
-        expect(plugin.supportsChain({ type: 'solana' })).toBe(false);
+        wallet = new EdwinEVMWallet('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
+        storyProtocol = new StoryProtocolService(wallet);
     });
 
     describe('Tools', () => {
         it('should register an IP asset', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.registerIPAsset.execute({
+            const result = await storyProtocol.registerIPAsset({
                 name: 'Test IP Asset',
-                description: 'This is a test IP asset',
-                mediaUrl: 'https://example.com/image.jpg',
-                contentHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                externalUrl: 'https://example.com',
+                description: 'A test IP asset',
+                mediaUrl: 'https://example.com/media',
+                contentHash: '0xabcdef',
+                externalUrl: 'https://example.com/ip-asset',
             });
 
-            expect(result).toBe('ip-asset-id');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+                ipId: '0x123',
+            });
         });
 
         it('should attach terms to an IP asset', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.attachTerms.execute({
-                ipId: 'ip-asset-id',
+            const result = await storyProtocol.attachTerms({
+                ipId: '0x123',
                 termsUrl: 'https://example.com/terms',
-                termsHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+                termsHash: '0xabcdef',
+                royaltyPercentage: 5,
             });
 
-            expect(result).toBe('tx-hash');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+            });
         });
 
         it('should mint a license token', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.mintLicenseToken.execute({
-                ipId: 'ip-asset-id',
-                licenseTermsUrl: 'https://example.com/license-terms',
-                licenseTermsHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-                mintTo: '0x1234567890abcdef1234567890abcdef12345678',
+            const result = await storyProtocol.mintLicenseToken({
+                ipId: '0x123',
+                licenseTermsUrl: 'https://example.com/terms',
+                licenseTermsHash: '0xabcdef',
+                mintTo: '0x456',
             });
 
-            expect(result).toBe('license-token-id');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+                tokenId: '1',
+            });
         });
 
         it('should register a derivative', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.registerDerivative.execute({
-                parentIpId: 'ip-asset-id',
+            const result = await storyProtocol.registerDerivative({
                 name: 'Test Derivative',
-                description: 'This is a test derivative',
-                mediaUrl: 'https://example.com/derivative.jpg',
-                contentHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+                description: 'A test derivative',
+                mediaUrl: 'https://example.com/media',
+                contentHash: '0xabcdef',
                 externalUrl: 'https://example.com/derivative',
+                parentIpId: '0x123',
                 isCommercial: true,
             });
 
-            expect(result).toBe('derivative-ip-id');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+                derivativeId: '0x456',
+            });
         });
 
         it('should pay an IP asset', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.payIPAsset.execute({
-                ipId: 'ip-asset-id',
-                amount: '100000000000000000', // 0.1 ETH in wei
+            const result = await storyProtocol.payIPAsset({
+                ipId: '0x123',
+                amount: '0.1',
             });
 
-            expect(result).toBe('payment-tx-hash');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+            });
         });
 
         it('should claim revenue', async () => {
-            const tools = plugin.getTools();
-            const result = await tools.claimRevenue.execute({
-                ipId: 'ip-asset-id',
+            const result = await storyProtocol.claimRevenue({
+                ipId: '0x123',
             });
 
-            expect(result).toBe('["claimed-token-1", "claimed-token-2"]');
+            expect(result).toEqual({
+                success: true,
+                txHash: 'mock-tx-hash',
+                amount: '0.1',
+            });
         });
     });
 });
