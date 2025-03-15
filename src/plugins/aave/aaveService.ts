@@ -101,22 +101,23 @@ export class AaveService extends EdwinService {
         }
 
         edwinLogger.info(`Submitting ${actionType} transactions`);
-        const results = [];
+        const txReceipts = [];
 
         for (const tx of txs) {
-            const result = await this.submitTransaction(setup.provider, setup.wallet, tx);
-            results.push(result);
+            const receipt = await this.submitTransaction(setup.provider, setup.wallet, tx);
+            txReceipts.push(receipt);
         }
 
+
         // Return the last transaction
-        const finalTx = results[results.length - 1];
+        const finalTx = txReceipts[txReceipts.length - 1];
         return (
             `Successfully ${actionType === 'supply' ? 'supplied' : 'withdrew'} ` +
             amount +
             ' ' +
             asset +
             ` ${actionType === 'supply' ? 'to' : 'from'} Aave, transaction signature: ` +
-            finalTx.hash
+            finalTx.transactionHash
         );
     }
 
@@ -124,11 +125,13 @@ export class AaveService extends EdwinService {
         provider: providers.Provider,
         wallet: ethers.Wallet,
         tx: EthereumTransactionTypeExtended
-    ): Promise<ethers.providers.TransactionResponse> {
+    ): Promise<ethers.providers.TransactionReceipt> {
         try {
             const extendedTxData = await tx.tx();
             const { from, ...txData } = extendedTxData;
-            return await wallet.sendTransaction(txData);
+            const txResponse = await wallet.sendTransaction(txData);
+            const receipt = await txResponse.wait();
+            return receipt;
         } catch (error) {
             // Check if error contains gas estimation error details
             const aaveError = error as AaveError;

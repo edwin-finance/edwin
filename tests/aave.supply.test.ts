@@ -9,6 +9,7 @@ import { AaveService } from '../src/plugins/aave/aaveService';
 const hasPrivateKey = Boolean(process.env.EVM_PRIVATE_KEY);
 
 const MIN_USDC_REQUIRED = 0.05;
+const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`;
 
 // Skip entire test if no private key
 let wallet: EdwinEVMWallet | null = null;
@@ -19,7 +20,7 @@ if (hasPrivateKey) {
     try {
         // Create wallet for pre-check only
         wallet = new EdwinEVMWallet(process.env.EVM_PRIVATE_KEY as `0x${string}`);
-        const balance = await wallet.getTokenBalance('base', 'usdc');
+        const balance = await wallet.getTokenBalance('base', BASE_USDC_ADDRESS);
         const balanceNum = parseFloat(balance);
 
         sufficientBalance = balanceNum >= MIN_USDC_REQUIRED;
@@ -59,7 +60,7 @@ describeIf('Edwin AAVE test', () => {
             asset: 'usdc',
         });
         expect(result).toBeDefined();
-    });
+    }, 60000); // 60 second timeout
 
     it('Test withdraw action', async () => {
         expect(aave).toBeDefined();
@@ -70,5 +71,5 @@ describeIf('Edwin AAVE test', () => {
             asset: 'usdc',
         });
         expect(result).toBeDefined();
-    });
+    }, 60000); // 60 second timeout
 });
