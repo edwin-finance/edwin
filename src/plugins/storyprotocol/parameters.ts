@@ -16,6 +16,7 @@ export const AttachTermsParametersSchema = createParameterSchema(
         ipId: z.string().min(1).describe('The ID of the IP asset'),
         termsUrl: z.string().url().describe('The URL to the terms document'),
         termsHash: z.string().min(1).describe('The hash of the terms document'),
+        royaltyPercentage: z.number().describe('The royalty percentage'),
     })
 );
 

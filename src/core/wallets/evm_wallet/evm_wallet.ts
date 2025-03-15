@@ -28,15 +28,6 @@ const erc20Abi = [
 // Special address for representing native ETH
 const NATIVE_ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
-// Common token addresses by network - for convenience only
-const COMMON_TOKENS: Record<string, Record<string, Address>> = {
-    base: {
-        usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
-        eth: NATIVE_ETH_ADDRESS,
-    },
-    // Add more networks as needed
-};
-
 export const _SupportedEVMChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
 
 export class EdwinEVMWallet extends EdwinWallet {
@@ -198,19 +189,8 @@ export class EdwinEVMWallet extends EdwinWallet {
      * @param tokenAddress The token contract address or symbol
      * @returns Formatted token balance as a string
      */
-    async getTokenBalance(chainName: SupportedEVMChain, tokenAddressOrSymbol: string): Promise<string> {
-        try {
-            let tokenAddress: Address;
-            
-            // Check if input looks like a symbol (shorter than an address)
-            if (tokenAddressOrSymbol.length < 10 && COMMON_TOKENS[chainName]?.[tokenAddressOrSymbol.toLowerCase()]) {
-                // It's likely a token symbol
-                tokenAddress = COMMON_TOKENS[chainName][tokenAddressOrSymbol.toLowerCase()];
-            } else {
-                // Treat it as an address
-                tokenAddress = tokenAddressOrSymbol as Address;
-            }
-            
+    async getTokenBalance(chainName: SupportedEVMChain, tokenAddress: `0x${string}`): Promise<string> {
+        try {            
             const client = this.getPublicClient(chainName);
 
             // If it's native ETH (or equivalent)

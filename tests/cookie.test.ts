@@ -75,21 +75,4 @@ describe('CookieSwarm Integration', () => {
             ).rejects.toThrow();
         });
     });
-
-    describe('SearchTweetsAction', () => {
-        conditionalTest('should search tweets with date range', async () => {
-            const today = new Date();
-            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-            const result = await cookieSwarmClient.searchTweets({
-                query: 'cookie token utility',
-                from: lastWeek.toISOString().split('T')[0],
-                to: today.toISOString().split('T')[0],
-            });
-
-            const parsed = JSON.parse(result);
-            expect(parsed.ok).toBeDefined();
-            expect(Array.isArray(parsed.ok)).toBe(true);
-        });
-    });
 });

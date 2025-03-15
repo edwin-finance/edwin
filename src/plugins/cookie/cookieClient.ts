@@ -136,12 +136,4 @@ export class CookieSwarmClient {
         );
         return JSON.stringify(response);
     }
-
-    async searchTweets(params: SearchParameters): Promise<string> {
-        const encodedQuery = encodeURIComponent(params.query);
-        const response = await this.fetch<TweetSearchResponse>(
-            `/v1/hackathon/search/${encodedQuery}?from=${params.from}&to=${params.to}`
-        );
-        return JSON.stringify(response);
-    }
 }

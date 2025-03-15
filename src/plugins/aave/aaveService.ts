@@ -15,6 +15,14 @@ interface AaveError extends Error {
     reason?: string;
 }
 
+interface PoolSetup {
+    pool: Pool;
+    wallet: ethers.Wallet;
+    provider: providers.Provider;
+    userAddress: string;
+    reserveAddress: string;
+}
+
 export class AaveService extends EdwinService {
     public supportedChains: SupportedChain[] = ['base'];
     private wallet: EdwinEVMWallet;
@@ -33,6 +41,83 @@ export class AaveService extends EdwinService {
             throw new Error(`Chain ${chain} is not supported by Aave protocol`);
         }
         return chain as SupportedEVMChain;
+    }
+
+    /**
+     * Set up the Aave pool and necessary wallet connections
+     */
+    private async setupPool(chain: SupportedChain, asset: string): Promise<PoolSetup> {
+        // Get the chain and switch wallet
+        const aaveChain = this.getAaveChain(chain);
+        this.wallet.switchChain(aaveChain);
+        
+        // Setup wallet client and provider
+        const walletClient = this.wallet.getWalletClient(aaveChain);
+        const provider = new providers.JsonRpcProvider(walletClient.transport.url);
+        const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
+        ethers_wallet.connect(provider);
+
+        // Create Aave Pool
+        const pool = new Pool(ethers_wallet.provider, {
+            POOL: AaveV3Base.POOL,
+            WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
+        });
+
+        // Resolve asset address
+        const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
+        if (!assetKey) {
+            throw new Error(`Unsupported asset: ${asset}`);
+        }
+        if (!AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS]) {
+            throw new Error(`Unsupported asset: ${asset}`);
+        }
+        const reserve = AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS].UNDERLYING;
+        if (!reserve) {
+            throw new Error(`Unsupported asset: ${asset}`);
+        }
+
+        // Return all necessary objects
+        return {
+            pool,
+            wallet: ethers_wallet,
+            provider: ethers_wallet.provider,
+            userAddress: walletClient.account?.address as string,
+            reserveAddress: reserve
+        };
+    }
+
+    /**
+     * Execute transactions and handle results
+     */
+    private async executeTransactions(
+        txs: EthereumTransactionTypeExtended[],
+        setup: PoolSetup,
+        actionType: 'supply' | 'withdraw',
+        amount: number,
+        asset: string
+    ): Promise<string> {
+        if (!txs || txs.length === 0) {
+            throw new Error(`No transaction generated from Aave Pool for ${actionType}`);
+        }
+
+        edwinLogger.info(`Submitting ${actionType} transactions`);
+        const results = [];
+        
+        for (const tx of txs) {
+            const result = await this.submitTransaction(setup.provider, setup.wallet, tx);
+            results.push(result);
+        }
+        
+        // Return the last transaction
+        const finalTx = results[results.length - 1];
+        return (
+            `Successfully ${actionType === 'supply' ? 'supplied' : 'withdrew'} ` +
+            amount +
+            ' ' +
+            asset +
+            ` ${actionType === 'supply' ? 'to' : 'from'} Aave, transaction signature: ` +
+            finalTx.hash
+        );
     }
 
     private async submitTransaction(
@@ -59,72 +144,27 @@ export class AaveService extends EdwinService {
 
     async supply(params: SupplyParameters): Promise<string> {
         const { chain, amount, asset } = params;
-        edwinLogger.info(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
-        if (!asset) {
-            throw new Error('Asset is required');
-        }
-        if (!amount) {
-            throw new Error('Amount is required');
-        }
+        
+        // Validate required parameters
+        if (!asset) throw new Error('Asset is required');
+        if (!amount) throw new Error('Amount is required');
+        
         try {
-            const aaveChain = this.getAaveChain(chain as SupportedChain);
-            this.wallet.switchChain(aaveChain);
-            const walletClient = this.wallet.getWalletClient(aaveChain);
-            const provider = new providers.JsonRpcProvider(walletClient.transport.url);
-
-            const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
-            ethers_wallet.connect(provider);
-
-            const pool = new Pool(ethers_wallet.provider, {
-                POOL: AaveV3Base.POOL,
-                WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
-            });
-            // Get the reserve address for the input asset
-            const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
-
-            if (!assetKey) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
-            // check assetKey is in ASSETS
-            if (!AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS]) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
-            const reserve = AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS].UNDERLYING;
-
-            if (!reserve) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
+            // Setup pool and connections
+            const setup = await this.setupPool(chain as SupportedChain, asset);
+            
             // Prepare supply parameters
             const supplyParams = {
-                user: walletClient.account?.address as string,
-                reserve: reserve, // The address of the reserve
+                user: setup.userAddress,
+                reserve: setup.reserveAddress,
                 amount: String(amount),
             };
 
             // Get supply transaction
-            const txs = await pool.supply(supplyParams);
-
-            // Submit the transactions
-            if (txs && txs.length > 0) {
-                edwinLogger.info(`Submitting supply transactions`);
-                const results = [];
-                for (const tx of txs) {
-                    const result = await this.submitTransaction(ethers_wallet.provider, ethers_wallet, tx);
-                    results.push(result);
-                }
-                // Return the last transaction
-                const finalTx = results[results.length - 1];
-                return (
-                    'Successfully supplied ' +
-                    params.amount +
-                    ' ' +
-                    params.asset +
-                    ' to Aave, transaction signature: ' +
-                    finalTx.hash
-                );
-            } else {
-                throw new Error('No transaction generated from Aave Pool');
-            }
+            const txs = await setup.pool.supply(supplyParams);
+            
+            // Execute transactions
+            return await this.executeTransactions(txs, setup, 'supply', amount, asset);
         } catch (error: unknown) {
             edwinLogger.error('Aave supply error:', error);
             const message = error instanceof Error ? error.message : String(error);
@@ -134,62 +174,27 @@ export class AaveService extends EdwinService {
 
     async withdraw(params: WithdrawParameters): Promise<string> {
         const { chain, amount, asset } = params;
-        edwinLogger.info(`Calling the inner AAVE logic to withdraw ${amount} ${asset}`);
-        if (!asset) {
-            throw new Error('Asset is required');
-        }
-        if (!amount) {
-            throw new Error('Amount is required');
-        }
+        
+        // Validate required parameters
+        if (!asset) throw new Error('Asset is required');
+        if (!amount) throw new Error('Amount is required');
+        
         try {
-            const aaveChain = this.getAaveChain(chain as SupportedChain);
-            this.wallet.switchChain(aaveChain);
-            const walletClient = this.wallet.getWalletClient(aaveChain);
-            const provider = new providers.JsonRpcProvider(walletClient.transport.url);
-            const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
-            ethers_wallet.connect(provider);
-
-            const pool = new Pool(ethers_wallet.provider, {
-                POOL: AaveV3Base.POOL,
-                WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
-            });
-            const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
-            if (!assetKey) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
-            if (!AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS]) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
-            const reserve = AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS].UNDERLYING;
-            if (!reserve) {
-                throw new Error(`Unsupported asset: ${asset}`);
-            }
-
+            // Setup pool and connections
+            const setup = await this.setupPool(chain as SupportedChain, asset);
+            
+            // Prepare withdraw parameters
             const withdrawParams = {
-                user: walletClient.account?.address as string,
-                reserve: reserve,
+                user: setup.userAddress,
+                reserve: setup.reserveAddress,
                 amount: String(amount),
             };
-            const txs = await pool.withdraw(withdrawParams);
-
-            if (txs && txs.length > 0) {
-                const results = [];
-                for (const tx of txs) {
-                    const result = await this.submitTransaction(ethers_wallet.provider, ethers_wallet, tx);
-                    results.push(result);
-                }
-                const finalTx = results[results.length - 1];
-                return (
-                    'Successfully withdrew ' +
-                    params.amount +
-                    ' ' +
-                    params.asset +
-                    ' from Aave, transaction signature: ' +
-                    finalTx.hash
-                );
-            } else {
-                throw new Error('No transaction generated from Aave Pool');
-            }
+            
+            // Get withdraw transaction
+            const txs = await setup.pool.withdraw(withdrawParams);
+            
+            // Execute transactions
+            return await this.executeTransactions(txs, setup, 'withdraw', amount, asset);
         } catch (error: unknown) {
             edwinLogger.error('Aave withdraw error:', error);
             const message = error instanceof Error ? error.message : String(error);
