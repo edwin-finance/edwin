@@ -12,33 +12,33 @@ vi.mock('../src/plugins/storyprotocol/storyProtocolService', () => {
                 registerIPAsset: vi.fn().mockResolvedValue({
                     success: true,
                     txHash: 'mock-tx-hash',
-                    ipId: '0x123'
+                    ipId: '0x123',
                 }),
                 attachTerms: vi.fn().mockResolvedValue({
                     success: true,
-                    txHash: 'mock-tx-hash'
+                    txHash: 'mock-tx-hash',
                 }),
                 mintLicenseToken: vi.fn().mockResolvedValue({
-                    success: true, 
+                    success: true,
                     txHash: 'mock-tx-hash',
-                    tokenId: '1'
+                    tokenId: '1',
                 }),
                 registerDerivative: vi.fn().mockResolvedValue({
                     success: true,
                     txHash: 'mock-tx-hash',
-                    derivativeId: '0x456'
+                    derivativeId: '0x456',
                 }),
                 payIPAsset: vi.fn().mockResolvedValue({
                     success: true,
-                    txHash: 'mock-tx-hash'
+                    txHash: 'mock-tx-hash',
                 }),
                 claimRevenue: vi.fn().mockResolvedValue({
                     success: true,
                     txHash: 'mock-tx-hash',
-                    amount: '0.1'
-                })
+                    amount: '0.1',
+                }),
             };
-        })
+        }),
     };
 });
 
@@ -49,7 +49,7 @@ vi.mock('../src/core/wallets/evm_wallet/evm_wallet', () => {
             return {
                 getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
             };
-        })
+        }),
     };
 });
 
@@ -69,13 +69,13 @@ describe('StoryProtocol Plugin', () => {
                 description: 'A test IP asset',
                 mediaUrl: 'https://example.com/media',
                 contentHash: '0xabcdef',
-                externalUrl: 'https://example.com/ip-asset'
+                externalUrl: 'https://example.com/ip-asset',
             });
 
             expect(result).toEqual({
                 success: true,
                 txHash: 'mock-tx-hash',
-                ipId: '0x123'
+                ipId: '0x123',
             });
         });
 
@@ -84,12 +84,12 @@ describe('StoryProtocol Plugin', () => {
                 ipId: '0x123',
                 termsUrl: 'https://example.com/terms',
                 termsHash: '0xabcdef',
-                royaltyPercentage: 5
+                royaltyPercentage: 5,
             });
 
             expect(result).toEqual({
                 success: true,
-                txHash: 'mock-tx-hash'
+                txHash: 'mock-tx-hash',
             });
         });
 
@@ -98,13 +98,13 @@ describe('StoryProtocol Plugin', () => {
                 ipId: '0x123',
                 licenseTermsUrl: 'https://example.com/terms',
                 licenseTermsHash: '0xabcdef',
-                mintTo: '0x456'
+                mintTo: '0x456',
             });
 
             expect(result).toEqual({
-                success: true, 
+                success: true,
                 txHash: 'mock-tx-hash',
-                tokenId: '1'
+                tokenId: '1',
             });
         });
 
@@ -116,13 +116,13 @@ describe('StoryProtocol Plugin', () => {
                 contentHash: '0xabcdef',
                 externalUrl: 'https://example.com/derivative',
                 parentIpId: '0x123',
-                isCommercial: true
+                isCommercial: true,
             });
 
             expect(result).toEqual({
                 success: true,
                 txHash: 'mock-tx-hash',
-                derivativeId: '0x456'
+                derivativeId: '0x456',
             });
         });
 
@@ -134,19 +134,19 @@ describe('StoryProtocol Plugin', () => {
 
             expect(result).toEqual({
                 success: true,
-                txHash: 'mock-tx-hash'
+                txHash: 'mock-tx-hash',
             });
         });
 
         it('should claim revenue', async () => {
             const result = await storyProtocol.claimRevenue({
-                ipId: '0x123'
+                ipId: '0x123',
             });
 
             expect(result).toEqual({
                 success: true,
                 txHash: 'mock-tx-hash',
-                amount: '0.1'
+                amount: '0.1',
             });
         });
     });

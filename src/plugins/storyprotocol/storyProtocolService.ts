@@ -90,14 +90,10 @@ export class StoryProtocolService {
             txOptions: { waitForTransaction: true },
         });
 
-        return {
-            success: true,
-            txHash: 'tx-hash-value',
-            ipId: ipId || '0x0'
-        };
+        return ipId || '';
     }
 
-    async attachTerms(params: AttachTermsParameters): Promise<{success: boolean; txHash: string}> {
+    async attachTerms(params: AttachTermsParameters): Promise<{ success: boolean; txHash: string }> {
         const { ipId: _ipId, termsUrl, termsHash } = params;
 
         // Attach terms to IP asset
@@ -123,11 +119,13 @@ export class StoryProtocolService {
 
         return {
             success: true,
-            txHash: txHash || 'tx-hash-value'
+            txHash: txHash || 'tx-hash-value',
         };
     }
 
-    async mintLicenseToken(params: MintLicenseTokenParameters): Promise<{success: boolean; txHash: string; tokenId: string}> {
+    async mintLicenseToken(
+        params: MintLicenseTokenParameters
+    ): Promise<{ success: boolean; txHash: string; tokenId: string }> {
         const {
             ipId: _ipId,
             licenseTermsUrl: _licenseTermsUrl,
@@ -140,7 +138,7 @@ export class StoryProtocolService {
         return {
             success: true,
             txHash: 'tx-hash-value',
-            tokenId: 'license-token-id'
+            tokenId: 'license-token-id',
         };
     }
 

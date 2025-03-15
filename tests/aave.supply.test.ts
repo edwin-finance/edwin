@@ -16,22 +16,24 @@ let sufficientBalance = false;
 
 // Check for sufficient balance if we have a private key
 if (hasPrivateKey) {
-  try {
-    // Create wallet for pre-check only
-    wallet = new EdwinEVMWallet(process.env.EVM_PRIVATE_KEY as `0x${string}`);
-    const balance = await wallet.getTokenBalance('base', 'usdc');
-    const balanceNum = parseFloat(balance);
-    
-    sufficientBalance = balanceNum >= MIN_USDC_REQUIRED;
-    
-    console.log(`Pre-check: USDC Balance on Base: ${balance}`);
-    if (!sufficientBalance) {
-      console.log(`Skipping AAVE tests: Insufficient USDC balance (${balance}). Need at least ${MIN_USDC_REQUIRED} USDC.`);
+    try {
+        // Create wallet for pre-check only
+        wallet = new EdwinEVMWallet(process.env.EVM_PRIVATE_KEY as `0x${string}`);
+        const balance = await wallet.getTokenBalance('base', 'usdc');
+        const balanceNum = parseFloat(balance);
+
+        sufficientBalance = balanceNum >= MIN_USDC_REQUIRED;
+
+        console.log(`Pre-check: USDC Balance on Base: ${balance}`);
+        if (!sufficientBalance) {
+            console.log(
+                `Skipping AAVE tests: Insufficient USDC balance (${balance}). Need at least ${MIN_USDC_REQUIRED} USDC.`
+            );
+        }
+    } catch (error) {
+        console.error('Error in pre-check balance:', error);
+        sufficientBalance = false;
     }
-  } catch (error) {
-    console.error('Error in pre-check balance:', error);
-    sufficientBalance = false;
-  }
 }
 
 // Skip entire test suite if no key or insufficient balance

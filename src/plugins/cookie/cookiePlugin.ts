@@ -1,7 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { CookieSwarmClient } from './cookieClient';
-import { AgentParametersSchema, SearchParametersSchema, AgentParameters, SearchParameters } from './parameters';
+import { AgentParametersSchema, AgentParameters } from './parameters';
 
 export class CookiePlugin extends EdwinPlugin {
     constructor(apiKey: string) {
@@ -23,14 +23,6 @@ export class CookiePlugin extends EdwinPlugin {
                         return await cookieClient.getAgentByTwitter(params);
                     }
                     return await cookieClient.getAgentByContract(params);
-                },
-            },
-            cookieSearchTweets: {
-                name: 'cookie_search_tweets',
-                description: 'Search tweets within a date range',
-                schema: SearchParametersSchema.schema,
-                execute: async (params: SearchParameters) => {
-                    return await cookieClient.searchTweets(params);
                 },
             },
         };

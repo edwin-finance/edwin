@@ -22,7 +22,7 @@ const erc20Abi = [
         inputs: [],
         outputs: [{ name: '', type: 'uint8' }],
         stateMutability: 'view',
-    }
+    },
 ];
 
 // Special address for representing native ETH
@@ -190,7 +190,7 @@ export class EdwinEVMWallet extends EdwinWallet {
      * @returns Formatted token balance as a string
      */
     async getTokenBalance(chainName: SupportedEVMChain, tokenAddress: `0x${string}`): Promise<string> {
-        try {            
+        try {
             const client = this.getPublicClient(chainName);
 
             // If it's native ETH (or equivalent)
@@ -203,13 +203,13 @@ export class EdwinEVMWallet extends EdwinWallet {
             // First, get the token decimals
             let decimals = 18; // Default to 18 if we can't get decimals
             try {
-                decimals = await client.readContract({
+                decimals = (await client.readContract({
                     address: tokenAddress,
                     abi: erc20Abi,
                     functionName: 'decimals',
-                }) as number;
+                })) as number;
             } catch (error) {
-                edwinLogger.warn(`Could not get decimals for token ${tokenAddress}, defaulting to 18`);
+                edwinLogger.warn(`Could not get decimals for token ${tokenAddress}, defaulting to 18. Error: ${error}`);
             }
 
             // Then get the balance

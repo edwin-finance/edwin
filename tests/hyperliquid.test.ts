@@ -22,7 +22,7 @@ vi.mock('ccxt', () => {
                         markPrice: 51000,
                         pnl: 1000,
                         margin: 5000,
-                    }
+                    },
                 ]),
                 fetchBalance: vi.fn().mockResolvedValue({
                     total: { USD: 10000 },

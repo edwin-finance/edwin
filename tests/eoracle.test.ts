@@ -47,44 +47,52 @@ describe('EOracleSystem Integration', () => {
     });
 
     describe('GetPrice', () => {
-        conditionalTest('should fetch price for a valid symbol', async () => {
-            vi.mocked(fetch)
-                .mockResolvedValueOnce(createMockResponse(mockFeeds))
-                .mockResolvedValueOnce(createMockResponse(mockPrice));
+        conditionalTest(
+            'should fetch price for a valid symbol',
+            async () => {
+                vi.mocked(fetch)
+                    .mockResolvedValueOnce(createMockResponse(mockFeeds))
+                    .mockResolvedValueOnce(createMockResponse(mockPrice));
 
-            const result = await eoracle.getPrice('BTC/USD');
+                const result = await eoracle.getPrice('BTC/USD');
 
-            const parsed = JSON.parse(result);
-            expect(parsed).toEqual({
-                symbol: 'BTC/USD',
-                price: '100000.00',
-                timestamp: 1678901234,
-            });
+                const parsed = JSON.parse(result);
+                expect(parsed).toEqual({
+                    symbol: 'BTC/USD',
+                    price: '100000.00',
+                    timestamp: 1678901234,
+                });
 
-            expect(fetch).toHaveBeenCalledTimes(2);
-            expect(fetch).toHaveBeenCalledWith(
-                process.env.EORACLE_API_URL + '/feeds',
-                expect.objectContaining({
-                    headers: {
-                        'X-API-Key': process.env.EORACLE_API_KEY,
-                        'Content-Type': 'application/json',
-                    },
-                })
-            );
-        }, 30000);
+                expect(fetch).toHaveBeenCalledTimes(2);
+                expect(fetch).toHaveBeenCalledWith(
+                    process.env.EORACLE_API_URL + '/feeds',
+                    expect.objectContaining({
+                        headers: {
+                            'X-API-Key': process.env.EORACLE_API_KEY,
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                );
+            },
+            30000
+        );
 
-        conditionalTest('should use cached feed ID for subsequent requests', async () => {
-            vi.mocked(fetch)
-                .mockResolvedValueOnce(createMockResponse(mockFeeds))
-                .mockResolvedValueOnce(createMockResponse(mockPrice))
-                .mockResolvedValueOnce(createMockResponse(mockPrice));
+        conditionalTest(
+            'should use cached feed ID for subsequent requests',
+            async () => {
+                vi.mocked(fetch)
+                    .mockResolvedValueOnce(createMockResponse(mockFeeds))
+                    .mockResolvedValueOnce(createMockResponse(mockPrice))
+                    .mockResolvedValueOnce(createMockResponse(mockPrice));
 
-            await eoracle.getPrice('BTC/USD');
+                await eoracle.getPrice('BTC/USD');
 
-            await eoracle.getPrice('BTC/USD');
+                await eoracle.getPrice('BTC/USD');
 
-            expect(fetch).toHaveBeenCalledTimes(3);
-        }, 30000);
+                expect(fetch).toHaveBeenCalledTimes(3);
+            },
+            30000
+        );
     });
 
     describe('Error Handling', () => {

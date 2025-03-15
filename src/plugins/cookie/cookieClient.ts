@@ -1,6 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import edwinLogger from '../../utils/logger';
-import { AgentParameters, SearchParameters } from './parameters';
+import { AgentParameters } from './parameters';
 
 interface AgentResponse {
     ok: {
@@ -35,26 +35,6 @@ interface AgentResponse {
             impressionsCount: number;
         }[];
     };
-    success: boolean;
-    error: string | null;
-}
-
-interface TweetSearchResponse {
-    ok: {
-        authorUsername: string;
-        createdAt: string;
-        engagementsCount: number;
-        impressionsCount: number;
-        isQuote: boolean;
-        isReply: boolean;
-        likesCount: number;
-        quotesCount: number;
-        repliesCount: number;
-        retweetsCount: number;
-        smartEngagementPoints: number;
-        text: string;
-        matchingScore: number;
-    }[];
     success: boolean;
     error: string | null;
 }

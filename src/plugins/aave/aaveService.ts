@@ -50,7 +50,7 @@ export class AaveService extends EdwinService {
         // Get the chain and switch wallet
         const aaveChain = this.getAaveChain(chain);
         this.wallet.switchChain(aaveChain);
-        
+
         // Setup wallet client and provider
         const walletClient = this.wallet.getWalletClient(aaveChain);
         const provider = new providers.JsonRpcProvider(walletClient.transport.url);
@@ -82,7 +82,7 @@ export class AaveService extends EdwinService {
             wallet: ethers_wallet,
             provider: ethers_wallet.provider,
             userAddress: walletClient.account?.address as string,
-            reserveAddress: reserve
+            reserveAddress: reserve,
         };
     }
 
@@ -102,12 +102,12 @@ export class AaveService extends EdwinService {
 
         edwinLogger.info(`Submitting ${actionType} transactions`);
         const results = [];
-        
+
         for (const tx of txs) {
             const result = await this.submitTransaction(setup.provider, setup.wallet, tx);
             results.push(result);
         }
-        
+
         // Return the last transaction
         const finalTx = results[results.length - 1];
         return (
@@ -144,15 +144,15 @@ export class AaveService extends EdwinService {
 
     async supply(params: SupplyParameters): Promise<string> {
         const { chain, amount, asset } = params;
-        
+
         // Validate required parameters
         if (!asset) throw new Error('Asset is required');
         if (!amount) throw new Error('Amount is required');
-        
+
         try {
             // Setup pool and connections
             const setup = await this.setupPool(chain as SupportedChain, asset);
-            
+
             // Prepare supply parameters
             const supplyParams = {
                 user: setup.userAddress,
@@ -162,7 +162,7 @@ export class AaveService extends EdwinService {
 
             // Get supply transaction
             const txs = await setup.pool.supply(supplyParams);
-            
+
             // Execute transactions
             return await this.executeTransactions(txs, setup, 'supply', amount, asset);
         } catch (error: unknown) {
@@ -174,25 +174,25 @@ export class AaveService extends EdwinService {
 
     async withdraw(params: WithdrawParameters): Promise<string> {
         const { chain, amount, asset } = params;
-        
+
         // Validate required parameters
         if (!asset) throw new Error('Asset is required');
         if (!amount) throw new Error('Amount is required');
-        
+
         try {
             // Setup pool and connections
             const setup = await this.setupPool(chain as SupportedChain, asset);
-            
+
             // Prepare withdraw parameters
             const withdrawParams = {
                 user: setup.userAddress,
                 reserve: setup.reserveAddress,
                 amount: String(amount),
             };
-            
+
             // Get withdraw transaction
             const txs = await setup.pool.withdraw(withdrawParams);
-            
+
             // Execute transactions
             return await this.executeTransactions(txs, setup, 'withdraw', amount, asset);
         } catch (error: unknown) {
