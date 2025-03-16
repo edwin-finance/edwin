@@ -11,14 +11,5 @@ export const AgentParametersSchema = createParameterSchema(
     })
 );
 
-export const SearchParametersSchema = createParameterSchema(
-    z.object({
-        query: z.string().describe('Search query string'),
-        from: z.string().describe('Start date for search range'),
-        to: z.string().describe('End date for search range'),
-    })
-);
-
 // Export clean parameter types
 export type AgentParameters = typeof AgentParametersSchema.type;
-export type SearchParameters = typeof SearchParametersSchema.type;

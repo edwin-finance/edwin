@@ -10,6 +10,9 @@ import { BN } from '@coral-xyz/anchor';
 import { EdwinSolanaWallet } from '../src/core/wallets';
 import { MeteoraProtocol } from '../src/plugins/meteora/meteoraProtocol';
 
+
+const AMOUNT_USDC_TO_ADD = 0.05;
+
 // Meteora test
 describe('Meteora test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
@@ -17,77 +20,85 @@ describe('Meteora test', () => {
     }
     const meteora = new MeteoraProtocol(new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY));
 
-    it('test meteora getPools', async () => {
-        const results = await meteora.getPools({
-            asset: 'sol',
-            assetB: 'usdc',
+    describe('Meteora Read-only tests', () => {
+        it('test meteora getPools', async () => {
+            const results = await meteora.getPools({
+                asset: 'sol',
+                assetB: 'usdc',
+            });
+            expect(results).toBeDefined();
+            expect(results).toBeInstanceOf(Array);
+            expect(results.length).toBe(10);
+        }, 30000); // 30 second timeout
+
+        it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
+            const positions = await meteora.getPositions();
+            edwinLogger.info('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
+        }, 120000); // 120 second timeout
+    });
+
+    describe('Meteora Write (active) tests', () => {
+        it('test meteora create position and add liquidity, then check for new position', async () => {
+            const results = await meteora.getPools({
+                asset: 'sol',
+                assetB: 'usdc',
+            });
+            const topPoolAddress = results[0].address;
+
+            const result = await meteora.addLiquidity({
+                poolAddress: topPoolAddress,
+                amount: 'auto',
+                amountB: AMOUNT_USDC_TO_ADD,
+            });
+            // Verify liquidity was added correctly
+            expect(result.liquidityAdded).toBeDefined();
+            expect(result.liquidityAdded).toHaveLength(2);
+            expect(result.liquidityAdded[1]).toBeCloseTo(AMOUNT_USDC_TO_ADD, 1); // Verify USDC amount is approximately 2
+            expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
+            edwinLogger.info('🚀 ~ it ~ result:', result);
+
+            const positionAddress = result.positionAddress;
+            // Get positions after adding liquidity
+            const positions = await meteora.getPositionsFromPool({
+                poolAddress: topPoolAddress,
+            });
+            // Check that positions is ok - should be 1 position
+            expect(positions).toBeDefined();
+            expect(positions.length).toBe(1);
+            expect(positions[0].publicKey.toString()).toBe(positionAddress);
+        }, 120000); // 120 second timeout
+
+        describe('Remove Liquidity', () => {
+            it('Test Meteora position removal', async () => {
+                // Check if positions exist
+                const positions = await meteora.getPositions();
+                edwinLogger.info('🚀 ~ positions check:', safeJsonStringify(positions));
+                
+                // Skip test if no positions
+                if (!positions || positions.size === 0) {
+                    edwinLogger.info('No positions found - skipping remove liquidity test');
+                    return; // Simply return early from the test
+                }
+                
+                // Remove liquidity from first position found
+                const poolAddress = Array.from(positions.keys())[0];
+                const result = await meteora.removeLiquidity({
+                    poolAddress: poolAddress,
+                    shouldClosePosition: true,
+                });
+                edwinLogger.info('🚀 ~ removeLiquidity result:', result);
+
+                // Check positions after removal
+                const positionsAfter = await meteora.getPositionsFromPool({
+                    poolAddress: poolAddress,
+                });
+                edwinLogger.info('🚀 ~ positions after removal:', positionsAfter);
+
+                // Verify position was closed
+                expect(positionsAfter.length).toBe(positions.size - 1);
+            }, 60000); // 60 second timeout
         });
-        expect(results).toBeDefined();
-        expect(results).toBeInstanceOf(Array);
-        expect(results.length).toBe(10);
-    }, 30000); // 30 second timeout
-
-    it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
-        const positions = await meteora.getPositions();
-        edwinLogger.info('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
-    }, 120000); // 120 second timeout
-
-    it('test meteora create position and add liquidity, then check for new position', async () => {
-        const results = await meteora.getPools({
-            asset: 'sol',
-            assetB: 'usdc',
-        });
-        const topPoolAddress = results[0].address;
-
-        const result = await meteora.addLiquidity({
-            poolAddress: topPoolAddress,
-            amount: 'auto',
-            amountB: '2',
-        });
-        // Verify liquidity was added correctly
-        expect(result.liquidityAdded).toBeDefined();
-        expect(result.liquidityAdded).toHaveLength(2);
-        expect(result.liquidityAdded[1]).toBeCloseTo(2, 1); // Verify USDC amount is approximately 2
-        expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
-        edwinLogger.info('🚀 ~ it ~ result:', result);
-
-        const positionAddress = result.positionAddress;
-        // Get positions after adding liquidity
-        const positions = await meteora.getPositionsFromPool({
-            poolAddress: topPoolAddress,
-        });
-        // Check that positions is ok - should be 1 position
-        expect(positions).toBeDefined();
-        expect(positions.length).toBe(1);
-        expect(positions[0].publicKey.toString()).toBe(positionAddress);
-    }, 120000); // 120 second timeout
-
-    it('test meteora remove liquidity', async () => {
-        // Get initial positions
-        const positions = await meteora.getPositions();
-        edwinLogger.info('🚀 ~ it ~ initial positions:', positions);
-
-        if (!positions || positions.size === 0) {
-            return it.skip('No positions found to close - skipping test');
-        }
-
-        // Remove liquidity from first position found
-        const poolAddress = Array.from(positions.keys())[0];
-        const result = await meteora.removeLiquidity({
-            poolAddress: poolAddress,
-            shouldClosePosition: true,
-        });
-        edwinLogger.info('🚀 ~ it ~ removeLiquidity result:', result);
-
-        // Check positions after removal
-        const positionsAfter = await meteora.getPositionsFromPool({
-            poolAddress: poolAddress,
-        });
-        edwinLogger.info('🚀 ~ it ~ positions after removal:', positionsAfter);
-
-        // Verify position was closed
-        expect(positionsAfter.length).toBe(positions.size - 1);
-    }, 60000); // 60 second timeout
+    });
 });
 
 describe('Meteora utils', () => {
@@ -95,7 +106,6 @@ describe('Meteora utils', () => {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
     const wallet = new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY);
-    const meteora = new MeteoraProtocol(wallet);
 
     describe('calculateAmounts', () => {
         // Mock DLMM instance

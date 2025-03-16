@@ -1,6 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import edwinLogger from '../../utils/logger';
-import { AgentParameters, SearchParameters } from './parameters';
+import { AgentParameters } from './parameters';
 
 interface AgentResponse {
     ok: {
@@ -35,26 +35,6 @@ interface AgentResponse {
             impressionsCount: number;
         }[];
     };
-    success: boolean;
-    error: string | null;
-}
-
-interface TweetSearchResponse {
-    ok: {
-        authorUsername: string;
-        createdAt: string;
-        engagementsCount: number;
-        impressionsCount: number;
-        isQuote: boolean;
-        isReply: boolean;
-        likesCount: number;
-        quotesCount: number;
-        repliesCount: number;
-        retweetsCount: number;
-        smartEngagementPoints: number;
-        text: string;
-        matchingScore: number;
-    }[];
     success: boolean;
     error: string | null;
 }
@@ -133,14 +113,6 @@ export class CookieSwarmClient {
         }
         const response = await this.fetch<GetAgentsPagedResponse>(
             `/v2/agents/agentsPaged?interval=${params.interval}&page=${params.page}&pageSize=${params.pageSize}`
-        );
-        return JSON.stringify(response);
-    }
-
-    async searchTweets(params: SearchParameters): Promise<string> {
-        const encodedQuery = encodeURIComponent(params.query);
-        const response = await this.fetch<TweetSearchResponse>(
-            `/v1/hackathon/search/${encodedQuery}?from=${params.from}&to=${params.to}`
         );
         return JSON.stringify(response);
     }

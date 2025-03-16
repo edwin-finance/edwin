@@ -13,6 +13,22 @@ vi.mock('ccxt', () => {
                     tag: null,
                     network: 'EVM',
                 }),
+                fetchPositions: vi.fn().mockResolvedValue([
+                    {
+                        symbol: 'BTC',
+                        side: 'long',
+                        size: 1.0,
+                        entryPrice: 50000,
+                        markPrice: 51000,
+                        pnl: 1000,
+                        margin: 5000,
+                    },
+                ]),
+                fetchBalance: vi.fn().mockResolvedValue({
+                    total: { USD: 10000 },
+                    free: { USD: 5000 },
+                    used: { USD: 5000 },
+                }),
             };
         }),
     };
@@ -67,6 +83,8 @@ vi.mock('../src/core/wallets/evm_wallet/evm_wallet', () => {
                 evmPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
                 getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
                 getWalletClient: vi.fn().mockReturnValue({
+                    account: '0x1234567890abcdef1234567890abcdef12345678',
+                    chain: { id: 42161, name: 'arbitrum' },
                     sendTransaction: vi.fn().mockResolvedValue('0xmock-tx-hash'),
                 }),
                 getChainConfigs: vi.fn().mockReturnValue({
@@ -204,7 +222,7 @@ describe('HyperLiquidService', () => {
 
             expect(result).toEqual([
                 {
-                    coin: 'BTC',
+                    symbol: 'BTC',
                     side: 'long',
                     size: 1.0,
                     entryPrice: 50000,

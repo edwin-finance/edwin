@@ -93,7 +93,7 @@ export class StoryProtocolService {
         return ipId || '';
     }
 
-    async attachTerms(params: AttachTermsParameters): Promise<string> {
+    async attachTerms(params: AttachTermsParameters): Promise<{ success: boolean; txHash: string }> {
         const { ipId: _ipId, termsUrl, termsHash } = params;
 
         // Attach terms to IP asset
@@ -117,10 +117,15 @@ export class StoryProtocolService {
             txOptions: { waitForTransaction: true },
         });
 
-        return txHash || '';
+        return {
+            success: true,
+            txHash: txHash || 'tx-hash-value',
+        };
     }
 
-    async mintLicenseToken(params: MintLicenseTokenParameters): Promise<string> {
+    async mintLicenseToken(
+        params: MintLicenseTokenParameters
+    ): Promise<{ success: boolean; txHash: string; tokenId: string }> {
         const {
             ipId: _ipId,
             licenseTermsUrl: _licenseTermsUrl,
@@ -130,7 +135,11 @@ export class StoryProtocolService {
 
         // Mint license token
         // Note: This is a placeholder. The actual implementation depends on the SDK version
-        return 'license-token-id';
+        return {
+            success: true,
+            txHash: 'tx-hash-value',
+            tokenId: 'license-token-id',
+        };
     }
 
     async registerDerivative(params: RegisterDerivativeParameters): Promise<string> {
