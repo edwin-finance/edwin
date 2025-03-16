@@ -9,7 +9,7 @@ import { AaveService } from '../src/plugins/aave/aaveService';
 const hasPrivateKey = Boolean(process.env.EVM_PRIVATE_KEY);
 
 const MIN_USDC_REQUIRED = 0.05;
-const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`;
+const SEPOLIA_USDC_ADDRESS = '0x94a9d9ac8a22534e3faca9f4e7f2e2cf85d5e4c8' as `0x${string}`;
 
 // Skip entire test if no private key
 let wallet: EdwinEVMWallet | null = null;
@@ -20,15 +20,15 @@ if (hasPrivateKey) {
     try {
         // Create wallet for pre-check only
         wallet = new EdwinEVMWallet(process.env.EVM_PRIVATE_KEY as `0x${string}`);
-        const balance = await wallet.getTokenBalance('base', BASE_USDC_ADDRESS);
+        const balance = await wallet.getTokenBalance('sepolia', SEPOLIA_USDC_ADDRESS);
         const balanceNum = parseFloat(balance);
 
         sufficientBalance = balanceNum >= MIN_USDC_REQUIRED;
 
-        console.log(`Pre-check: USDC Balance on Base: ${balance}`);
+        console.log(`Pre-check: USDC Balance on Base Sepolia: ${balance}`);
         if (!sufficientBalance) {
             console.log(
-                `Skipping AAVE tests: Insufficient USDC balance (${balance}). Need at least ${MIN_USDC_REQUIRED} USDC.`
+                `Skipping AAVE tests: Insufficient Base Sepolia USDC balance (${balance}). Need at least ${MIN_USDC_REQUIRED} USDC.`
             );
         }
     } catch (error) {
@@ -55,7 +55,7 @@ describeIf('Edwin AAVE test', () => {
 
         // Test supply action
         const result = await aave.supply({
-            chain: 'base',
+            chain: 'sepolia',
             amount: MIN_USDC_REQUIRED,
             asset: 'usdc',
         });
@@ -66,7 +66,7 @@ describeIf('Edwin AAVE test', () => {
         expect(aave).toBeDefined();
 
         const result = await aave.withdraw({
-            chain: 'base',
+            chain: 'sepolia',
             amount: MIN_USDC_REQUIRED,
             asset: 'usdc',
         });

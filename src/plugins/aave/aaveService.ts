@@ -1,6 +1,7 @@
 import { Pool, EthereumTransactionTypeExtended } from '@aave/contract-helpers';
 import {
     AaveV3Base,
+    AaveV3BaseSepolia,
     AaveV3Ethereum,
     AaveV3Polygon,
     AaveV3Sepolia,
@@ -42,7 +43,7 @@ interface AaveAddressBook {
 }
 
 export class AaveService extends EdwinService {
-    public supportedChains: SupportedChain[] = ['base', 'baseSepolia'];
+    public supportedChains: SupportedChain[] = ['base', 'baseSepolia', 'sepolia', 'polygon', 'arbitrum'];
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
@@ -145,7 +146,7 @@ export class AaveService extends EdwinService {
             case 'base':
                 return AaveV3Base;
             case 'basesepolia':
-                return AaveV3Sepolia;
+                return AaveV3BaseSepolia;
             case 'ethereum':
                 return AaveV3Ethereum;
             case 'sepolia':
