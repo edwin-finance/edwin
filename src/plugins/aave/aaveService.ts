@@ -1,5 +1,13 @@
 import { Pool, EthereumTransactionTypeExtended } from '@aave/contract-helpers';
-import { AaveV3Base } from '@bgd-labs/aave-address-book';
+import {
+    AaveV3Base,
+    AaveV3BaseSepolia,
+    AaveV3Ethereum,
+    AaveV3Polygon,
+    AaveV3Sepolia,
+    AaveV3Arbitrum,
+    AaveV3BNB,
+} from '@bgd-labs/aave-address-book';
 import { ethers, providers } from 'ethers';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { type SupportedChain, type SupportedEVMChain } from '../../core/types';
@@ -23,8 +31,19 @@ interface PoolSetup {
     reserveAddress: string;
 }
 
+// Define an interface with only the properties we need
+interface AaveAddressBook {
+    POOL: string;
+    WETH_GATEWAY: string;
+    ASSETS: {
+        [key: string]: {
+            UNDERLYING: string;
+        };
+    };
+}
+
 export class AaveService extends EdwinService {
-    public supportedChains: SupportedChain[] = ['base'];
+    public supportedChains: SupportedChain[] = ['base', 'baseSepolia', 'sepolia', 'polygon', 'arbitrum'];
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
@@ -36,8 +55,8 @@ export class AaveService extends EdwinService {
         return '';
     }
 
-    private getAaveChain(chain: SupportedChain): SupportedEVMChain {
-        if (!this.supportedChains.includes(chain)) {
+    private getAaveChain(chain: string): SupportedEVMChain {
+        if (!this.supportedChains.map(c => c.toLowerCase()).includes((chain as SupportedChain).toLowerCase())) {
             throw new Error(`Chain ${chain} is not supported by Aave protocol`);
         }
         return chain as SupportedEVMChain;
@@ -58,20 +77,22 @@ export class AaveService extends EdwinService {
         ethers_wallet.connect(provider);
 
         // Create Aave Pool
+        const addressBook = this.getAddressBook(aaveChain);
+
         const pool = new Pool(ethers_wallet.provider, {
-            POOL: AaveV3Base.POOL,
-            WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
+            POOL: addressBook.POOL,
+            WETH_GATEWAY: addressBook.WETH_GATEWAY,
         });
 
         // Resolve asset address
-        const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
+        const assetKey = Object.keys(addressBook.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
         if (!assetKey) {
             throw new Error(`Unsupported asset: ${asset}`);
         }
-        if (!AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS]) {
+        if (!addressBook.ASSETS[assetKey as keyof typeof addressBook.ASSETS]) {
             throw new Error(`Unsupported asset: ${asset}`);
         }
-        const reserve = AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS].UNDERLYING;
+        const reserve = addressBook.ASSETS[assetKey as keyof typeof addressBook.ASSETS].UNDERLYING;
         if (!reserve) {
             throw new Error(`Unsupported asset: ${asset}`);
         }
@@ -108,7 +129,6 @@ export class AaveService extends EdwinService {
             txReceipts.push(receipt);
         }
 
-
         // Return the last transaction
         const finalTx = txReceipts[txReceipts.length - 1];
         return (
@@ -119,6 +139,27 @@ export class AaveService extends EdwinService {
             ` ${actionType === 'supply' ? 'to' : 'from'} Aave, transaction signature: ` +
             finalTx.transactionHash
         );
+    }
+
+    private getAddressBook(chain: SupportedEVMChain): AaveAddressBook {
+        switch (chain.toLowerCase()) {
+            case 'base':
+                return AaveV3Base;
+            case 'basesepolia':
+                return AaveV3BaseSepolia;
+            case 'ethereum':
+                return AaveV3Ethereum;
+            case 'sepolia':
+                return AaveV3Sepolia;
+            case 'polygon':
+                return AaveV3Polygon;
+            case 'arbitrum':
+                return AaveV3Arbitrum;
+            case 'bnb':
+                return AaveV3BNB;
+            default:
+                throw new Error(`No Aave address book available for chain: ${chain}`);
+        }
     }
 
     private async submitTransaction(
