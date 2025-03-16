@@ -128,7 +128,6 @@ export class AaveService extends EdwinService {
             txReceipts.push(receipt);
         }
 
-
         // Return the last transaction
         const finalTx = txReceipts[txReceipts.length - 1];
         return (

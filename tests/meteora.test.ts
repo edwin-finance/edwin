@@ -10,7 +10,6 @@ import { BN } from '@coral-xyz/anchor';
 import { EdwinSolanaWallet } from '../src/core/wallets';
 import { MeteoraProtocol } from '../src/plugins/meteora/meteoraProtocol';
 
-
 const AMOUNT_USDC_TO_ADD = 0.05;
 
 // Meteora test
@@ -73,13 +72,13 @@ describe('Meteora test', () => {
                 // Check if positions exist
                 const positions = await meteora.getPositions();
                 edwinLogger.info('🚀 ~ positions check:', safeJsonStringify(positions));
-                
+
                 // Skip test if no positions
                 if (!positions || positions.size === 0) {
                     edwinLogger.info('No positions found - skipping remove liquidity test');
                     return; // Simply return early from the test
                 }
-                
+
                 // Remove liquidity from first position found
                 const poolAddress = Array.from(positions.keys())[0];
                 const result = await meteora.removeLiquidity({

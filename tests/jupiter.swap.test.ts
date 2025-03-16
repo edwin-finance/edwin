@@ -7,7 +7,6 @@ import { EdwinSolanaWallet } from '../src/core/wallets';
 
 const AMOUNT_SOL_TO_SWAP = 0.0001;
 
-
 describe('Jupiter Swap Test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
