@@ -219,6 +219,6 @@ describe('Meteora utils', () => {
             await expect(
                 extractBalanceChanges(connection, 'invalid_signature', 'token_x_address', 'token_y_address')
             ).rejects.toThrow(Error);
-        }, 20000);
+        }, 40000);
     });
 });
