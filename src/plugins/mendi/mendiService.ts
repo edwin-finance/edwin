@@ -163,7 +163,8 @@ export class MendiService extends EdwinService {
 
                 // Create contract instance for mETH
                 const mEthAbi = ['function mint() external payable returns (uint256)'];
-                const mEthAddress = this.getMTokenAddress(chain as SupportedEVMChain, 'eth');
+                // Use explicit address to avoid checksum issues
+                const mEthAddress = '0xf401D1482DaC313EAD2Cf6aD33585C679b24c51b';
                 const mEthContract = new ethers.Contract(mEthAddress, mEthAbi, signer);
 
                 // Supply ETH to Mendi (mint mETH)
@@ -176,8 +177,9 @@ export class MendiService extends EdwinService {
 
                 return `Successfully supplied ${amount} ETH to Mendi on ${chain}`;
             } else if (asset.toLowerCase() === 'usdc') {
-                const usdcTokenAddress = this.getUnderlyingTokenAddress(chain as SupportedEVMChain, 'usdc');
-                const mUsdcTokenAddress = this.getMTokenAddress(chain as SupportedEVMChain, 'usdc');
+                // Use explicit addresses to avoid checksum issues
+                const usdcTokenAddress = '0x176211869cA2b568f2A7D4EE941E073a821EE1ff';
+                const mUsdcTokenAddress = '0xAFb95cC0Bd320648B3E8Df6595bD18ec8134581F';
 
                 edwinLogger.debug(`Approving ${amount} USDC for Mendi on ${chain}`);
 
@@ -210,34 +212,7 @@ export class MendiService extends EdwinService {
                     throw new Error(`Failed in USDC supply process: ${err.message || err}`);
                 }
             } else {
-                // Generic implementation for other supported assets
-                const tokenAddress = this.getUnderlyingTokenAddress(chain as SupportedEVMChain, asset);
-                const mTokenAddress = this.getMTokenAddress(chain as SupportedEVMChain, asset);
-
-                edwinLogger.debug(`Approving ${amount} ${asset} for Mendi on ${chain}`);
-
-                // Create contract instance for token
-                const erc20Abi = [
-                    'function approve(address spender, uint256 amount) external returns (bool)',
-                    'function decimals() external view returns (uint8)',
-                ];
-                const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, signer);
-
-                // Approve mToken to spend underlying token
-                const approveTx = await tokenContract.approve(mTokenAddress, amountInSmallestUnits);
-                await approveTx.wait(1);
-
-                edwinLogger.debug(`Supplying ${amount} ${asset} to Mendi on ${chain}`);
-
-                // Create contract instance for mToken
-                const mTokenAbi = ['function mint(uint256 mintAmount) external returns (uint256)'];
-                const mTokenContract = new ethers.Contract(mTokenAddress, mTokenAbi, signer);
-
-                // Supply asset to Mendi (mint mToken)
-                const supplyTx = await mTokenContract.mint(amountInSmallestUnits);
-                await supplyTx.wait(1);
-
-                return `Successfully supplied ${amount} ${asset} to Mendi on ${chain}`;
+                throw new Error(`Asset ${asset} is not yet fully implemented for supply in Mendi`);
             }
         } catch (error) {
             const err = error as MendiError;
@@ -264,22 +239,25 @@ export class MendiService extends EdwinService {
 
             edwinLogger.debug(`Withdrawing ${amount} ${asset} from Mendi on ${chain}`);
 
-            // Get mToken address for the asset
-            const mTokenAddress = this.getMTokenAddress(chain as SupportedEVMChain, asset);
+            if (asset.toLowerCase() === 'usdc') {
+                // Use explicit address to avoid checksum issues
+                const mUsdcTokenAddress = '0xAFb95cC0Bd320648B3E8Df6595bD18ec8134581F';
 
-            // Create contract instance for mToken
-            const mTokenAbi = [
-                'function redeem(uint256 redeemTokens) external returns (uint256)',
-                'function redeemUnderlying(uint256 redeemAmount) external returns (uint256)',
-            ];
-            const mTokenContract = new ethers.Contract(mTokenAddress, mTokenAbi, signer);
+                // Create contract instance for mToken
+                const mTokenAbi = [
+                    'function redeem(uint256 redeemTokens) external returns (uint256)',
+                    'function redeemUnderlying(uint256 redeemAmount) external returns (uint256)',
+                ];
+                const mTokenContract = new ethers.Contract(mUsdcTokenAddress, mTokenAbi, signer);
 
-            // Withdraw asset from Mendi (redeem mToken)
-            // Using redeemUnderlying to withdraw exact amount of underlying asset
-            const withdrawTx = await mTokenContract.redeemUnderlying(amountInSmallestUnits);
-            await withdrawTx.wait(1);
+                // Withdraw asset from Mendi (redeem mToken)
+                const withdrawTx = await mTokenContract.redeemUnderlying(amountInSmallestUnits);
+                await withdrawTx.wait(1);
 
-            return `Successfully withdrew ${amount} ${asset} from Mendi on ${chain}`;
+                return `Successfully withdrew ${amount} USDC from Mendi on ${chain}`;
+            } else {
+                throw new Error(`Asset ${asset} is not yet fully implemented for withdraw in Mendi`);
+            }
         } catch (error) {
             const err = error as MendiError;
             edwinLogger.error(`Error withdrawing from Mendi: ${err.message || err}`);
