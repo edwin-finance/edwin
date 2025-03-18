@@ -8,7 +8,7 @@ import { MendiService } from '../src/plugins/mendi/mendiService';
 // Check if private key is available
 const hasPrivateKey = Boolean(process.env.EVM_PRIVATE_KEY);
 
-const MIN_USDC_REQUIRED = 5; // 5 USDC minimum for testing
+const MIN_USDC_REQUIRED = 0.5; // 0.5 USDC minimum for testing
 const LINEA_USDC_ADDRESS = '0x176211869cA2b568f2A7D4EE941E073a821EE1ff' as `0x${string}`;
 
 // Skip entire test if no private key
@@ -56,7 +56,7 @@ describeIf('Edwin Mendi test', () => {
         // Test supply action
         const result = await mendi.supply({
             chain: 'linea',
-            amount: 1, // Supply 1 USDC
+            amount: MIN_USDC_REQUIRED, // Supply MIN_USDC_REQUIRED USDC
             asset: 'usdc',
         });
         expect(result).toBeDefined();
@@ -67,7 +67,7 @@ describeIf('Edwin Mendi test', () => {
 
         const result = await mendi.withdraw({
             chain: 'linea',
-            amount: 1, // Withdraw 1 USDC
+            amount: MIN_USDC_REQUIRED, // Withdraw MIN_USDC_REQUIRED USDC
             asset: 'usdc',
         });
         expect(result).toBeDefined();
