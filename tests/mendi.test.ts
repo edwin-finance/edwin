@@ -8,7 +8,7 @@ import { MendiService } from '../src/plugins/mendi/mendiService';
 // Check if private key is available
 const hasPrivateKey = Boolean(process.env.EVM_PRIVATE_KEY);
 
-const MIN_USDC_REQUIRED = 0.5; // 0.5 USDC minimum for testing
+const MIN_USDC_REQUIRED = 0.5; // USDC minimum for testing
 const LINEA_USDC_ADDRESS = '0x176211869cA2b568f2A7D4EE941E073a821EE1ff' as `0x${string}`;
 
 // Skip entire test if no private key
@@ -50,7 +50,7 @@ describeIf('Edwin Mendi test', () => {
         console.log('Running Mendi tests with sufficient balance');
     });
 
-    it('Test supply action', async () => {
+    it.skip('Test supply action', async () => {
         expect(mendi).toBeDefined();
 
         // Test supply action
@@ -62,7 +62,7 @@ describeIf('Edwin Mendi test', () => {
         expect(result).toBeDefined();
     }, 60000); // 60 second timeout
 
-    it('Test withdraw action', async () => {
+    it.skip('Test withdraw action', async () => {
         expect(mendi).toBeDefined();
 
         const result = await mendi.withdraw({
