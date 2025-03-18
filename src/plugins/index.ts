@@ -8,3 +8,4 @@ export * from './cookie';
 export * from './eoracle';
 export * from './storyprotocol';
 export * from './hyperliquid';
+export * from './compound';
