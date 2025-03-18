@@ -3,13 +3,13 @@ config(); // Load test environment variables from .env file
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { EdwinEVMWallet } from '../src/core/wallets/evm_wallet/evm_wallet';
-import { CompoundService } from '../src/plugins/compound/compoundService';
+import { MendiService } from '../src/plugins/mendi/mendiService';
 
 // Check if private key is available
 const hasPrivateKey = Boolean(process.env.EVM_PRIVATE_KEY);
 
-const MIN_DAI_REQUIRED = 10; // 10 DAI minimum for testing
-const GOERLI_DAI_ADDRESS = '0xdc31Ee1784292379Fbb2964b3B9C4124D8F89C60' as `0x${string}`;
+const MIN_USDC_REQUIRED = 5; // 5 USDC minimum for testing
+const LINEA_USDC_ADDRESS = '0x176211869cA2b568f2A7D4EE941E073a821EE1ff' as `0x${string}`;
 
 // Skip entire test if no private key
 let wallet: EdwinEVMWallet | null = null;
@@ -20,15 +20,15 @@ if (hasPrivateKey) {
     try {
         // Create wallet for pre-check only
         wallet = new EdwinEVMWallet(process.env.EVM_PRIVATE_KEY as `0x${string}`);
-        const balance = await wallet.getTokenBalance('goerli', GOERLI_DAI_ADDRESS);
+        const balance = await wallet.getTokenBalance('linea', LINEA_USDC_ADDRESS);
         const balanceNum = parseFloat(balance);
 
-        sufficientBalance = balanceNum >= MIN_DAI_REQUIRED;
+        sufficientBalance = balanceNum >= MIN_USDC_REQUIRED;
 
-        console.log(`Pre-check: DAI Balance on Goerli: ${balance}`);
+        console.log(`Pre-check: USDC Balance on Linea: ${balance}`);
         if (!sufficientBalance) {
             console.log(
-                `Skipping Compound tests: Insufficient Goerli DAI balance (${balance}). Need at least ${MIN_DAI_REQUIRED} DAI.`
+                `Skipping Mendi tests: Insufficient Linea USDC balance (${balance}). Need at least ${MIN_USDC_REQUIRED} USDC.`
             );
         }
     } catch (error) {
@@ -41,34 +41,34 @@ if (hasPrivateKey) {
 const shouldRunTests = hasPrivateKey && sufficientBalance;
 const describeIf = shouldRunTests ? describe : describe.skip;
 
-describeIf('Edwin Compound test', () => {
-    let compound: CompoundService;
+describeIf('Edwin Mendi test', () => {
+    let mendi: MendiService;
 
     beforeAll(() => {
         // We already created the wallet in the pre-check
-        compound = new CompoundService(wallet!);
-        console.log('Running Compound tests with sufficient balance');
+        mendi = new MendiService(wallet!);
+        console.log('Running Mendi tests with sufficient balance');
     });
 
     it('Test supply action', async () => {
-        expect(compound).toBeDefined();
+        expect(mendi).toBeDefined();
 
         // Test supply action
-        const result = await compound.supply({
-            chain: 'goerli',
-            amount: 1, // Supply 1 DAI
-            asset: 'dai',
+        const result = await mendi.supply({
+            chain: 'linea',
+            amount: 1, // Supply 1 USDC
+            asset: 'usdc',
         });
         expect(result).toBeDefined();
     }, 60000); // 60 second timeout
 
     it('Test withdraw action', async () => {
-        expect(compound).toBeDefined();
+        expect(mendi).toBeDefined();
 
-        const result = await compound.withdraw({
-            chain: 'goerli',
-            amount: 1, // Withdraw 1 DAI
-            asset: 'dai',
+        const result = await mendi.withdraw({
+            chain: 'linea',
+            amount: 1, // Withdraw 1 USDC
+            asset: 'usdc',
         });
         expect(result).toBeDefined();
     }, 60000); // 60 second timeout

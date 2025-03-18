@@ -1,31 +1,31 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
-import { CompoundService } from './compoundService';
+import { CompoundV2Service } from './compoundV2Service';
 import { EdwinEVMWallet } from '../../core/wallets';
 import { SupplyParametersSchema, WithdrawParametersSchema, SupplyParameters, WithdrawParameters } from './parameters';
 
-export class CompoundPlugin extends EdwinPlugin {
+export class CompoundV2Plugin extends EdwinPlugin {
     constructor(wallet: EdwinEVMWallet) {
-        super('compound', [new CompoundService(wallet)]);
+        super('compoundV2', [new CompoundV2Service(wallet)]);
     }
 
     getTools(): Record<string, EdwinTool> {
         const compoundService = this.toolProviders.find(
-            provider => provider instanceof CompoundService
-        ) as CompoundService;
+            provider => provider instanceof CompoundV2Service
+        ) as CompoundV2Service;
 
         return {
-            compoundSupply: {
-                name: 'compound_supply',
-                description: 'Supply assets to Compound protocol',
+            compoundV2Supply: {
+                name: 'compoundV2_supply',
+                description: 'Supply assets to Compound V2 protocol',
                 schema: SupplyParametersSchema.schema,
                 execute: async (params: SupplyParameters) => {
                     return await compoundService.supply(params);
                 },
             },
-            compoundWithdraw: {
-                name: 'compound_withdraw',
-                description: 'Withdraw assets from Compound protocol',
+            compoundV2Withdraw: {
+                name: 'compoundV2_withdraw',
+                description: 'Withdraw assets from Compound V2 protocol',
                 schema: WithdrawParametersSchema.schema,
                 execute: async (params: WithdrawParameters) => {
                     return await compoundService.withdraw(params);
@@ -37,4 +37,4 @@ export class CompoundPlugin extends EdwinPlugin {
     supportsChain = (chain: Chain) => chain.type === 'evm';
 }
 
-export const compound = (wallet: EdwinEVMWallet) => new CompoundPlugin(wallet);
+export const compoundV2 = (wallet: EdwinEVMWallet) => new CompoundV2Plugin(wallet);

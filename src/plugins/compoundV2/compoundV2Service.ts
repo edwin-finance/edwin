@@ -18,7 +18,7 @@ interface CompoundError extends Error {
     reason?: string;
 }
 
-export class CompoundService extends EdwinService {
+export class CompoundV2Service extends EdwinService {
     // Currently Compound V2 is supported on Ethereum mainnet and Goerli testnet
     // Note: We assume these chains are defined in the SupportedChain type
     public supportedChains: SupportedChain[] = ['mainnet', 'goerli'] as SupportedChain[];
@@ -36,7 +36,7 @@ export class CompoundService extends EdwinService {
     private getCompoundChain(chain: string): SupportedEVMChain {
         const supportedChains = this.supportedChains.map(c => c.toLowerCase());
         if (!supportedChains.includes((chain as SupportedChain).toLowerCase())) {
-            throw new Error(`Chain ${chain} is not supported by Compound protocol`);
+            throw new Error(`Chain ${chain} is not supported by Compound V2 protocol`);
         }
         return chain as SupportedEVMChain;
     }
@@ -60,7 +60,7 @@ export class CompoundService extends EdwinService {
         const provider = new providers.JsonRpcProvider(rpcUrl);
         const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
         ethers_wallet.connect(provider);
-        
+
         // Create Compound instance - just pass the URL
         const compound = Compound(rpcUrl) as AnyCompound;
 
@@ -102,19 +102,19 @@ export class CompoundService extends EdwinService {
 
         // Check if the chain is supported
         if (!cTokens[chain]) {
-            throw new Error(`Chain ${chain} is not supported by Compound protocol`);
+            throw new Error(`Chain ${chain} is not supported by Compound V2 protocol`);
         }
 
         // Check if the asset is supported on the chain
         if (!cTokens[chain][assetLower]) {
-            throw new Error(`Asset ${asset} is not supported on ${chain} by Compound protocol`);
+            throw new Error(`Asset ${asset} is not supported on ${chain} by Compound V2 protocol`);
         }
 
         return cTokens[chain][assetLower];
     }
 
     /**
-     * Supply assets to Compound
+     * Supply assets to Compound V2
      */
     async supply(params: SupplyParameters): Promise<string> {
         try {
@@ -128,16 +128,16 @@ export class CompoundService extends EdwinService {
 
             // For ETH, we need to use special ETH handling
             if (asset.toLowerCase() === 'eth') {
-                edwinLogger.debug(`Supplying ${amount} ETH to Compound on ${chain}`);
+                edwinLogger.debug(`Supplying ${amount} ETH to Compound V2 on ${chain}`);
                 const trx = await compound.supply('ETH', amount, { from: userAddress });
                 await trx.wait(1);
-                return `Successfully supplied ${amount} ETH to Compound on ${chain}`;
+                return `Successfully supplied ${amount} ETH to Compound V2 on ${chain}`;
             } else {
                 // For ERC20 tokens, we need to approve first
                 const underlyingAddress = await compound.getTokenAddress(asset.toUpperCase());
 
                 // Approve the cToken to spend the underlying token
-                edwinLogger.debug(`Approving ${amount} ${asset} for Compound on ${chain}`);
+                edwinLogger.debug(`Approving ${amount} ${asset} for Compound V2 on ${chain}`);
                 const decimals = await compound.decimals(underlyingAddress);
                 const scaledAmount = (amount * Math.pow(10, decimals)).toString();
 
@@ -150,7 +150,7 @@ export class CompoundService extends EdwinService {
                 await approvalTrx.wait(1);
 
                 // Supply the asset
-                edwinLogger.debug(`Supplying ${amount} ${asset} to Compound on ${chain}`);
+                edwinLogger.debug(`Supplying ${amount} ${asset} to Compound V2 on ${chain}`);
                 const supplyTrx = await compound.supply({
                     asset: asset.toUpperCase(),
                     amount: amount.toString(),
@@ -158,17 +158,17 @@ export class CompoundService extends EdwinService {
                 });
                 await supplyTrx.wait(1);
 
-                return `Successfully supplied ${amount} ${asset} to Compound on ${chain}`;
+                return `Successfully supplied ${amount} ${asset} to Compound V2 on ${chain}`;
             }
         } catch (error) {
             const err = error as CompoundError;
-            edwinLogger.error(`Error supplying to Compound: ${err.message || err}`);
-            throw new Error(`Failed to supply to Compound: ${err.message || err}`);
+            edwinLogger.error(`Error supplying to Compound V2: ${err.message || err}`);
+            throw new Error(`Failed to supply to Compound V2: ${err.message || err}`);
         }
     }
 
     /**
-     * Withdraw assets from Compound
+     * Withdraw assets from Compound V2
      */
     async withdraw(params: WithdrawParameters): Promise<string> {
         try {
@@ -178,14 +178,14 @@ export class CompoundService extends EdwinService {
             const { compound, userAddress } = await this.setupCompound(chain as SupportedChain);
 
             // Withdraw the asset
-            edwinLogger.debug(`Withdrawing ${amount} ${asset} from Compound on ${chain}`);
+            edwinLogger.debug(`Withdrawing ${amount} ${asset} from Compound V2 on ${chain}`);
 
             if (asset.toLowerCase() === 'eth') {
                 // For ETH, use the cETH address
                 const cETH = this.getCTokenAddress(chain as SupportedEVMChain, 'eth');
                 const trx = await compound.redeem(cETH, amount, { from: userAddress });
                 await trx.wait(1);
-                return `Successfully withdrew ${amount} ETH from Compound on ${chain}`;
+                return `Successfully withdrew ${amount} ETH from Compound V2 on ${chain}`;
             } else {
                 const trx = await compound.redeem({
                     asset: asset.toUpperCase(),
@@ -193,12 +193,12 @@ export class CompoundService extends EdwinService {
                     from: userAddress,
                 });
                 await trx.wait(1);
-                return `Successfully withdrew ${amount} ${asset} from Compound on ${chain}`;
+                return `Successfully withdrew ${amount} ${asset} from Compound V2 on ${chain}`;
             }
         } catch (error) {
             const err = error as CompoundError;
-            edwinLogger.error(`Error withdrawing from Compound: ${err.message || err}`);
-            throw new Error(`Failed to withdraw from Compound: ${err.message || err}`);
+            edwinLogger.error(`Error withdrawing from Compound V2: ${err.message || err}`);
+            throw new Error(`Failed to withdraw from Compound V2: ${err.message || err}`);
         }
     }
 }
