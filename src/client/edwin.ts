@@ -1,6 +1,6 @@
 import { EdwinEVMWallet, EdwinSolanaWallet } from '../core/wallets';
 import type { EdwinTool } from '../core/types';
-import { aave, lido, lulo, meteora, uniswap, jupiter, cookie, eoracle, storyprotocol, mendi } from '../plugins';
+import { aave, lido, lulo, meteora, uniswap, jupiter, cookie, eoracle, storyprotocol, mendi, renzo } from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
 import { UniswapPlugin } from '../plugins/uniswap/uniswapPlugin';
@@ -11,6 +11,7 @@ import { CookiePlugin } from '../plugins/cookie/cookiePlugin';
 import { EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 import { StoryProtocolPlugin } from '../plugins/storyprotocol/storyProtocolPlugin';
 import { MendiPlugin } from '../plugins/mendi/mendiPlugin';
+import { RenzoPlugin } from '../plugins/renzo/renzoPlugin';
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
@@ -33,6 +34,7 @@ interface EdwinPlugins {
     eoracle?: EOraclePlugin;
     storyprotocol?: StoryProtocolPlugin;
     mendi?: MendiPlugin;
+    renzo?: RenzoPlugin;
 }
 
 export class Edwin {
@@ -54,6 +56,7 @@ export class Edwin {
             this.plugins.lido = lido(this.wallets.evm);
             this.plugins.uniswap = uniswap(this.wallets.evm);
             this.plugins.mendi = mendi(this.wallets.evm);
+            this.plugins.renzo = renzo(this.wallets.evm);
             if (process.env.NFT_CONTRACT_ADDRESS && process.env.SPG_NFT_CONTRACT_ADDRESS) {
                 this.plugins.storyprotocol = storyprotocol(this.wallets.evm);
             }
