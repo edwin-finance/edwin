@@ -101,6 +101,8 @@ We categorize issues and PRs with labels to maintain clarity:
 
 ### Code of Conduct
 
+Our full Code of Conduct can be found in the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file.
+
 #### Our Pledge
 
 We are committed to maintaining an open, welcoming environment. As contributors and maintainers, we pledge to keep our community free from harassment, regardless of age, body size, disability, ethnicity, gender identity, education level, nationality, personal appearance, race, religion, or sexual identity and orientation.
