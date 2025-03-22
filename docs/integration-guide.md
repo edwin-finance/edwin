@@ -163,7 +163,8 @@ export class YourPlugin extends EdwinPlugin {
     }
 
     // Define which chains your plugin supports
-    supportsChain = (chain: Chain) => chain.type === 'evm'; // Or 'solana'
+    supportsChain = (chain: Chain) => ['ethereum', 'base', 'avalanche'].includes(chain.name); // For EVM chains
+    // Or for Solana: supportsChain = (chain: Chain) => chain.name === 'solana';
 }
 
 // Factory function to create a new instance of your plugin
