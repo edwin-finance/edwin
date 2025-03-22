@@ -195,10 +195,8 @@ Testing is a crucial part of plugin development. Create test files for your plug
 
 ```
 tests/
-└── plugins/
-    └── yourplugin/
-        ├── yourPluginPlugin.test.ts
-        └── yourPluginService.test.ts
+├── yourplugin.test.ts
+└── yourpluginService.test.ts
 ```
 
 ### Writing Tests
@@ -206,24 +204,18 @@ tests/
 Here's an example of how to write tests for your plugin:
 
 ```typescript
-// tests/plugins/yourplugin/yourPluginService.test.ts
-import { YourPluginService } from '../../../src/plugins/yourplugin/yourPluginService';
-import { EdwinEVMWallet } from '../../../src/core/wallets'; // Or EdwinSolanaWallet
-
-// Mock the wallet
-jest.mock('../../../src/core/wallets', () => ({
-    EdwinEVMWallet: jest.fn().mockImplementation(() => ({
-        getAddress: jest.fn().mockReturnValue('0x123...'),
-        // Mock other methods as needed
-    })),
-}));
+// tests/yourplugin.test.ts
+import { describe, it, expect } from 'vitest';
+import { YourPluginService } from '../src/plugins/yourplugin/yourPluginService';
+import { EdwinEVMWallet } from '../src/core/wallets'; // Or EdwinSolanaWallet
 
 describe('YourPluginService', () => {
     let service: YourPluginService;
     let wallet: EdwinEVMWallet;
 
     beforeEach(() => {
-        wallet = new EdwinEVMWallet('0x123...' as `0x${string}`);
+        // Use a real wallet with a test private key
+        wallet = new EdwinEVMWallet(process.env.TEST_PRIVATE_KEY as `0x${string}`);
         service = new YourPluginService(wallet);
     });
 
