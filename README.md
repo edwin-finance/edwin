@@ -40,6 +40,8 @@ const result = await aave.supply({
 
 For detailed documentation, visit [docs.edwin.finance](https://docs.edwin.finance)
 
+For developers interested in creating plugins, check out our [Plugin Integration Guide](docs/integration-guide.md).
+
 ## Contributing
 
 Contributions are welcome! Please visit our [Contributing Guide](https://docs.edwin.finance) for details.
