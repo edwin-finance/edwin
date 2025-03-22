@@ -341,4 +341,4 @@ constructor(config: EdwinConfig) {
 
 ---
 
-By following this guide, you should be able to create a new plugin for the Edwin SDK that integrates seamlessly with the existing architecture. If you encounter any issues or have questions, please refer to the [Edwin SDK documentation](https://docs.edwin.finance) or open an issue on the GitHub repository.
+By following this guide, you should be able to create a new plugin for the Edwin SDK that integrates seamlessly with the existing architecture. If you encounter any issues or have questions, please refer to the [Edwin SDK documentation](https://docs.edwin.finance), join the [Edwin Discord community](https://discord.com/invite/QNA55N3KtF) for support and discussions, or open an issue on the GitHub repository.
