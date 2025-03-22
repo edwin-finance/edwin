@@ -5,6 +5,9 @@ import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { StakeParameters, ClaimParameters } from './parameters';
 import edwinLogger from '../../utils/logger';
 
+// Import from mmi-defi-adapters (this would require integrating the package)
+// import { RenzoEzEthAdapter } from 'mmi-defi-adapters/packages/adapters-library/src/adapters/renzo/products/ez-eth/renzoEzEthAdapter';
+
 // Renzo Protocol contract addresses
 const RENZO_RESTAKE_MANAGER = '0x74a09653A083691711cF8215a6ab074BB4e99ef5';
 
@@ -20,10 +23,20 @@ const RENZO_ABI = [
 
 export class RenzoProtocol extends EdwinService {
     private wallet: EdwinEVMWallet;
+    // We would instantiate the adapter here if fully integrated
+    // private renzoAdapter: RenzoEzEthAdapter;
 
     constructor(wallet: EdwinEVMWallet) {
         super();
         this.wallet = wallet;
+        // Initialize adapter if fully integrated
+        // this.renzoAdapter = new RenzoEzEthAdapter({
+        //   provider: new providers.JsonRpcProvider(wallet.getWalletClient('mainnet').transport.url),
+        //   chainId: 1, // Ethereum mainnet
+        //   protocolId: 'renzo',
+        //   adaptersController: {}, // Would need proper initialization
+        //   helpers: {}, // Would need proper initialization
+        // });
     }
 
     supportedChains: SupportedChain[] = ['mainnet'];
