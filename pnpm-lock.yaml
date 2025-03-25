@@ -29,6 +29,9 @@ importers:
       '@meteora-ag/dlmm':
         specifier: ^1.4.0
         version: 1.4.2(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.7.0
+        version: 1.7.0
       '@solana/spl-token-registry':
         specifier: ^0.2.4574
         version: 0.2.4574
@@ -84,9 +87,6 @@ importers:
       '@lifi/types':
         specifier: 16.3.0
         version: 16.3.0
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.7.0
-        version: 1.7.0
       '@types/bn.js':
         specifier: ^5.1.6
         version: 5.1.6

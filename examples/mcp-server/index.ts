@@ -1,9 +1,5 @@
-/**
- * Example of a basic Edwin MCP server
- */
-
 import { Edwin } from 'edwin-sdk';
-import { EdwinMcpServer } from '../mcpServer';
+import { EdwinMcpServer } from '../../src/adapters/mcp';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -22,7 +18,7 @@ async function main() {
             name: process.env.MCP_SERVER_NAME || 'edwin-mcp',
             port: parseInt(process.env.MCP_PORT || '3333'),
             autoApproveTools: (process.env.MCP_AUTO_APPROVE_TOOLS || '').split(',').filter(Boolean),
-            logger: (message, level) => {
+            logger: (message: string, level: string) => {
                 console.log(`[${level.toUpperCase()}] ${message}`);
             },
         });
@@ -30,7 +26,7 @@ async function main() {
         // Handle graceful shutdown
         process.on('SIGINT', async () => {
             console.log('Shutting down MCP server...');
-            await mcpServer.shutdown();
+            await mcpServer.stop();
             process.exit(0);
         });
 
@@ -42,4 +38,5 @@ async function main() {
     }
 }
 
+// Run the server
 main();
