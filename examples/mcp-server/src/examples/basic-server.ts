@@ -3,30 +3,43 @@
  */
 
 import { Edwin } from 'edwin-sdk';
-import { EdwinMcpServer } from '../index';
-import { loadConfigFromEnv } from '../config';
+import { EdwinMcpServer } from '../mcpServer';
+import dotenv from 'dotenv';
 
-async function startBasicMcpServer() {
-  try {
-    // Load configuration from environment variables
-    const { mcpConfig, evmPrivateKey, solanaPrivateKey } = loadConfigFromEnv();
+// Load environment variables
+dotenv.config();
 
-    // Initialize Edwin with wallet configurations
-    const edwin = new Edwin({
-      evmPrivateKey,
-      solanaPrivateKey,
-    });
+async function main() {
+    try {
+        // Initialize Edwin with wallet configurations
+        const edwin = new Edwin({
+            evmPrivateKey: process.env.EVM_PRIVATE_KEY as `0x${string}`,
+            solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
+        });
 
-    // Create and start the MCP server
-    const mcpServer = new EdwinMcpServer(edwin, mcpConfig);
-    await mcpServer.start();
+        // Create and start the MCP server
+        const mcpServer = new EdwinMcpServer(edwin, {
+            name: process.env.MCP_SERVER_NAME || 'edwin-mcp',
+            port: parseInt(process.env.MCP_PORT || '3333'),
+            autoApproveTools: (process.env.MCP_AUTO_APPROVE_TOOLS || '').split(',').filter(Boolean),
+            logger: (message, level) => {
+                console.log(`[${level.toUpperCase()}] ${message}`);
+            },
+        });
 
-    console.log('Edwin MCP server is running');
-  } catch (error) {
-    console.error('Failed to start Edwin MCP server:', error);
-    process.exit(1);
-  }
+        // Handle graceful shutdown
+        process.on('SIGINT', async () => {
+            console.log('Shutting down MCP server...');
+            await mcpServer.shutdown();
+            process.exit(0);
+        });
+
+        // Start the server
+        await mcpServer.start();
+    } catch (error) {
+        console.error('Failed to start MCP server:', error);
+        process.exit(1);
+    }
 }
 
-// Start the server
-startBasicMcpServer();
+main();

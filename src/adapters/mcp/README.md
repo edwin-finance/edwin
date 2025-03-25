@@ -30,15 +30,15 @@ import { EdwinMcpServer } from 'edwin-sdk/adapters/mcp';
 
 // Initialize Edwin with wallet configurations
 const edwin = new Edwin({
-  evmPrivateKey: process.env.EVM_PRIVATE_KEY as `0x${string}`,
-  solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
+    evmPrivateKey: process.env.EVM_PRIVATE_KEY as `0x${string}`,
+    solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
 });
 
 // Create and start the MCP server
 const mcpServer = new EdwinMcpServer(edwin, {
-  name: 'edwin-mcp',
-  port: 3333,
-  autoApproveTools: ['WALLET_ADDRESS', 'BALANCE'],
+    name: 'edwin-mcp',
+    port: 3333,
+    autoApproveTools: ['WALLET_ADDRESS', 'BALANCE'],
 });
 
 // Start the server
@@ -75,8 +75,8 @@ import { loadConfigFromEnv } from 'edwin-sdk/adapters/mcp';
 const { mcpConfig, authConfig, evmPrivateKey, solanaPrivateKey } = loadConfigFromEnv();
 
 const edwin = new Edwin({
-  evmPrivateKey,
-  solanaPrivateKey,
+    evmPrivateKey,
+    solanaPrivateKey,
 });
 
 const mcpServer = new EdwinMcpServer(edwin, mcpConfig);
@@ -93,19 +93,19 @@ To add the Edwin MCP server to Claude Desktop, add the following to your Claude 
 
 ```json
 {
-  "mcpServers": {
-    "edwin-mcp": {
-      "command": "node",
-      "args": ["path/to/your/edwin-mcp-server.js"],
-      "env": {
-        "EVM_PRIVATE_KEY": "your_evm_private_key_here",
-        "SOLANA_PRIVATE_KEY": "your_solana_private_key_here",
-        "MCP_AUTO_APPROVE_TOOLS": "WALLET_ADDRESS,BALANCE"
-      },
-      "disabled": false,
-      "autoApprove": ["WALLET_ADDRESS", "BALANCE"]
+    "mcpServers": {
+        "edwin-mcp": {
+            "command": "node",
+            "args": ["path/to/your/edwin-mcp-server.js"],
+            "env": {
+                "EVM_PRIVATE_KEY": "your_evm_private_key_here",
+                "SOLANA_PRIVATE_KEY": "your_solana_private_key_here",
+                "MCP_AUTO_APPROVE_TOOLS": "WALLET_ADDRESS,BALANCE"
+            },
+            "disabled": false,
+            "autoApprove": ["WALLET_ADDRESS", "BALANCE"]
+        }
     }
-  }
 }
 ```
 
@@ -165,24 +165,24 @@ import { EdwinMcpServer } from 'edwin-sdk/adapters/mcp';
 import { createAuthMiddleware, createApprovalMiddleware } from 'edwin-sdk/adapters/mcp/auth';
 
 // Custom authentication function
-const customAuthFunction = async (request) => {
-  // Implement your authentication logic
-  return true;
+const customAuthFunction = async request => {
+    // Implement your authentication logic
+    return true;
 };
 
 // Custom approval function
 const customApprovalFunction = async (toolName, params) => {
-  // Implement your approval logic
-  return true;
+    // Implement your approval logic
+    return true;
 };
 
 // Create the MCP server with custom auth
 const mcpServer = new EdwinMcpServer(edwin, {
-  name: 'edwin-mcp',
-  port: 3333,
-  logger: (message, level) => {
-    // Custom logging implementation
-  },
+    name: 'edwin-mcp',
+    port: 3333,
+    logger: (message, level) => {
+        // Custom logging implementation
+    },
 });
 
 // Start the server

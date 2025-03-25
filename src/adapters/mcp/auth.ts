@@ -2,29 +2,43 @@
  * Authentication and approval handling for the Edwin MCP server
  */
 
-import { UnauthorizedError } from './errorHandler';
+import { Request as ExpressRequest, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { AuthConfig as BaseAuthConfig } from './config';
 
 /**
  * Configuration for authentication
  */
-export interface AuthConfig {
-  /** Whether to require authentication for all requests */
-  requireAuth?: boolean;
-  /** Custom authentication function */
-  authFunction?: (request: any) => Promise<boolean>;
-  /** Custom approval function for tool execution */
-  approvalFunction?: (toolName: string, params: any) => Promise<boolean>;
+interface AuthRequest extends ExpressRequest {
+    auth?: {
+        apiKey?: string;
+        origin?: string;
+        [key: string]: unknown;
+    };
+    headers: {
+        'x-api-key'?: string;
+        origin?: string;
+        [key: string]: string | undefined;
+    };
 }
+
+const authConfigSchema = z.object({
+    enabled: z.boolean(),
+    apiKey: z.string().optional(),
+    allowedOrigins: z.array(z.string()).optional(),
+});
+
+type AuthConfig = z.infer<typeof authConfigSchema> & BaseAuthConfig;
 
 /**
  * Default authentication handler
  * @param request The incoming request
  * @returns Whether the request is authenticated
  */
-export async function defaultAuthHandler(_request: any): Promise<boolean> {
-  // In a real implementation, this would check for valid authentication
-  // For now, we'll allow all requests
-  return true;
+export async function defaultAuthHandler(_request: AuthRequest): Promise<boolean> {
+    // In a real implementation, this would check for valid authentication
+    // For now, we'll allow all requests
+    return true;
 }
 
 /**
@@ -34,31 +48,47 @@ export async function defaultAuthHandler(_request: any): Promise<boolean> {
  * @returns Authentication middleware function
  */
 export function createAuthMiddleware(
-  config: AuthConfig = {},
-  logger: (message: string, level: string) => void
-) {
-  const requireAuth = config.requireAuth ?? false;
-  const authFunction = config.authFunction ?? defaultAuthHandler;
+    config: AuthConfig,
+    _authFunction: (req: AuthRequest) => Promise<boolean>
+): (req: AuthRequest, res: Response, next: NextFunction) => Promise<void> {
+    const validatedConfig = authConfigSchema.parse(config);
 
-  return async function authMiddleware(request: any): Promise<void> {
-    if (!requireAuth) {
-      return;
-    }
+    return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        if (!validatedConfig.enabled) {
+            next();
+            return;
+        }
 
-    try {
-      const isAuthenticated = await authFunction(request);
-      
-      if (!isAuthenticated) {
-        logger('Authentication failed for request', 'warn');
-        throw new UnauthorizedError('Authentication required');
-      }
-      
-      logger('Request authenticated successfully', 'debug');
-    } catch (error) {
-      logger(`Authentication error: ${error}`, 'error');
-      throw new UnauthorizedError('Authentication failed', { originalError: error });
-    }
-  };
+        const apiKey = req.headers['x-api-key'] as string | undefined;
+        const origin = req.headers.origin;
+
+        if (validatedConfig.apiKey && apiKey !== validatedConfig.apiKey) {
+            res.status(401).json({
+                error: {
+                    message: 'Invalid API key',
+                    code: 'INVALID_API_KEY',
+                },
+            });
+            return;
+        }
+
+        if (validatedConfig.allowedOrigins?.length && origin && !validatedConfig.allowedOrigins.includes(origin)) {
+            res.status(401).json({
+                error: {
+                    message: 'Invalid origin',
+                    code: 'INVALID_ORIGIN',
+                },
+            });
+            return;
+        }
+
+        req.auth = {
+            apiKey,
+            origin,
+        };
+
+        next();
+    };
 }
 
 /**
@@ -69,18 +99,18 @@ export function createAuthMiddleware(
  * @returns Whether the tool execution is approved
  */
 export async function defaultApprovalHandler(
-  toolName: string,
-  params: any,
-  autoApproveTools: string[] = []
+    toolName: string,
+    params: unknown,
+    autoApproveTools: string[] = []
 ): Promise<boolean> {
-  // Auto-approve tools in the list
-  if (autoApproveTools.includes(toolName)) {
-    return true;
-  }
+    // Auto-approve tools in the list
+    if (autoApproveTools.includes(toolName)) {
+        return true;
+    }
 
-  // In a real implementation, this would prompt the user for approval
-  // For now, we'll approve all requests
-  return true;
+    // In a real implementation, this would prompt the user for approval
+    // For now, we'll approve all requests
+    return true;
 }
 
 /**
@@ -91,29 +121,31 @@ export async function defaultApprovalHandler(
  * @returns Approval middleware function
  */
 export function createApprovalMiddleware(
-  config: AuthConfig = {},
-  autoApproveTools: string[] = [],
-  logger: (message: string, level: string) => void
-) {
-  const approvalFunction = config.approvalFunction ?? defaultApprovalHandler;
+    _config: AuthConfig = { enabled: false },
+    approvalFunction: (req: AuthRequest) => Promise<boolean>
+): (req: AuthRequest, res: Response, next: NextFunction) => Promise<void> {
+    return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const isApproved = await approvalFunction(req);
 
-  return async function approvalMiddleware(
-    toolName: string,
-    params: any
-  ): Promise<boolean> {
-    try {
-      const isApproved = await approvalFunction(toolName, params, autoApproveTools);
-      
-      if (!isApproved) {
-        logger(`Tool execution not approved: ${toolName}`, 'warn');
-        return false;
-      }
-      
-      logger(`Tool execution approved: ${toolName}`, 'debug');
-      return true;
-    } catch (error) {
-      logger(`Approval error for tool ${toolName}: ${error}`, 'error');
-      return false;
-    }
-  };
+            if (!isApproved) {
+                res.status(403).json({
+                    error: {
+                        message: 'Tool execution not approved',
+                        code: 'TOOL_NOT_APPROVED',
+                    },
+                });
+                return;
+            }
+
+            next();
+        } catch {
+            res.status(500).json({
+                error: {
+                    message: 'Approval error',
+                    code: 'APPROVAL_ERROR',
+                },
+            });
+        }
+    };
 }
