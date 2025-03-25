@@ -44,6 +44,7 @@
         "@typescript-eslint/eslint-plugin": "^8.24.1",
         "@typescript-eslint/parser": "^8.24.1",
         "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
         "eslint": "^9.21.0",
         "express": "^4.21.2",
         "express-rate-limit": "^7.5.0",
@@ -55,7 +56,7 @@
         "tsup": "8.3.5",
         "typescript": "^5.0.0",
         "vitest": "3.0.8",
-        "zod": "^3.22.0",
+        "zod": "^3.24.2",
         "zod-to-json-schema": "^3.24.5"
     },
     "dependencies": {
@@ -74,7 +75,6 @@
         "bn.js": "^5.2.1",
         "bs58": "^6.0.0",
         "ccxt": "^4.4.63",
-        "dotenv": "^16.4.7",
         "eslint-config-prettier": "^10.0.1",
         "ethers": "^5.7.2",
         "hyperliquid": "^1.6.2",

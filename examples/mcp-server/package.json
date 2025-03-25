@@ -7,7 +7,7 @@
         "start": "ts-node src/examples/basic-server.ts",
         "test": "vitest run",
         "dev": "ts-node-dev --respawn src/examples/basic-server.ts",
-        "build": "tsc"
+        "build": "tsup"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.7.0",
@@ -18,7 +18,7 @@
         "raw-body": "^2.5.2",
         "zod": "^3.22.4",
         "zod-to-json-schema": "^3.22.3",
-        "edwin-sdk": "workspace:*"
+        "edwin-sdk": "file:../.."
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",
