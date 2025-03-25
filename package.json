@@ -11,7 +11,8 @@
         "prepare": "npm run build",
         "format": "prettier -c .prettierrc --write \"**/*.{ts,js,cjs,json,md}\"",
         "format:check": "prettier -c .prettierrc --check \"**/*.{ts,js,cjs,json,md}\"",
-        "start:chatagent": "ts-node examples/chat-agent.ts",
+        "start:chatagent": "ts-node examples/cli-chat-agent/chat-agent.ts",
+        "start:mcp-server": "ts-node examples/mcp-server/index.ts",
         "clean": "rimraf node_modules"
     },
     "keywords": [

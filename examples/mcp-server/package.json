@@ -5,7 +5,6 @@
     "main": "src/index.ts",
     "scripts": {
         "start": "ts-node examples/basic-server.ts",
-        "test": "vitest run",
         "dev": "ts-node-dev --respawn examples/basic-server.ts",
         "build": "tsup"
     },
