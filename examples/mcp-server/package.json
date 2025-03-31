@@ -1,0 +1,35 @@
+{
+    "name": "edwin-mcp-server",
+    "version": "0.1.0",
+    "description": "MCP server example for Edwin SDK",
+    "main": "src/index.ts",
+    "scripts": {
+        "start": "ts-node examples/basic-server.ts",
+        "dev": "ts-node-dev --respawn examples/basic-server.ts",
+        "build": "tsup"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.7.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.1",
+        "edwin-sdk": "file:../..",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.1.5",
+        "raw-body": "^2.5.2",
+        "zod": "^3.22.4",
+        "zod-to-json-schema": "^3.22.3"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/express": "^4.17.21",
+        "@types/node": "^20.11.16",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "private": true
+}
