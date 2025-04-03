@@ -7,4 +7,4 @@ export default defineConfig({
     sourcemap: true,
     clean: true,
     external: ['edwin-sdk'],
-}); 
+});
