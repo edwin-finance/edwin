@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { Edwin } from 'edwin-sdk';
-import type { EdwinTool } from 'edwin-sdk/src/core/types';
+import type { Edwin } from '../../index';
+import type { EdwinTool } from '../../core/types';
 import edwinLogger from '../../utils/logger';
 
 /**
