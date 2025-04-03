@@ -404,7 +404,8 @@ Fees claimed:
             const removeLiquidityTx = await dlmmPool.removeLiquidity({
                 position: position.publicKey,
                 user: this.wallet.getPublicKey(),
-                binIds: binIdsToRemove,
+                fromBinId: Math.min(...binIdsToRemove),
+                toBinId: Math.max(...binIdsToRemove),
                 bps: new BN(100 * 100), // 100%
                 shouldClaimAndClose: shouldClaimAndClose,
             });
