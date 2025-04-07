@@ -66,7 +66,9 @@ export async function getMcpToolsFromEdwin({ edwin }: GetMcpToolsParams) {
                 execute: async (args: unknown) => {
                     try {
                         logDebug(`Executing tool ${name} with params: ${JSON.stringify(args)}`);
-                        const result = await tool.execute(args as any);
+                        // Parse and validate the input using the tool's schema
+                        const validatedArgs = tool.schema.parse(args);
+                        const result = await tool.execute(validatedArgs);
                         logDebug(`Tool ${name} executed successfully`);
                         return {
                             content: [
