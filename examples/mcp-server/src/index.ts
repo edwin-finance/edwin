@@ -1,14 +1,15 @@
-import { Edwin, EdwinMcpServer } from 'edwin-sdk';
+import { Edwin } from '../../../src/client/edwin';
+import { getMcpToolsFromEdwin } from '../../../src/adapters/mcp';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import dotenv from 'dotenv';
+import edwinLogger from '../../../src/utils/logger';
 
 // Load environment variables
 dotenv.config();
 
 // Set MCP mode before importing the logger
 process.env.EDWIN_MCP_MODE = 'true';
-
-// Import logger after setting MCP mode
-import edwinLogger from '../../../src/utils/logger';
 
 async function main() {
     try {
@@ -18,37 +19,32 @@ async function main() {
             solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
         });
 
-        // Create and start the MCP server
-        const mcpServer = new EdwinMcpServer(edwin, {
+        // Get MCP tools from Edwin
+        const mcpTools = await getMcpToolsFromEdwin({ edwin });
+
+        // Create MCP server instance
+        const server = new McpServer({
             name: process.env.MCP_SERVER_NAME || 'edwin',
-            port: parseInt(process.env.MCP_PORT || '3333'),
-            autoApproveTools: (process.env.MCP_AUTO_APPROVE_TOOLS || '').split(',').filter(Boolean),
-            logger: (message: string, level: string) => {
-                switch (level) {
-                    case 'error':
-                        edwinLogger.error(message);
-                        break;
-                    case 'warn':
-                        edwinLogger.warn(message);
-                        break;
-                    case 'debug':
-                        edwinLogger.debug(message);
-                        break;
-                    default:
-                        edwinLogger.info(message);
-                }
-            },
+            version: process.env.MCP_SERVER_VERSION || '0.1.0',
         });
+
+        // Register tools with the server
+        for (const tool of mcpTools) {
+            server.tool(tool.name, tool.description, tool.parameters, tool.execute);
+        }
+
+        // Create and connect to stdio transport
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
 
         // Handle graceful shutdown
         process.on('SIGINT', async () => {
             edwinLogger.info('Shutting down MCP server...');
-            await mcpServer.stop();
+            await server.close();
             process.exit(0);
         });
 
-        // Start the server
-        await mcpServer.start();
+        edwinLogger.info('MCP server started successfully');
     } catch (error) {
         edwinLogger.error('Failed to start MCP server:', error);
         process.exit(1);
