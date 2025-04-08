@@ -2,10 +2,10 @@
     "name": "edwin-mcp-server",
     "version": "0.1.0",
     "description": "MCP server example for Edwin SDK",
-    "main": "src/index.ts",
+    "main": "dist/index.js",
     "scripts": {
-        "start": "ts-node examples/basic-server.ts",
-        "dev": "ts-node-dev --respawn examples/basic-server.ts",
+        "start": "node dist/index.js",
+        "dev": "tsup --watch",
         "build": "tsup"
     },
     "dependencies": {
