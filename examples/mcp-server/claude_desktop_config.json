@@ -3,7 +3,7 @@
         "edwin": {
             "command": "node",
             "env": {
-                "RPC_URL": "your_rpc_url_here",
+                "SOLANA_RPC_URL": "your_rpc_url_here",
                 "EVM_PRIVATE_KEY": "your_evm_private_key_here",
                 "SOLANA_PRIVATE_KEY": "your_solana_private_key_here",
                 "EDWIN_MCP_MODE": "true"

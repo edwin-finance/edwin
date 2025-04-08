@@ -41,7 +41,7 @@ cp .env.example .env
 
 2. Configure your `.env` file with the following required settings:
 
-    - `RPC_URL`: Your RPC endpoint
+    - `SOLANA_RPC_URL`: Your RPC endpoint
     - `EVM_PRIVATE_KEY`: Your EVM wallet private key
     - `SOLANA_PRIVATE_KEY`: Your Solana wallet private key
     - `EDWIN_MCP_MODE=true`: Enable MCP mode
