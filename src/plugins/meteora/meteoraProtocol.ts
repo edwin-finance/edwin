@@ -341,6 +341,9 @@ export class MeteoraProtocol {
                 owner: this.wallet.getPublicKey(),
                 position: position,
             });
+            if (!claimFeeTx) {
+                throw new Error('Failed to create claim fee transaction');
+            }
 
             // Send and confirm transaction
             const signature = await this.wallet.sendTransaction(connection, claimFeeTx, [this.wallet.getSigner()]);

@@ -54,6 +54,14 @@ export async function calculateAmounts(
     let totalXAmount;
     let totalYAmount;
 
+    // Helper function to safely get decimals
+    const getDecimals = (token: any) => {
+        return token.decimal ?? token.mint?.decimals ?? 0;
+    };
+
+    const tokenXDecimals = getDecimals(dlmmPool.tokenX);
+    const tokenYDecimals = getDecimals(dlmmPool.tokenY);
+
     if (amount === 'auto' && amountB === 'auto') {
         throw new TypeError(
             "Amount for both first asset and second asset cannot be 'auto' for Meteora liquidity provision"
@@ -65,23 +73,27 @@ export async function calculateAmounts(
     if (amount === 'auto') {
         // Calculate amount based on amountB
         if (!isNaN(Number(amountB))) {
-            totalXAmount = new BN((Number(amountB) / Number(activeBinPricePerToken)) * 10 ** dlmmPool.tokenX.decimal);
-            totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
+            totalXAmount = new BN(
+                (Number(amountB) / Number(activeBinPricePerToken)) * 10 ** tokenXDecimals
+            );
+            totalYAmount = new BN(Number(amountB) * 10 ** tokenYDecimals);
         } else {
             throw new TypeError('Invalid amountB value for second token for Meteora liquidity provision');
         }
     } else if (amountB === 'auto') {
         // Calculate amountB based on amount
         if (!isNaN(Number(amount))) {
-            totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-            totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** dlmmPool.tokenY.decimal);
+            totalXAmount = new BN(Number(amount) * 10 ** tokenXDecimals);
+            totalYAmount = new BN(
+                Number(amount) * Number(activeBinPricePerToken) * 10 ** tokenYDecimals
+            );
         } else {
             throw new TypeError('Invalid amount value for first token for Meteora liquidity provision');
         }
     } else if (!isNaN(Number(amount)) && !isNaN(Number(amountB))) {
         // Both are numbers
-        totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-        totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
+        totalXAmount = new BN(Number(amount) * 10 ** tokenXDecimals);
+        totalYAmount = new BN(Number(amountB) * 10 ** tokenYDecimals);
     } else {
         throw new TypeError("Both amounts must be numbers or 'auto' for Meteora liquidity provision");
     }
