@@ -3,14 +3,16 @@ import { createParameterSchema } from '../../core/utils/createParameterSchema';
 
 export const AddLiquidityParametersSchema = createParameterSchema(
     z.object({
-        amount: z.union([
-            z.number().positive().describe('The amount of token A to add as liquidity'),
-            z.literal('auto').describe('Auto-calculate the amount of token A based on amountB'),
-        ]),
-        amountB: z.union([
-            z.number().positive().describe('The amount of token B to add as liquidity'),
-            z.literal('auto').describe('Auto-calculate the amount of token B based on amount'),
-        ]),
+        amount: z
+            .string()
+            .describe(
+                'The amount of token A to add as liquidity, or the string "auto" to auto-calculate the amount of token A based on amountB'
+            ),
+        amountB: z
+            .string()
+            .describe(
+                'The amount of token B to add as liquidity, or the string "auto" to auto-calculate the amount of token B based on amount'
+            ),
         poolAddress: z.string().min(1).describe('The address of the Meteora pool'),
         rangeInterval: z.number().optional().describe('The price range interval for concentrated liquidity'),
     })
