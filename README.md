@@ -1,4 +1,4 @@
-# Edwin 🦉 - DeFAI Layer
+# edwin 🦉 - The DeFAI Layer
 
 ![Edwin Overview](docs/static/img/edwin_diagram.png)
 
