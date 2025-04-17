@@ -7,7 +7,7 @@ import {
     ParsedInstruction as SolanaParsedInstruction,
 } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
-import DLMM from '@meteora-ag/dlmm';
+import DLMM, { TokenReserve } from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
 import { EdwinSolanaWallet } from '../../core/wallets';
 
@@ -55,8 +55,17 @@ export async function calculateAmounts(
     let totalYAmount;
 
     // Helper function to safely get decimals
-    const getDecimals = (token: any) => {
-        return token.decimal ?? token.mint?.decimals ?? 0;
+    const getDecimals = (token: TokenReserve): number => {
+        if (token.mint) {
+            return token.mint.decimals;
+        } else if ('decimal' in token) {
+            if (typeof token.decimal === 'number') {
+                return token.decimal;
+            }
+            return 0;
+        } else {
+            return 0;
+        }
     };
 
     const tokenXDecimals = getDecimals(dlmmPool.tokenX);
@@ -73,9 +82,7 @@ export async function calculateAmounts(
     if (amount === 'auto') {
         // Calculate amount based on amountB
         if (!isNaN(Number(amountB))) {
-            totalXAmount = new BN(
-                (Number(amountB) / Number(activeBinPricePerToken)) * 10 ** tokenXDecimals
-            );
+            totalXAmount = new BN((Number(amountB) / Number(activeBinPricePerToken)) * 10 ** tokenXDecimals);
             totalYAmount = new BN(Number(amountB) * 10 ** tokenYDecimals);
         } else {
             throw new TypeError('Invalid amountB value for second token for Meteora liquidity provision');
@@ -84,9 +91,7 @@ export async function calculateAmounts(
         // Calculate amountB based on amount
         if (!isNaN(Number(amount))) {
             totalXAmount = new BN(Number(amount) * 10 ** tokenXDecimals);
-            totalYAmount = new BN(
-                Number(amount) * Number(activeBinPricePerToken) * 10 ** tokenYDecimals
-            );
+            totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** tokenYDecimals);
         } else {
             throw new TypeError('Invalid amount value for first token for Meteora liquidity provision');
         }
