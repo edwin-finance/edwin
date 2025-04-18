@@ -9,5 +9,12 @@ export const SwapParametersSchema = createParameterSchema(
     })
 );
 
-// Export clean parameter type
+export const GetTokenAddressSchema = createParameterSchema(
+    z.object({
+        ticker: z.string().min(1).describe('The token ticker to lookup (case-sensitive, should be in UPPERCASE)'),
+    })
+);
+
+// Export clean parameter types
 export type SwapParameters = typeof SwapParametersSchema.type;
+export type GetTokenAddressParameters = typeof GetTokenAddressSchema.type;

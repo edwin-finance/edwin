@@ -29,8 +29,11 @@
         "yield"
     ],
     "author": "",
-    "license": "MIT",
-    "repository": "https://github.com/edwin-finance/edwin",
+    "license": "GPL-3.0-only",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/edwin-finance/edwin.git"
+    },
     "devDependencies": {
         "@eslint/js": "^9.15.0",
         "@lifi/data-types": "5.15.5",
@@ -63,6 +66,7 @@
         "@aave/contract-helpers": "^1.30.5",
         "@bgd-labs/aave-address-book": "^4.7.4",
         "@coral-xyz/anchor": "^0.30.1",
+        "@jup-ag/api": "^6.0.40",
         "@langchain/core": "^0.3.37",
         "@langchain/langgraph": "^0.2.39",
         "@langchain/openai": "^0.3.17",
@@ -82,5 +86,14 @@
         "prettier": "^3.4.2",
         "viem": "^2.23.5",
         "winston": "^3.17.0"
+    },
+    "bugs": {
+        "url": "https://github.com/edwin-finance/edwin/issues"
+    },
+    "homepage": "https://github.com/edwin-finance/edwin#readme",
+    "directories": {
+        "doc": "docs",
+        "example": "examples",
+        "test": "tests"
     }
 }
