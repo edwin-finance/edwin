@@ -3,6 +3,7 @@ import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../core/wallets';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
+import { createJupiterApiClient } from '@jup-ag/api';
 
 interface SwapInfo {
     ammKey: string;
@@ -91,11 +92,14 @@ interface SwapResponse {
 export class JupiterService {
     supportedChains: SupportedChain[] = ['solana'];
     JUPITER_API_URL = 'https://api.jup.ag/swap/v1/';
+    TOKEN_LIST_URL = 'https://tokens.jup.ag/tokens?tags=verified';
 
     private wallet: EdwinSolanaWallet;
+    private jupiterClient: ReturnType<typeof createJupiterApiClient>;
 
     constructor(wallet: EdwinSolanaWallet) {
         this.wallet = wallet;
+        this.jupiterClient = createJupiterApiClient();
     }
 
     async swap(params: SwapParameters): Promise<number> {
@@ -194,5 +198,38 @@ export class JupiterService {
         }
 
         return response.json();
+    }
+
+    /**
+     * Gets the token mint address for a given ticker symbol
+     * @param ticker The token ticker/symbol to lookup (case-sensitive)
+     * @returns The mint address or null if not found
+     */
+    async getTokenAddressFromTicker(ticker: string): Promise<string | null> {
+        try {
+            const response = await fetch(this.TOKEN_LIST_URL);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch token list: ${response.statusText}`);
+            }
+
+            interface JupiterToken {
+                symbol: string;
+                address: string;
+            }
+
+            const tokens = (await response.json()) as JupiterToken[];
+            const hit = tokens.find(t => t.symbol.toUpperCase() === ticker.toUpperCase());
+
+            if (!hit) {
+                throw new Error(
+                    `Token ${ticker} not found in Jupiter's verified token list. This token may exist but is not yet verified. Please find and verify the contract address manually.`
+                );
+            }
+
+            return hit.address;
+        } catch (error) {
+            console.error('Error fetching token address:', error);
+            throw error;
+        }
     }
 }
