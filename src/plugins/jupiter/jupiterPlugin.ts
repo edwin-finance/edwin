@@ -23,6 +23,22 @@ export class JupiterPlugin extends EdwinPlugin {
                     return await jupiterService.swap(params);
                 },
             },
+            jupiterTrade: {
+                name: 'jupiter_trade',
+                description: 'Trade tokens using Jupiter aggregator',
+                schema: SwapParametersSchema.schema,
+                execute: async (params: SwapParameters) => {
+                    return await jupiterService.swap(params);
+                },
+            },
+            jupiterConvert: {
+                name: 'jupiter_convert',
+                description: 'Convert tokens using Jupiter aggregator',
+                schema: SwapParametersSchema.schema,
+                execute: async (params: SwapParameters) => {
+                    return await jupiterService.swap(params);
+                },
+            },
         };
     }
 
