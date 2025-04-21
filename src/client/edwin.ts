@@ -1,6 +1,18 @@
 import { EdwinEVMWallet, EdwinSolanaWallet } from '../core/wallets';
 import type { EdwinTool } from '../core/types';
-import { aave, lido, lulo, meteora, uniswap, jupiter, cookie, eoracle, storyprotocol, mendi } from '../plugins';
+import {
+    aave,
+    lido,
+    lulo,
+    meteora,
+    uniswap,
+    jupiter,
+    cookie,
+    eoracle,
+    storyprotocol,
+    mendi,
+    dexscreener,
+} from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
 import { UniswapPlugin } from '../plugins/uniswap/uniswapPlugin';
@@ -11,6 +23,7 @@ import { CookiePlugin } from '../plugins/cookie/cookiePlugin';
 import { EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 import { StoryProtocolPlugin } from '../plugins/storyprotocol/storyProtocolPlugin';
 import { MendiPlugin } from '../plugins/mendi/mendiPlugin';
+import { DexScreenerPlugin } from '../plugins/dexscreener/dexscreenerPlugin';
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
@@ -33,6 +46,7 @@ interface EdwinPlugins {
     eoracle?: EOraclePlugin;
     storyprotocol?: StoryProtocolPlugin;
     mendi?: MendiPlugin;
+    dexscreener?: DexScreenerPlugin;
 }
 
 export class Edwin {
@@ -72,6 +86,9 @@ export class Edwin {
         if (process.env.EORACLE_API_KEY) {
             this.plugins.eoracle = eoracle(process.env.EORACLE_API_KEY);
         }
+
+        // Initialize DexScreener plugin (no wallet or API key required)
+        this.plugins.dexscreener = dexscreener();
     }
 
     async getTools(): Promise<Record<string, EdwinTool>> {
