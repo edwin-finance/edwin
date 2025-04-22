@@ -9,3 +9,4 @@ export * from './eoracle';
 export * from './storyprotocol';
 export * from './hyperliquid';
 export * from './mendi';
+export * from './dexscreener';
