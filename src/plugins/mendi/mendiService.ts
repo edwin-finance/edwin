@@ -29,7 +29,7 @@ const MENDI_TOKEN_ADDRESSES = {
 
 export class MendiService extends EdwinService {
     // Mendi is supported on Linea mainnet
-    public supportedChains: SupportedChain[] = ['linea'] as SupportedChain[];
+    public supportedChains: SupportedEVMChain[] = ['linea'] as SupportedEVMChain[];
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
@@ -42,11 +42,11 @@ export class MendiService extends EdwinService {
     }
 
     private getMendiChain(chain: string): SupportedEVMChain {
-        const supportedChains = this.supportedChains.map(c => c.toLowerCase());
-        if (!supportedChains.includes((chain as SupportedChain).toLowerCase())) {
+        const matchingChain = this.supportedChains.find(c => c.toLowerCase() === chain.toLowerCase());
+        if (!matchingChain) {
             throw new Error(`Chain ${chain} is not supported by Mendi protocol`);
         }
-        return chain as SupportedEVMChain;
+        return matchingChain;
     }
 
     /**
@@ -97,11 +97,11 @@ export class MendiService extends EdwinService {
     async supply(params: SupplyParameters): Promise<string> {
         try {
             const { chain, asset, amount } = params;
-            if (chain !== 'linea') {
-                throw new Error(`Chain ${chain} is not supported by Mendi protocol`);
-            }
+            // Use getMendiChain for validation
+            const mendiChain = this.getMendiChain(chain);
+
             // Setup Mendi client
-            const { signer } = await this.setupMendiClient(chain as SupportedChain);
+            const { signer } = await this.setupMendiClient(mendiChain);
 
             // Get token decimals
             const decimals = this.getAssetDecimals(asset);
@@ -154,11 +154,11 @@ export class MendiService extends EdwinService {
     async withdraw(params: WithdrawParameters): Promise<string> {
         try {
             const { chain, asset, amount } = params;
-            if (chain !== 'linea') {
-                throw new Error(`Chain ${chain} is not supported by Mendi protocol`);
-            }
+            // Use getMendiChain for validation
+            const mendiChain = this.getMendiChain(chain);
+
             // Setup Mendi client
-            const { signer } = await this.setupMendiClient(chain as SupportedChain);
+            const { signer } = await this.setupMendiClient(mendiChain);
 
             // Get token decimals
             const decimals = this.getAssetDecimals(asset);
