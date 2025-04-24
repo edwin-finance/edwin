@@ -56,10 +56,13 @@ export class AaveService extends EdwinService {
     }
 
     private getAaveChain(chain: string): SupportedEVMChain {
-        if (!this.supportedChains.map(c => c.toLowerCase()).includes((chain as SupportedChain).toLowerCase())) {
+        const matchedChain = this.supportedChains.find(
+            c => c.toLowerCase() === chain.toLowerCase()
+        );
+        if (!matchedChain) {
             throw new Error(`Chain ${chain} is not supported by Aave protocol`);
         }
-        return chain as SupportedEVMChain;
+        return matchedChain as SupportedEVMChain;
     }
 
     /**
