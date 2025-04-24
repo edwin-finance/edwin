@@ -50,23 +50,23 @@ describeIf('Edwin Mendi test', () => {
         console.log('Running Mendi tests with sufficient balance');
     });
 
-    it.skip('Test supply action', async () => {
+    it('Test supply action', async () => {
         expect(mendi).toBeDefined();
 
         // Test supply action
         const result = await mendi.supply({
-            chain: 'linea',
+            chain: 'Linea',
             amount: MIN_USDC_REQUIRED, // Supply MIN_USDC_REQUIRED USDC
             asset: 'usdc',
         });
         expect(result).toBeDefined();
     }, 60000); // 60 second timeout
 
-    it.skip('Test withdraw action', async () => {
+    it('Test withdraw action', async () => {
         expect(mendi).toBeDefined();
 
         const result = await mendi.withdraw({
-            chain: 'linea',
+            chain: 'Linea',
             amount: MIN_USDC_REQUIRED, // Withdraw MIN_USDC_REQUIRED USDC
             asset: 'usdc',
         });
