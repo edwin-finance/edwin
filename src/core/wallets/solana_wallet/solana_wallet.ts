@@ -85,24 +85,48 @@ export class EdwinSolanaWallet extends EdwinWallet {
     }
 
     async getBalance(mintAddress?: string, commitment: Commitment = 'confirmed'): Promise<number> {
-        const connection = this.getConnection();
+        // Use getBalanceOfWallet with the current wallet address
+        return this.getBalanceOfWallet(this.getAddress(), mintAddress, commitment);
+    }
 
-        if (!mintAddress || mintAddress === NATIVE_SOL_MINT) {
-            return (await connection.getBalance(this.wallet_address, commitment)) / LAMPORTS_PER_SOL;
+    /**
+     * Get balance of any wallet address in Solana
+     * @param walletAddress The wallet address to check
+     * @param mintAddress Optional SPL token mint address (if not provided, returns SOL balance)
+     * @param commitment Commitment level for the request
+     * @returns Balance of the wallet
+     */
+    async getBalanceOfWallet(
+        walletAddress: string,
+        mintAddress?: string,
+        commitment: Commitment = 'confirmed'
+    ): Promise<number> {
+        try {
+            const connection = this.getConnection();
+            const publicKey = new PublicKey(walletAddress);
+
+            if (!mintAddress || mintAddress === NATIVE_SOL_MINT) {
+                // Get SOL balance
+                return (await connection.getBalance(publicKey, commitment)) / LAMPORTS_PER_SOL;
+            }
+
+            // Get SPL token balance
+            const tokenMint = new PublicKey(mintAddress);
+            const tokenAccounts = await connection.getTokenAccountsByOwner(publicKey, {
+                mint: tokenMint,
+            });
+
+            if (tokenAccounts.value.length === 0) {
+                return 0;
+            }
+
+            const tokenAccount = tokenAccounts.value[0];
+            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey, commitment);
+            return tokenAccountBalance.value.uiAmount || 0;
+        } catch (error) {
+            edwinLogger.error(`Error getting balance for wallet ${walletAddress}:`, error);
+            throw new Error(`Failed to get balance for wallet ${walletAddress}: ${error}`);
         }
-
-        const tokenMint = new PublicKey(mintAddress);
-        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
-            mint: tokenMint,
-        });
-
-        if (tokenAccounts.value.length === 0) {
-            return 0;
-        }
-
-        const tokenAccount = tokenAccounts.value[0];
-        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey, commitment);
-        return tokenAccountBalance.value.uiAmount || 0;
     }
 
     // Function to gracefully wait for transaction confirmation

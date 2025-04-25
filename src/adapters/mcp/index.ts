@@ -51,9 +51,9 @@ export async function getMcpToolsFromEdwin({ edwin }: GetMcpToolsParams) {
         logDebug(`Found ${Object.keys(edwinTools).length} tools from Edwin`);
 
         // Convert each tool to MCP format
-        const mcpTools = Object.entries(edwinTools).map(([name, tool]) => {
-            // Convert tool name to uppercase for MCP convention
-            const mcpToolName = name.toUpperCase();
+        const mcpTools = Object.entries(edwinTools).map(([key, tool]) => {
+            // Use the tool's name property in uppercase for MCP convention
+            const mcpToolName = tool.name ? tool.name.toUpperCase() : key.toUpperCase();
             logDebug(`Converting tool: ${mcpToolName}`);
 
             // Convert Zod schema to parameters for MCP
@@ -65,11 +65,11 @@ export async function getMcpToolsFromEdwin({ edwin }: GetMcpToolsParams) {
                 parameters,
                 execute: async (args: unknown) => {
                     try {
-                        logDebug(`Executing tool ${name} with params: ${JSON.stringify(args)}`);
+                        logDebug(`Executing tool ${key} with params: ${JSON.stringify(args)}`);
                         // Parse and validate the input using the tool's schema
                         const validatedArgs = tool.schema.parse(args);
                         const result = await tool.execute(validatedArgs);
-                        logDebug(`Tool ${name} executed successfully`);
+                        logDebug(`Tool ${key} executed successfully`);
                         return {
                             content: [
                                 {
@@ -79,7 +79,7 @@ export async function getMcpToolsFromEdwin({ edwin }: GetMcpToolsParams) {
                             ],
                         };
                     } catch (error) {
-                        logError(`Error executing tool ${name}`, error);
+                        logError(`Error executing tool ${key}`, error);
                         const mcpError =
                             error instanceof McpServerError
                                 ? error

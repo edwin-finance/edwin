@@ -87,15 +87,8 @@ export class EdwinEVMWallet extends EdwinWallet {
     }
 
     async getBalance(): Promise<number> {
-        const client = this.getPublicClient(this.currentChain);
-        if (!this.account.address) {
-            throw new Error('Account not set');
-        }
-        // Get ETH balance
-        const balance = await client.getBalance({ address: this.account.address });
-        const balanceFormatted = formatUnits(balance, 18);
-        const balanceNumber = Number(balanceFormatted);
-        return balanceNumber;
+        // Use getBalanceOfWallet with the current wallet address
+        return this.getBalanceOfWallet(this.getAddress(), this.currentChain);
     }
 
     async getWalletBalanceForChain(chainName: SupportedEVMChain): Promise<string | null> {
@@ -191,16 +184,37 @@ export class EdwinEVMWallet extends EdwinWallet {
      */
     async getTokenBalance(chainName: SupportedEVMChain, tokenAddress: `0x${string}`): Promise<string> {
         try {
+            // Use getBalanceOfWallet and convert the result to string
+            const balance = await this.getBalanceOfWallet(this.getAddress(), chainName, tokenAddress);
+            return balance.toString();
+        } catch (error) {
+            edwinLogger.error('Error getting token balance:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get balance of any wallet address on any EVM chain
+     * @param walletAddress The wallet address to check
+     * @param chainName The chain to query (e.g., 'mainnet', 'base', etc)
+     * @param tokenAddress Optional ERC20 token address (if not provided, returns native token balance)
+     * @returns Balance of the wallet
+     */
+    async getBalanceOfWallet(
+        walletAddress: Address,
+        chainName: SupportedEVMChain = this.currentChain,
+        tokenAddress?: `0x${string}`
+    ): Promise<number> {
+        try {
             const client = this.getPublicClient(chainName);
 
-            // If it's native ETH (or equivalent)
-            if (tokenAddress === NATIVE_ETH_ADDRESS) {
-                const balance = await client.getBalance({ address: this.account.address });
-                return formatUnits(balance, 18); // Native coins always have 18 decimals
+            if (!tokenAddress || tokenAddress === NATIVE_ETH_ADDRESS) {
+                // Get native token balance
+                const balance = await client.getBalance({ address: walletAddress });
+                return Number(formatUnits(balance, 18));
             }
 
-            // For ERC-20 tokens
-            // First, get the token decimals
+            // Get ERC20 token balance
             let decimals = 18; // Default to 18 if we can't get decimals
             try {
                 decimals = (await client.readContract({
@@ -212,20 +226,21 @@ export class EdwinEVMWallet extends EdwinWallet {
                 edwinLogger.warn(`Could not get decimals for token ${tokenAddress}, defaulting to 18. Error: ${error}`);
             }
 
-            // Then get the balance
             const balance = await client.readContract({
                 address: tokenAddress,
                 abi: erc20Abi,
                 functionName: 'balanceOf',
-                args: [this.account.address],
+                args: [walletAddress],
             });
+
             if (typeof balance !== 'bigint') {
                 throw new Error(`Invalid balance returned from contract. Expected bigint, got ${typeof balance}`);
             }
-            return formatUnits(balance as bigint, decimals);
+
+            return Number(formatUnits(balance as bigint, decimals));
         } catch (error) {
-            edwinLogger.error('Error getting token balance:', error);
-            throw error;
+            edwinLogger.error(`Error getting balance for wallet ${walletAddress}:`, error);
+            throw new Error(`Failed to get balance for wallet ${walletAddress}: ${error}`);
         }
     }
 }
