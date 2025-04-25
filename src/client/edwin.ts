@@ -12,6 +12,8 @@ import {
     storyprotocol,
     mendi,
     dexscreener,
+    evmWallet,
+    solanaWallet,
 } from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
@@ -24,6 +26,8 @@ import { EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 import { StoryProtocolPlugin } from '../plugins/storyprotocol/storyProtocolPlugin';
 import { MendiPlugin } from '../plugins/mendi/mendiPlugin';
 import { DexScreenerPlugin } from '../plugins/dexscreener/dexscreenerPlugin';
+import { EVMWalletPlugin } from '../plugins/evm_wallet/evmWalletPlugin';
+import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin';
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
@@ -47,6 +51,8 @@ interface EdwinPlugins {
     storyprotocol?: StoryProtocolPlugin;
     mendi?: MendiPlugin;
     dexscreener?: DexScreenerPlugin;
+    evmWallet?: EVMWalletPlugin;
+    solanaWallet?: SolanaWalletPlugin;
 }
 
 export class Edwin {
@@ -68,6 +74,7 @@ export class Edwin {
             this.plugins.lido = lido(this.wallets.evm);
             this.plugins.uniswap = uniswap(this.wallets.evm);
             this.plugins.mendi = mendi(this.wallets.evm);
+            this.plugins.evmWallet = evmWallet(this.wallets.evm);
             if (process.env.NFT_CONTRACT_ADDRESS && process.env.SPG_NFT_CONTRACT_ADDRESS) {
                 this.plugins.storyprotocol = storyprotocol(this.wallets.evm);
             }
@@ -77,6 +84,7 @@ export class Edwin {
             this.plugins.lulo = lulo(this.wallets.solana);
             this.plugins.meteora = meteora(this.wallets.solana);
             this.plugins.jupiter = jupiter(this.wallets.solana);
+            this.plugins.solanaWallet = solanaWallet(this.wallets.solana);
         }
 
         if (process.env.COOKIE_API_KEY) {
