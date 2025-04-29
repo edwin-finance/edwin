@@ -1,7 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { MeteoraProtocol } from './meteoraProtocol';
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
 import {
     // Import schemas with Schema suffix
     AddLiquidityParametersSchema,
@@ -16,7 +16,7 @@ import {
 } from './parameters';
 
 export class MeteoraPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         super('meteora', [new MeteoraProtocol(wallet)]);
     }
 
@@ -64,4 +64,4 @@ export class MeteoraPlugin extends EdwinPlugin {
     supportsChain = (chain: Chain) => chain.type === 'solana';
 }
 
-export const meteora = (wallet: EdwinSolanaWallet) => new MeteoraPlugin(wallet);
+export const meteora = (wallet: EdwinSolanaPublicKeyWallet) => new MeteoraPlugin(wallet);

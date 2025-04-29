@@ -1,4 +1,5 @@
-import { EdwinEVMWallet, EdwinSolanaWallet } from '../core/wallets';
+import { EdwinEVMWallet } from '../core/wallets';
+import { EdwinSolanaWallet, EdwinSolanaPublicKeyWallet } from '../core/wallets/solana_wallet';
 import type { EdwinTool } from '../core/types';
 import {
     aave,
@@ -32,11 +33,12 @@ import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin'
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
     solanaPrivateKey?: string;
+    solanaPublicKey?: string;
 }
 
 interface EdwinWallets {
     evm?: EdwinEVMWallet;
-    solana?: EdwinSolanaWallet;
+    solana?: EdwinSolanaPublicKeyWallet;
 }
 
 interface EdwinPlugins {
@@ -64,8 +66,12 @@ export class Edwin {
         if (config.evmPrivateKey) {
             this.wallets.evm = new EdwinEVMWallet(config.evmPrivateKey);
         }
+
+        // Initialize Solana wallet based on whether private or public key is provided
         if (config.solanaPrivateKey) {
             this.wallets.solana = new EdwinSolanaWallet(config.solanaPrivateKey);
+        } else if (config.solanaPublicKey) {
+            this.wallets.solana = new EdwinSolanaPublicKeyWallet(config.solanaPublicKey);
         }
 
         // Initialize plugins

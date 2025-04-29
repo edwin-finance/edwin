@@ -1,4 +1,4 @@
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
 import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition, PositionInfo } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
@@ -52,9 +52,9 @@ interface Position {
 
 export class MeteoraProtocol {
     private static readonly BASE_URL = 'https://dlmm-api.meteora.ag';
-    private wallet: EdwinSolanaWallet;
+    private wallet: EdwinSolanaPublicKeyWallet;
 
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         this.wallet = wallet;
     }
 
@@ -153,6 +153,11 @@ export class MeteoraProtocol {
         amountB: string,
         rangeInterval: number = 10
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
+        // Check if wallet has signing capability
+        if (!(this.wallet instanceof EdwinSolanaWallet)) {
+            throw new Error('Add liquidity operation requires a wallet with signing capabilities');
+        }
+
         const connection = this.wallet.getConnection();
         const dlmmPool = await withRetry(
             async () => DLMM.create(connection, new PublicKey(poolAddress)),
@@ -324,6 +329,11 @@ export class MeteoraProtocol {
         const { poolAddress } = params;
 
         try {
+            // Check if wallet has signing capability
+            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+                throw new Error('Claim fees operation requires a wallet with signing capabilities');
+            }
+
             const connection = this.wallet.getConnection();
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
@@ -371,6 +381,11 @@ Fees claimed:
     ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
         const { poolAddress, positionAddress, shouldClosePosition } = params;
         try {
+            // Check if wallet has signing capability
+            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+                throw new Error('Remove liquidity operation requires a wallet with signing capabilities');
+            }
+
             if (!poolAddress) {
                 throw new Error('Pool address is required for Meteora liquidity removal');
             }

@@ -1,10 +1,10 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
 import edwinLogger from '../../utils/logger';
 import { SolanaBalanceParameters } from './parameters';
 
 export class SolanaWalletService extends EdwinService {
-    constructor(private wallet: EdwinSolanaWallet) {
+    constructor(private wallet: EdwinSolanaPublicKeyWallet) {
         super();
     }
 
