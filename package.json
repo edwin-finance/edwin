@@ -83,6 +83,7 @@
         "eslint-config-prettier": "^10.0.1",
         "ethers": "^5.7.2",
         "helius-sdk": "^1.5.1",
+        "husky": "^9.1.7",
         "hyperliquid": "^1.6.2",
         "prettier": "^3.4.2",
         "viem": "^2.23.5",
