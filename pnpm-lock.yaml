@@ -68,9 +68,6 @@ importers:
       helius-sdk:
         specifier: ^1.5.1
         version: 1.5.1(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)
-      husky:
-        specifier: ^9.1.7
-        version: 9.1.7
       hyperliquid:
         specifier: ^1.6.2
         version: 1.7.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -132,6 +129,9 @@ importers:
       express-rate-limit:
         specifier: ^7.5.0
         version: 7.5.0(express@4.21.2)
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
