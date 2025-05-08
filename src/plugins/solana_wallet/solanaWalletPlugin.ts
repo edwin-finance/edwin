@@ -2,7 +2,14 @@ import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { SolanaWalletService } from './solanaWalletService';
 import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
-import { SolanaBalanceParameters, SolanaBalanceParametersSchema } from './parameters';
+import {
+    SolanaBalanceParameters,
+    SolanaBalanceParametersSchema,
+    SolanaWalletBalancesParameters,
+    SolanaWalletBalancesParametersSchema,
+    CurrentWalletBalancesParameters,
+    CurrentWalletBalancesParametersSchema,
+} from './parameters';
 import { z } from 'zod';
 import { createParameterSchema } from '../../core/utils/createParameterSchema';
 
@@ -48,6 +55,22 @@ export class SolanaWalletPlugin extends EdwinPlugin {
                 schema: CurrentWalletBalanceParametersSchema.schema,
                 execute: async (params: CurrentWalletBalanceParameters) => {
                     return await solanaWalletService.getCurrentWalletBalance(params.mintAddress);
+                },
+            },
+            getWalletBalances: {
+                name: 'get_wallet_balances',
+                description: 'Get all token balances for any Solana wallet',
+                schema: SolanaWalletBalancesParametersSchema.schema,
+                execute: async (params: SolanaWalletBalancesParameters) => {
+                    return await solanaWalletService.getWalletBalances(params);
+                },
+            },
+            getCurrentWalletBalances: {
+                name: 'get_current_wallet_balances',
+                description: 'Get all token balances for your current Solana wallet',
+                schema: CurrentWalletBalancesParametersSchema.schema,
+                execute: async (_params: CurrentWalletBalancesParameters) => {
+                    return await solanaWalletService.getCurrentWalletBalances();
                 },
             },
         };

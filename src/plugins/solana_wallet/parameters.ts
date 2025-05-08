@@ -9,5 +9,19 @@ export const SolanaBalanceParametersSchema = createParameterSchema(
     })
 );
 
+// Schema for getting all token balances for a wallet
+export const SolanaWalletBalancesParametersSchema = createParameterSchema(
+    z.object({
+        walletAddress: z.string().describe('The Solana wallet address to check all token balances for'),
+    })
+);
+
+// Schema for getting all token balances for the current wallet
+export const CurrentWalletBalancesParametersSchema = createParameterSchema(
+    z.object({}).describe('No parameters needed')
+);
+
 // Export clean parameter types
 export type SolanaBalanceParameters = typeof SolanaBalanceParametersSchema.type;
+export type SolanaWalletBalancesParameters = typeof SolanaWalletBalancesParametersSchema.type;
+export type CurrentWalletBalancesParameters = typeof CurrentWalletBalancesParametersSchema.type;
