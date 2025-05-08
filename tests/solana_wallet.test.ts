@@ -13,7 +13,7 @@ const describeIf = hasHeliusKey ? describe : describe.skip;
 
 // Known Solana wallets with tokens for testing
 // Using Solana Foundation's wallet as an example
-const TEST_WALLET_ADDRESS = 'AXvWVviBmAECEDRKRYYUMKWFadLUMBkVYxMYvdqQWPeq';
+const TEST_WALLET_ADDRESS = process.env.SOLANA_PUBLIC_KEY as string;
 
 describeIf('Solana Wallet Token Balances Tests', () => {
     let wallet: EdwinSolanaPublicKeyWallet;
