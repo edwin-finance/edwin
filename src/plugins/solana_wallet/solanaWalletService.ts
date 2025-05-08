@@ -70,7 +70,11 @@ export class SolanaWalletService extends EdwinService {
                 ownerAddress: params.walletAddress,
                 page: 1,
                 limit: 1000,
+                displayOptions: {
+                    showFungible: true,
+                },
             });
+
 
             // Filter for fungible tokens only and map to our desired format
             return response.items
