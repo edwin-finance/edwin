@@ -1,7 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { MeteoraProtocol } from './meteoraProtocol';
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
 import {
     // Import schemas with Schema suffix
     AddLiquidityParametersSchema,
@@ -16,11 +16,36 @@ import {
 } from './parameters';
 
 export class MeteoraPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         super('meteora', [new MeteoraProtocol(wallet)]);
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        const meteoraProtocol = this.toolProviders.find(
+            provider => provider instanceof MeteoraProtocol
+        ) as MeteoraProtocol;
+
+        return {
+            meteoraGetPools: {
+                name: 'meteora_get_pools',
+                description: 'Get all pools on a Solana chain',
+                schema: GetPoolsParametersSchema.schema,
+                execute: async (params: GetPoolsParameters) => {
+                    return await meteoraProtocol.getPools(params);
+                },
+            },
+        };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const meteoraProtocol = this.toolProviders.find(
             provider => provider instanceof MeteoraProtocol
         ) as MeteoraProtocol;
@@ -50,18 +75,10 @@ export class MeteoraPlugin extends EdwinPlugin {
                     return await meteoraProtocol.claimFees(params);
                 },
             },
-            meteoraGetPools: {
-                name: 'meteora_get_pools',
-                description: 'Get all pools on a Solana chain',
-                schema: GetPoolsParametersSchema.schema,
-                execute: async (params: GetPoolsParameters) => {
-                    return await meteoraProtocol.getPools(params);
-                },
-            },
         };
     }
 
     supportsChain = (chain: Chain) => chain.type === 'solana';
 }
 
-export const meteora = (wallet: EdwinSolanaWallet) => new MeteoraPlugin(wallet);
+export const meteora = (wallet: EdwinSolanaPublicKeyWallet) => new MeteoraPlugin(wallet);

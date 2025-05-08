@@ -1,6 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 import { createJupiterApiClient } from '@jup-ag/api';
@@ -94,10 +94,10 @@ export class JupiterService {
     JUPITER_API_URL = 'https://api.jup.ag/swap/v1/';
     TOKEN_LIST_URL = 'https://tokens.jup.ag/tokens?tags=verified';
 
-    private wallet: EdwinSolanaWallet;
+    private wallet: EdwinSolanaPublicKeyWallet;
     private jupiterClient: ReturnType<typeof createJupiterApiClient>;
 
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         this.wallet = wallet;
         this.jupiterClient = createJupiterApiClient();
     }
@@ -106,6 +106,11 @@ export class JupiterService {
         const { inputMint, outputMint, amount } = params;
         if (!inputMint || !outputMint || !amount) {
             throw new Error('Invalid swap params. Need: inputMint, outputMint, amount');
+        }
+
+        // Check if wallet has signing capability
+        if (!(this.wallet instanceof EdwinSolanaWallet)) {
+            throw new Error('Swap operation requires a wallet with signing capabilities');
         }
 
         const balance = await this.wallet.getBalance(inputMint);

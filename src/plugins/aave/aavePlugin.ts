@@ -10,6 +10,19 @@ export class AavePlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // Aave has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const aaveService = this.toolProviders.find(provider => provider instanceof AaveService) as AaveService;
 
         return {

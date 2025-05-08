@@ -1,8 +1,15 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { SolanaWalletService } from './solanaWalletService';
-import { EdwinSolanaWallet } from '../../core/wallets';
-import { SolanaBalanceParameters, SolanaBalanceParametersSchema } from './parameters';
+import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
+import {
+    SolanaBalanceParameters,
+    SolanaBalanceParametersSchema,
+    SolanaWalletBalancesParameters,
+    SolanaWalletBalancesParametersSchema,
+    CurrentWalletBalancesParameters,
+    CurrentWalletBalancesParametersSchema,
+} from './parameters';
 import { z } from 'zod';
 import { createParameterSchema } from '../../core/utils/createParameterSchema';
 
@@ -16,11 +23,19 @@ const CurrentWalletBalanceParametersSchema = createParameterSchema(
 type CurrentWalletBalanceParameters = typeof CurrentWalletBalanceParametersSchema.type;
 
 export class SolanaWalletPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         super('solana_wallet', [new SolanaWalletService(wallet)]);
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const solanaWalletService = this.toolProviders.find(
             provider => provider instanceof SolanaWalletService
         ) as SolanaWalletService;
@@ -42,11 +57,32 @@ export class SolanaWalletPlugin extends EdwinPlugin {
                     return await solanaWalletService.getCurrentWalletBalance(params.mintAddress);
                 },
             },
+            getWalletBalances: {
+                name: 'get_wallet_balances',
+                description: 'Get all token balances for any Solana wallet',
+                schema: SolanaWalletBalancesParametersSchema.schema,
+                execute: async (params: SolanaWalletBalancesParameters) => {
+                    return await solanaWalletService.getWalletBalances(params);
+                },
+            },
+            getCurrentWalletBalances: {
+                name: 'get_current_wallet_balances',
+                description: 'Get all token balances for your current Solana wallet',
+                schema: CurrentWalletBalancesParametersSchema.schema,
+                execute: async (_params: CurrentWalletBalancesParameters) => {
+                    return await solanaWalletService.getCurrentWalletBalances();
+                },
+            },
         };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // Solana Wallet has no private tools
+        return {};
     }
 
     supportsChain = (chain: Chain) => chain.type === 'solana';
 }
 
 // Factory function to create a new instance of the plugin
-export const solanaWallet = (wallet: EdwinSolanaWallet) => new SolanaWalletPlugin(wallet);
+export const solanaWallet = (wallet: EdwinSolanaPublicKeyWallet) => new SolanaWalletPlugin(wallet);

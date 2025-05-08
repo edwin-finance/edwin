@@ -1,35 +1,8 @@
 import bs58 from 'bs58';
-import {
-    Connection,
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    Transaction,
-    VersionedTransaction,
-    SystemProgram,
-    Commitment,
-    Finality,
-} from '@solana/web3.js';
-import { TokenListProvider } from '@solana/spl-token-registry';
-import { EdwinWallet } from '../wallet';
+import { Keypair, Transaction, VersionedTransaction, SystemProgram, PublicKey, Connection } from '@solana/web3.js';
+import { EdwinSolanaPublicKeyWallet } from './solana_public_key_wallet';
 import { JitoJsonRpcClient } from './jito_client';
 import edwinLogger from '../../../utils/logger';
-import { withRetry } from '../../../utils';
-
-const NATIVE_SOL_MINT = 'So11111111111111111111111111111111111111112';
-
-interface TokenInfo {
-    symbol: string;
-    address: string;
-}
-
-interface TokenBalance {
-    owner?: string;
-    mint?: string;
-    uiTokenAmount: {
-        uiAmount: number | null;
-    };
-}
 
 interface SignatureStatus {
     err: unknown;
@@ -43,93 +16,35 @@ interface JitoResponse {
     result: string;
 }
 
-export class EdwinSolanaWallet extends EdwinWallet {
+/**
+ * Solana wallet that has full capabilities including transaction signing
+ */
+export class EdwinSolanaWallet extends EdwinSolanaPublicKeyWallet {
     private wallet: Keypair;
-    private wallet_address: PublicKey;
 
-    constructor(protected privateKey: string) {
-        super();
-        this.wallet = Keypair.fromSecretKey(bs58.decode(privateKey));
-        this.wallet_address = this.wallet.publicKey;
+    constructor(privateKey: string) {
+        const keypair = Keypair.fromSecretKey(bs58.decode(privateKey));
+        super(keypair.publicKey);
+        this.wallet = keypair;
     }
 
-    getPublicKey(): PublicKey {
-        return this.wallet_address;
-    }
-
-    getConnection(customRpcUrl?: string, commitment: Commitment = 'confirmed'): Connection {
-        return new Connection(
-            customRpcUrl || process.env.SOLANA_RPC_URL! || 'https://api.mainnet-beta.solana.com',
-            commitment
-        );
-    }
-
+    /**
+     * Signs a transaction with the wallet's keypair
+     */
     signTransaction(transaction: VersionedTransaction) {
         transaction.sign([this.wallet]);
     }
 
-    getAddress(): string {
-        return this.wallet_address.toBase58();
-    }
-
+    /**
+     * Returns the wallet's keypair (private key)
+     */
     getSigner(): Keypair {
         return this.wallet;
     }
 
-    async getTokenAddress(symbol: string): Promise<string | null> {
-        const tokens = await new TokenListProvider().resolve();
-        const tokenList = tokens.filterByChainId(101).getList();
-
-        const token = tokenList.find((t: TokenInfo) => t.symbol.toLowerCase() === symbol.toLowerCase());
-        return token ? token.address : null;
-    }
-
-    async getBalance(mintAddress?: string, commitment: Commitment = 'confirmed'): Promise<number> {
-        // Use getBalanceOfWallet with the current wallet address
-        return this.getBalanceOfWallet(this.getAddress(), mintAddress, commitment);
-    }
-
     /**
-     * Get balance of any wallet address in Solana
-     * @param walletAddress The wallet address to check
-     * @param mintAddress Optional SPL token mint address (if not provided, returns SOL balance)
-     * @param commitment Commitment level for the request
-     * @returns Balance of the wallet
+     * Function to gracefully wait for transaction confirmation
      */
-    async getBalanceOfWallet(
-        walletAddress: string,
-        mintAddress?: string,
-        commitment: Commitment = 'confirmed'
-    ): Promise<number> {
-        try {
-            const connection = this.getConnection();
-            const publicKey = new PublicKey(walletAddress);
-
-            if (!mintAddress || mintAddress === NATIVE_SOL_MINT) {
-                // Get SOL balance
-                return (await connection.getBalance(publicKey, commitment)) / LAMPORTS_PER_SOL;
-            }
-
-            // Get SPL token balance
-            const tokenMint = new PublicKey(mintAddress);
-            const tokenAccounts = await connection.getTokenAccountsByOwner(publicKey, {
-                mint: tokenMint,
-            });
-
-            if (tokenAccounts.value.length === 0) {
-                return 0;
-            }
-
-            const tokenAccount = tokenAccounts.value[0];
-            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey, commitment);
-            return tokenAccountBalance.value.uiAmount || 0;
-        } catch (error) {
-            edwinLogger.error(`Error getting balance for wallet ${walletAddress}:`, error);
-            throw new Error(`Failed to get balance for wallet ${walletAddress}: ${error}`);
-        }
-    }
-
-    // Function to gracefully wait for transaction confirmation
     async waitForConfirmationGracefully(
         connection: Connection,
         signature: string,
@@ -225,56 +140,5 @@ export class EdwinSolanaWallet extends EdwinWallet {
             throw new Error(data.error.message);
         }
         return data.result; // Transaction signature returned by Jito
-    }
-
-    async getTransactionTokenBalanceChange(signature: string, mint: string, commitment: Finality = 'confirmed') {
-        //    - For SOL, check lamport balance changes (and add back the fee).
-        //    - For SPL tokens, check the token account balance changes.
-        let actualOutputAmount: number;
-        const connection = this.getConnection();
-        // Fetch the parsed transaction details (make sure to set the proper options)
-        const txInfo = await withRetry(
-            () =>
-                connection.getParsedTransaction(signature, {
-                    maxSupportedTransactionVersion: 0,
-                    commitment: commitment,
-                }),
-            'Get parsed transaction'
-        );
-        if (!txInfo || !txInfo.meta) {
-            throw new Error('Could not fetch transaction details');
-        }
-        // Check if the output mint is SOL (using the native SOL mint address)
-        if (mint === NATIVE_SOL_MINT) {
-            // SOL changes are reflected in lamport balances.
-            const accountKeys = txInfo.transaction.message.accountKeys;
-            const walletIndex = accountKeys.findIndex(key => key.pubkey.toString() === this.getAddress());
-            if (walletIndex === -1) {
-                throw new Error('Wallet not found in transaction account keys');
-            }
-            // The difference in lamports includes the fee deduction. Add back the fee
-            // to get the total SOL credited from the swap.
-            const preLamports = txInfo.meta.preBalances[walletIndex];
-            const postLamports = txInfo.meta.postBalances[walletIndex];
-            const fee = txInfo.meta.fee; // fee is in lamports
-            const lamportsReceived = postLamports - preLamports + fee;
-            actualOutputAmount = lamportsReceived / LAMPORTS_PER_SOL;
-        } else {
-            // For SPL tokens, use token balance changes in the transaction metadata.
-            const preTokenBalances = txInfo.meta.preTokenBalances || [];
-            const postTokenBalances = txInfo.meta.postTokenBalances || [];
-            // Helper function: find the token balance entry for the wallet & token mint.
-            const findBalance = (balances: TokenBalance[]) =>
-                balances.find(
-                    balance =>
-                        balance.owner && balance.mint && balance.owner === this.getAddress() && balance.mint === mint
-                );
-            const preBalanceEntry = findBalance(preTokenBalances);
-            const postBalanceEntry = findBalance(postTokenBalances);
-            const preBalance = preBalanceEntry?.uiTokenAmount.uiAmount ?? 0;
-            const postBalance = postBalanceEntry?.uiTokenAmount.uiAmount ?? 0;
-            actualOutputAmount = (postBalance || 0) - (preBalance || 0);
-        }
-        return actualOutputAmount;
     }
 }

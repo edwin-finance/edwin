@@ -2,7 +2,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SupportedChain } from '../../core/types';
 import { SupplyParameters, WithdrawParameters } from './parameters';
 
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
 import edwinLogger from '../../utils/logger';
 
 interface LuloDepositResponse {
@@ -19,9 +19,9 @@ interface LuloWithdrawResponse {
 
 export class LuloProtocol {
     public supportedChains: SupportedChain[] = ['solana'];
-    private wallet: EdwinSolanaWallet;
+    private wallet: EdwinSolanaPublicKeyWallet;
 
-    constructor(wallet: EdwinSolanaWallet) {
+    constructor(wallet: EdwinSolanaPublicKeyWallet) {
         this.wallet = wallet;
     }
 
@@ -31,6 +31,11 @@ export class LuloProtocol {
 
     async supply(params: SupplyParameters): Promise<string> {
         try {
+            // Check if wallet has signing capability
+            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+                throw new Error('Supply operation requires a wallet with signing capabilities');
+            }
+
             if (!process.env.FLEXLEND_API_KEY) {
                 throw new Error('FLEXLEND_API_KEY is not set (For lulo.fi)');
             }
@@ -97,6 +102,11 @@ export class LuloProtocol {
 
     async withdraw(params: WithdrawParameters): Promise<string> {
         try {
+            // Check if wallet has signing capability
+            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+                throw new Error('Withdraw operation requires a wallet with signing capabilities');
+            }
+
             const response = await fetch(
                 `https://blink.lulo.fi/actions/withdraw?amount=${params.amount}&symbol=${params.asset}`,
                 {
