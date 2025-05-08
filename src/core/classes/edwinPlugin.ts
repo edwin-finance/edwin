@@ -15,5 +15,18 @@ export abstract class EdwinPlugin {
         return this.tools;
     }
 
+    /**
+     * Get all tools provided by this plugin
+     */
     abstract getTools(): Record<string, EdwinTool>;
+
+    /**
+     * Get tools that don't require signing capabilities
+     */
+    abstract getPublicTools(): Record<string, EdwinTool>;
+
+    /**
+     * Get tools that require signing capabilities
+     */
+    abstract getPrivateTools(): Record<string, EdwinTool>;
 }

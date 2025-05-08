@@ -21,6 +21,14 @@ export class SolanaWalletPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const solanaWalletService = this.toolProviders.find(
             provider => provider instanceof SolanaWalletService
         ) as SolanaWalletService;
@@ -43,6 +51,11 @@ export class SolanaWalletPlugin extends EdwinPlugin {
                 },
             },
         };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // Solana Wallet has no private tools
+        return {};
     }
 
     supportsChain = (chain: Chain) => chain.type === 'solana';

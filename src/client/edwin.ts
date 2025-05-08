@@ -1,6 +1,7 @@
-import { EdwinEVMWallet } from '../core/wallets';
+import { EdwinEVMWallet, EdwinEVMPublicKeyWallet } from '../core/wallets';
 import { EdwinSolanaWallet, EdwinSolanaPublicKeyWallet } from '../core/wallets/solana_wallet';
 import type { EdwinTool } from '../core/types';
+import { EdwinPlugin } from '../core/classes/edwinPlugin';
 import {
     aave,
     lido,
@@ -32,12 +33,13 @@ import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin'
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
+    evmPublicKey?: `0x${string}`;
     solanaPrivateKey?: string;
     solanaPublicKey?: string;
 }
 
 interface EdwinWallets {
-    evm?: EdwinEVMWallet;
+    evm?: EdwinEVMPublicKeyWallet;
     solana?: EdwinSolanaPublicKeyWallet;
 }
 
@@ -62,9 +64,11 @@ export class Edwin {
     public plugins: EdwinPlugins = {};
 
     constructor(config: EdwinConfig) {
-        // Initialize wallets
+        // Initialize EVM wallet based on whether private or public key is provided
         if (config.evmPrivateKey) {
             this.wallets.evm = new EdwinEVMWallet(config.evmPrivateKey);
+        } else if (config.evmPublicKey) {
+            this.wallets.evm = new EdwinEVMPublicKeyWallet(config.evmPublicKey);
         }
 
         // Initialize Solana wallet based on whether private or public key is provided
@@ -74,15 +78,20 @@ export class Edwin {
             this.wallets.solana = new EdwinSolanaPublicKeyWallet(config.solanaPublicKey);
         }
 
-        // Initialize plugins
+        // Initialize EVM plugins
         if (this.wallets.evm) {
-            this.plugins.aave = aave(this.wallets.evm);
-            this.plugins.lido = lido(this.wallets.evm);
-            this.plugins.uniswap = uniswap(this.wallets.evm);
-            this.plugins.mendi = mendi(this.wallets.evm);
+            // Initialize EVM wallet plugin (works with public key wallet)
             this.plugins.evmWallet = evmWallet(this.wallets.evm);
-            if (process.env.NFT_CONTRACT_ADDRESS && process.env.SPG_NFT_CONTRACT_ADDRESS) {
-                this.plugins.storyprotocol = storyprotocol(this.wallets.evm);
+
+            // Initialize plugins that require signing capabilities
+            if (this.wallets.evm instanceof EdwinEVMWallet) {
+                this.plugins.aave = aave(this.wallets.evm);
+                this.plugins.lido = lido(this.wallets.evm);
+                this.plugins.uniswap = uniswap(this.wallets.evm);
+                this.plugins.mendi = mendi(this.wallets.evm);
+                if (process.env.NFT_CONTRACT_ADDRESS && process.env.SPG_NFT_CONTRACT_ADDRESS) {
+                    this.plugins.storyprotocol = storyprotocol(this.wallets.evm);
+                }
             }
         }
 
@@ -107,13 +116,55 @@ export class Edwin {
 
     async getTools(): Promise<Record<string, EdwinTool>> {
         const tools: Record<string, EdwinTool> = {};
+
         for (const plugin of Object.values(this.plugins)) {
-            const pluginTools = plugin.getTools();
-            for (const [name, tool] of Object.entries(pluginTools)) {
+            // Get public tools from all plugins
+            const publicTools = plugin.getPublicTools();
+            for (const [name, tool] of Object.entries(publicTools)) {
                 tools[name] = tool as EdwinTool;
+            }
+
+            // Get private tools from plugins if the wallet has signing capabilities
+            if (this.hasSigningCapabilitiesForPlugin(plugin)) {
+                const privateTools = plugin.getPrivateTools();
+                for (const [name, tool] of Object.entries(privateTools)) {
+                    tools[name] = tool as EdwinTool;
+                }
             }
         }
         return tools;
+    }
+
+    /**
+     * Checks if the wallet has signing capabilities for a specific plugin
+     * @param plugin The plugin to check
+     * @returns true if the wallet has signing capabilities for the plugin, false otherwise
+     */
+    private hasSigningCapabilitiesForPlugin(plugin: EdwinPlugin): boolean {
+        // Check if the plugin is a Solana plugin
+        if (
+            plugin instanceof JupiterPlugin ||
+            plugin instanceof MeteoraPlugin ||
+            plugin instanceof LuloPlugin ||
+            plugin instanceof SolanaWalletPlugin
+        ) {
+            return this.wallets.solana instanceof EdwinSolanaWallet;
+        }
+
+        // Check if the plugin is an EVM plugin
+        if (
+            plugin instanceof AavePlugin ||
+            plugin instanceof LidoPlugin ||
+            plugin instanceof UniswapPlugin ||
+            plugin instanceof MendiPlugin ||
+            plugin instanceof StoryProtocolPlugin ||
+            plugin instanceof EVMWalletPlugin
+        ) {
+            return this.wallets.evm instanceof EdwinEVMWallet;
+        }
+
+        // For other plugins, assume they don't require signing capabilities
+        return true;
     }
 
     async getPortfolio(): Promise<string> {

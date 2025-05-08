@@ -21,6 +21,31 @@ export class MeteoraPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        const meteoraProtocol = this.toolProviders.find(
+            provider => provider instanceof MeteoraProtocol
+        ) as MeteoraProtocol;
+
+        return {
+            meteoraGetPools: {
+                name: 'meteora_get_pools',
+                description: 'Get all pools on a Solana chain',
+                schema: GetPoolsParametersSchema.schema,
+                execute: async (params: GetPoolsParameters) => {
+                    return await meteoraProtocol.getPools(params);
+                },
+            },
+        };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const meteoraProtocol = this.toolProviders.find(
             provider => provider instanceof MeteoraProtocol
         ) as MeteoraProtocol;
@@ -48,14 +73,6 @@ export class MeteoraPlugin extends EdwinPlugin {
                 schema: PoolParametersSchema.schema,
                 execute: async (params: PoolParameters) => {
                     return await meteoraProtocol.claimFees(params);
-                },
-            },
-            meteoraGetPools: {
-                name: 'meteora_get_pools',
-                description: 'Get all pools on a Solana chain',
-                schema: GetPoolsParametersSchema.schema,
-                execute: async (params: GetPoolsParameters) => {
-                    return await meteoraProtocol.getPools(params);
                 },
             },
         };

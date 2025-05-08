@@ -9,6 +9,14 @@ export class EOraclePlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const eoracleService = this.toolProviders.find(
             provider => provider instanceof EOracleService
         ) as EOracleService;
@@ -23,6 +31,11 @@ export class EOraclePlugin extends EdwinPlugin {
                 },
             },
         };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // EOraclePlugin has no private tools
+        return {};
     }
 
     supportsChain = (chain: Chain) => chain.type === 'evm';

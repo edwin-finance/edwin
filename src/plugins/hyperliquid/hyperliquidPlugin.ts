@@ -10,6 +10,20 @@ export class HyperLiquidPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // HyperLiquid has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // HyperLiquid has no private tools
         return {};
     }
 }

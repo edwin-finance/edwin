@@ -10,6 +10,31 @@ export class JupiterPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        const jupiterService = this.toolProviders.find(
+            provider => provider instanceof JupiterService
+        ) as JupiterService;
+
+        return {
+            jupiterGetTokenAddress: {
+                name: 'jupiter_get_token_address',
+                description: "Get a token's mint address / contract address (CA) from a ticker name",
+                schema: GetTokenAddressSchema.schema,
+                execute: async (params: GetTokenAddressParameters) => {
+                    return await jupiterService.getTokenAddressFromTicker(params.ticker);
+                },
+            },
+        };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const jupiterService = this.toolProviders.find(
             provider => provider instanceof JupiterService
         ) as JupiterService;
@@ -37,14 +62,6 @@ export class JupiterPlugin extends EdwinPlugin {
                 schema: SwapParametersSchema.schema,
                 execute: async (params: SwapParameters) => {
                     return await jupiterService.swap(params);
-                },
-            },
-            jupiterGetTokenAddress: {
-                name: 'jupiter_get_token_address',
-                description: "Get a token's mint address / contract address (CA) from a ticker name",
-                schema: GetTokenAddressSchema.schema,
-                execute: async (params: GetTokenAddressParameters) => {
-                    return await jupiterService.getTokenAddressFromTicker(params.ticker);
                 },
             },
         };

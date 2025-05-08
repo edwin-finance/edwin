@@ -10,6 +10,19 @@ export class LidoPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // Lido has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const lidoProtocol = this.toolProviders.find(provider => provider instanceof LidoProtocol) as LidoProtocol;
 
         return {

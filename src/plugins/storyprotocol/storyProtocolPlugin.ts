@@ -23,6 +23,19 @@ export class StoryProtocolPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // Story Protocol has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const storyProtocolService = this.toolProviders.find(
             provider => provider instanceof StoryProtocolService
         ) as StoryProtocolService;

@@ -10,6 +10,19 @@ export class MendiPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // Mendi has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const mendiService = this.toolProviders.find(provider => provider instanceof MendiService) as MendiService;
 
         return {

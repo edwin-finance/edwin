@@ -9,6 +9,14 @@ export class CookiePlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const cookieClient = this.toolProviders.find(
             provider => provider instanceof CookieSwarmClient
         ) as CookieSwarmClient;
@@ -26,6 +34,11 @@ export class CookiePlugin extends EdwinPlugin {
                 },
             },
         };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // Cookie has no private tools
+        return {};
     }
 
     supportsChain = (_: Chain) => true;

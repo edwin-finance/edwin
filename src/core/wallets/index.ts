@@ -1,3 +1,3 @@
 export { EdwinWallet } from './wallet';
-export { EdwinEVMWallet } from './evm_wallet';
-export { EdwinSolanaWallet } from './solana_wallet';
+export { EdwinEVMWallet, EdwinEVMPublicKeyWallet } from './evm_wallet';
+export { EdwinSolanaWallet, EdwinSolanaPublicKeyWallet } from './solana_wallet';

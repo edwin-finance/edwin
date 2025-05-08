@@ -10,6 +10,19 @@ export class LuloPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
+        // Lulo has no public tools
+        return {};
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
         const luloProtocol = this.toolProviders.find(provider => provider instanceof LuloProtocol) as LuloProtocol;
 
         return {

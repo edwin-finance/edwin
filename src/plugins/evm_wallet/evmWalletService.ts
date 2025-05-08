@@ -1,11 +1,11 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
-import { EdwinEVMWallet } from '../../core/wallets';
+import { EdwinEVMPublicKeyWallet } from '../../core/wallets';
 import edwinLogger from '../../utils/logger';
 import { EVMBalanceParameters, CurrentEVMBalanceParameters } from './parameters';
 import { SupportedEVMChain } from '../../core/types';
 
 export class EVMWalletService extends EdwinService {
-    constructor(private wallet: EdwinEVMWallet) {
+    constructor(private wallet: EdwinEVMPublicKeyWallet) {
         super();
     }
 

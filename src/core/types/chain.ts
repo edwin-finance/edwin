@@ -13,7 +13,7 @@ export type SolanaChain = {
     type: 'solana';
 };
 
-import { _SupportedEVMChainList } from '../wallets/evm_wallet/evm_wallet';
+import { _SupportedEVMChainList } from '../wallets/evm_wallet/evm_public_key_wallet';
 
 export type SupportedEVMChain = (typeof _SupportedEVMChainList)[number];
 

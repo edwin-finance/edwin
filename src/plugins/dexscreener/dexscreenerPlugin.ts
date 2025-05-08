@@ -26,6 +26,14 @@ export class DexScreenerPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const dexscreenerService = this.toolProviders.find(
             provider => provider instanceof DexScreenerService
         ) as DexScreenerService;
@@ -96,6 +104,11 @@ export class DexScreenerPlugin extends EdwinPlugin {
                 },
             },
         };
+    }
+
+    getPrivateTools(): Record<string, EdwinTool> {
+        // DexScreener has no private tools
+        return {};
     }
 
     supportsChain = (_chain: Chain) => true; // DexScreener API is chain-agnostic

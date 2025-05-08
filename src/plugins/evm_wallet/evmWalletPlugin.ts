@@ -1,7 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { EVMWalletService } from './evmWalletService';
-import { EdwinEVMWallet } from '../../core/wallets';
+import { EdwinEVMPublicKeyWallet } from '../../core/wallets';
 import {
     EVMBalanceParameters,
     EVMBalanceParametersSchema,
@@ -10,11 +10,19 @@ import {
 } from './parameters';
 
 export class EVMWalletPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinEVMWallet) {
+    constructor(wallet: EdwinEVMPublicKeyWallet) {
         super('evm_wallet', [new EVMWalletService(wallet)]);
     }
 
     getTools(): Record<string, EdwinTool> {
+        // Combine public and private tools
+        return {
+            ...this.getPublicTools(),
+            ...this.getPrivateTools(),
+        };
+    }
+
+    getPublicTools(): Record<string, EdwinTool> {
         const evmWalletService = this.toolProviders.find(
             provider => provider instanceof EVMWalletService
         ) as EVMWalletService;
@@ -39,8 +47,13 @@ export class EVMWalletPlugin extends EdwinPlugin {
         };
     }
 
+    getPrivateTools(): Record<string, EdwinTool> {
+        // EVM Wallet has no private tools
+        return {};
+    }
+
     supportsChain = (chain: Chain) => chain.type !== 'solana';
 }
 
 // Factory function to create a new instance of the plugin
-export const evmWallet = (wallet: EdwinEVMWallet) => new EVMWalletPlugin(wallet);
+export const evmWallet = (wallet: EdwinEVMPublicKeyWallet) => new EVMWalletPlugin(wallet);
