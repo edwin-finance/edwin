@@ -1,7 +1,7 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
 import edwinLogger from '../../utils/logger';
-import { SolanaBalanceParameters, SolanaWalletBalancesParameters } from './parameters';
+import { SolanaWalletTokenBalanceParameters, SolanaWalletBalancesParameters } from './parameters';
 import { Helius } from 'helius-sdk';
 
 interface TokenInfo {
@@ -24,7 +24,7 @@ export class SolanaWalletService extends EdwinService {
     /**
      * Get the balance of any Solana wallet
      */
-    async getWalletBalance(params: SolanaBalanceParameters): Promise<number> {
+    async getSolanaWalletTokenBalance(params: SolanaWalletTokenBalanceParameters): Promise<number> {
         edwinLogger.info(`Getting balance for Solana wallet: ${params.walletAddress}`);
 
         try {
@@ -38,7 +38,7 @@ export class SolanaWalletService extends EdwinService {
     /**
      * Get the balance of the current Solana wallet
      */
-    async getCurrentWalletBalance(mintAddress?: string): Promise<number> {
+    async getCurrentSolanaWalletTokenBalance(mintAddress?: string): Promise<number> {
         edwinLogger.info('Getting balance for current Solana wallet');
 
         try {
@@ -53,18 +53,19 @@ export class SolanaWalletService extends EdwinService {
     /**
      * Get all token balances for a Solana wallet
      */
-    async getWalletBalances(params: SolanaWalletBalancesParameters): Promise<
+    async getSolanaWalletBalances(params: SolanaWalletBalancesParameters): Promise<
         Array<{
             mint: string;
-            name: string;
             symbol: string;
             balance: number;
-            decimals: number;
         }>
     > {
         edwinLogger.info(`Getting all token balances for Solana wallet: ${params.walletAddress}`);
 
         try {
+            // Get SOL balance first
+            const solBalance = await this.wallet.getBalanceOfWallet(params.walletAddress);
+
             // Use the Helius API to get all fungible tokens for the wallet
             const response = await this.helius.rpc.getAssetsByOwner({
                 ownerAddress: params.walletAddress,
@@ -75,23 +76,32 @@ export class SolanaWalletService extends EdwinService {
                 },
             });
 
+            // Start with SOL balance
+            const balances = [
+                {
+                    mint: 'So11111111111111111111111111111111111111112', // Native SOL mint address
+                    symbol: 'SOL',
+                    balance: solBalance,
+                },
+            ];
 
             // Filter for fungible tokens only and map to our desired format
-            return response.items
+            const tokenBalances = response.items
                 .filter(item => item.interface === 'FungibleToken' || item.interface === 'FungibleAsset')
                 .map(item => {
                     // Use type assertion to handle the token_info properties
                     const tokenInfo = (item.token_info as TokenInfo) || {};
                     return {
                         mint: item.id,
-                        name: tokenInfo.name || 'Unknown Token',
                         symbol: tokenInfo.symbol || 'UNKNOWN',
                         balance: tokenInfo.balance
                             ? Number(tokenInfo.balance) / Math.pow(10, tokenInfo.decimals || 0)
                             : tokenInfo.ui_amount || tokenInfo.ui_balance || 0,
-                        decimals: tokenInfo.decimals || 0,
                     };
                 });
+
+            // Combine SOL and token balances
+            return [...balances, ...tokenBalances];
         } catch (error) {
             edwinLogger.error('Failed to get Solana wallet token balances:', error);
             throw error;
@@ -101,20 +111,18 @@ export class SolanaWalletService extends EdwinService {
     /**
      * Get all token balances for the current Solana wallet
      */
-    async getCurrentWalletBalances(): Promise<
+    async getCurrentSolanaWalletBalances(): Promise<
         Array<{
             mint: string;
-            name: string;
             symbol: string;
             balance: number;
-            decimals: number;
         }>
     > {
         edwinLogger.info('Getting all token balances for current Solana wallet');
 
         try {
-            // Use getWalletBalances with current wallet address
-            return await this.getWalletBalances({ walletAddress: this.wallet.getAddress() });
+            // Use getSolanaWalletBalances with current wallet address
+            return await this.getSolanaWalletBalances({ walletAddress: this.wallet.getAddress() });
         } catch (error) {
             edwinLogger.error('Failed to get current Solana wallet token balances:', error);
             throw error;
