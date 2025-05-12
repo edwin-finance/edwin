@@ -30,7 +30,7 @@ describeIf('Solana Wallet Token Balances Tests', () => {
         it('should get all token balances for a wallet', async () => {
             console.log(`Getting token balances for wallet: ${TEST_WALLET_ADDRESS}`);
 
-            const result = await solanaWalletService.getWalletBalances({
+            const result = await solanaWalletService.getSolanaWalletBalances({
                 walletAddress: TEST_WALLET_ADDRESS,
             });
 
@@ -42,16 +42,14 @@ describeIf('Solana Wallet Token Balances Tests', () => {
                 console.log(`Found ${result.length} tokens in wallet`);
                 console.log('First few tokens:');
                 result.slice(0, 3).forEach(token => {
-                    console.log(`- ${token.symbol} (${token.name}): ${token.balance}`);
+                    console.log(`- ${token.symbol}: ${token.balance}`);
                 });
 
                 // Validate token structure
                 const firstToken = result[0];
                 expect(firstToken.mint).toBeDefined();
-                expect(firstToken.name).toBeDefined();
                 expect(firstToken.symbol).toBeDefined();
                 expect(typeof firstToken.balance).toBe('number');
-                expect(typeof firstToken.decimals).toBe('number');
             } else {
                 console.log('No tokens found in wallet');
             }
@@ -62,7 +60,7 @@ describeIf('Solana Wallet Token Balances Tests', () => {
         it('should get all token balances for the current wallet', async () => {
             console.log(`Getting token balances for current wallet: ${wallet.getAddress()}`);
 
-            const result = await solanaWalletService.getCurrentWalletBalances();
+            const result = await solanaWalletService.getCurrentSolanaWalletBalances();
 
             expect(result).toBeDefined();
             expect(Array.isArray(result)).toBe(true);
@@ -75,10 +73,8 @@ describeIf('Solana Wallet Token Balances Tests', () => {
                 // Validate token structure
                 const firstToken = result[0];
                 expect(firstToken.mint).toBeDefined();
-                expect(firstToken.name).toBeDefined();
                 expect(firstToken.symbol).toBeDefined();
                 expect(typeof firstToken.balance).toBe('number');
-                expect(typeof firstToken.decimals).toBe('number');
             } else {
                 console.log('No tokens found in current wallet');
             }
@@ -90,7 +86,7 @@ describeIf('Solana Wallet Token Balances Tests', () => {
             console.log('Testing with invalid wallet address');
 
             try {
-                await solanaWalletService.getWalletBalances({
+                await solanaWalletService.getSolanaWalletBalances({
                     walletAddress: 'invalid-address',
                 });
                 // If it doesn't throw, the test fails

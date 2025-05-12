@@ -3,24 +3,15 @@ import { EdwinTool, Chain } from '../../core/types';
 import { SolanaWalletService } from './solanaWalletService';
 import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
 import {
-    SolanaBalanceParameters,
-    SolanaBalanceParametersSchema,
+    SolanaWalletTokenBalanceParameters,
+    SolanaWalletTokenBalanceParametersSchema,
+    CurrentSolanaWalletTokenBalanceParameters,
+    CurrentSolanaWalletTokenBalanceParametersSchema,
     SolanaWalletBalancesParameters,
     SolanaWalletBalancesParametersSchema,
-    CurrentWalletBalancesParameters,
-    CurrentWalletBalancesParametersSchema,
+    CurrentSolanaWalletBalancesParameters,
+    CurrentSolanaWalletBalancesParametersSchema,
 } from './parameters';
-import { z } from 'zod';
-import { createParameterSchema } from '../../core/utils/createParameterSchema';
-
-// Schema for current wallet balance
-const CurrentWalletBalanceParametersSchema = createParameterSchema(
-    z.object({
-        mintAddress: z.string().optional().describe('Optional SPL token mint address (or empty for SOL balance)'),
-    })
-);
-
-type CurrentWalletBalanceParameters = typeof CurrentWalletBalanceParametersSchema.type;
 
 export class SolanaWalletPlugin extends EdwinPlugin {
     constructor(wallet: EdwinSolanaPublicKeyWallet) {
@@ -41,36 +32,36 @@ export class SolanaWalletPlugin extends EdwinPlugin {
         ) as SolanaWalletService;
 
         return {
-            checkSolanaWalletBalance: {
-                name: 'check_solana_wallet_balance',
-                description: 'Check the balance of any Solana wallet',
-                schema: SolanaBalanceParametersSchema.schema,
-                execute: async (params: SolanaBalanceParameters) => {
-                    return await solanaWalletService.getWalletBalance(params);
+            getSolanaWalletTokenBalance: {
+                name: 'get_solana_wallet_token_balance',
+                description: 'Get the balance of a Solana wallet and a specific token mint (default is SOL)',
+                schema: SolanaWalletTokenBalanceParametersSchema.schema,
+                execute: async (params: SolanaWalletTokenBalanceParameters) => {
+                    return await solanaWalletService.getSolanaWalletTokenBalance(params);
                 },
             },
-            checkCurrentSolanaWalletBalance: {
-                name: 'check_current_solana_wallet_balance',
-                description: 'Check the balance of your current Solana wallet',
-                schema: CurrentWalletBalanceParametersSchema.schema,
-                execute: async (params: CurrentWalletBalanceParameters) => {
-                    return await solanaWalletService.getCurrentWalletBalance(params.mintAddress);
+            getCurrentSolanaWalletTokenBalance: {
+                name: 'get_current_solana_wallet_token_balance',
+                description: 'Get the balance of your current Solana wallet and a specific token mint (default is SOL)',
+                schema: CurrentSolanaWalletTokenBalanceParametersSchema.schema,
+                execute: async (params: CurrentSolanaWalletTokenBalanceParameters) => {
+                    return await solanaWalletService.getCurrentSolanaWalletTokenBalance(params.mintAddress);
                 },
             },
-            getWalletBalances: {
-                name: 'get_wallet_balances',
-                description: 'Get all token balances for any Solana wallet',
+            getSolanaWalletBalances: {
+                name: 'get_solana_wallet_balances',
+                description: 'Get all token balances of a Solana wallet',
                 schema: SolanaWalletBalancesParametersSchema.schema,
                 execute: async (params: SolanaWalletBalancesParameters) => {
-                    return await solanaWalletService.getWalletBalances(params);
+                    return await solanaWalletService.getSolanaWalletBalances(params);
                 },
             },
-            getCurrentWalletBalances: {
-                name: 'get_current_wallet_balances',
-                description: 'Get all token balances for your current Solana wallet',
-                schema: CurrentWalletBalancesParametersSchema.schema,
-                execute: async (_params: CurrentWalletBalancesParameters) => {
-                    return await solanaWalletService.getCurrentWalletBalances();
+            getCurrentSolanaWalletBalances: {
+                name: 'get_current_solana_wallet_balances',
+                description: 'Get all token balances of your current Solana wallet',
+                schema: CurrentSolanaWalletBalancesParametersSchema.schema,
+                execute: async (_params: CurrentSolanaWalletBalancesParameters) => {
+                    return await solanaWalletService.getCurrentSolanaWalletBalances();
                 },
             },
         };
