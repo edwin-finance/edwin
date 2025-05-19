@@ -7,7 +7,7 @@ import edwinLogger from '../src/utils/logger';
 import { calculateAmounts, extractBalanceChanges } from '../src/plugins/meteora/utils';
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
-import { EdwinSolanaWallet } from '../src/core/wallets';
+import { SolanaWalletFactory } from '../src/core/wallets/solana_wallet/factory';
 import { MeteoraProtocol } from '../src/plugins/meteora/meteoraProtocol';
 
 const AMOUNT_USDC_TO_ADD = 0.05;
@@ -17,7 +17,10 @@ describe('Meteora test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
-    const meteora = new MeteoraProtocol(new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY));
+    
+    // Create a wallet using the factory method instead of direct instantiation
+    const wallet = SolanaWalletFactory.fromPrivateKey(process.env.SOLANA_PRIVATE_KEY);
+    const meteora = new MeteoraProtocol(wallet);
 
     describe('Meteora Read-only tests', () => {
         it('test meteora getPools', async () => {
@@ -44,19 +47,25 @@ describe('Meteora test', () => {
             });
             const topPoolAddress = results[0].address;
 
-            const result = await meteora.addLiquidity({
+            // Add liquidity and get transaction hash
+            const txSignature = await meteora.addLiquidity({
                 poolAddress: topPoolAddress,
                 amount: 'auto',
                 amountB: AMOUNT_USDC_TO_ADD,
             });
-            // Verify liquidity was added correctly
-            expect(result.liquidityAdded).toBeDefined();
-            expect(result.liquidityAdded).toHaveLength(2);
-            expect(result.liquidityAdded[1]).toBeCloseTo(AMOUNT_USDC_TO_ADD, 1); // Verify USDC amount is approximately 2
-            expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
-            edwinLogger.info('🚀 ~ it ~ result:', result);
+            edwinLogger.info('🚀 ~ it ~ transaction signature:', txSignature);
 
-            const positionAddress = result.positionAddress;
+            // Get position details from transaction
+            const positionInfo = await meteora.getPositionInfoFromTransaction(txSignature);
+
+            // Verify liquidity was added correctly
+            expect(positionInfo.liquidityAdded).toBeDefined();
+            expect(positionInfo.liquidityAdded).toHaveLength(2);
+            expect(positionInfo.liquidityAdded[1]).toBeCloseTo(AMOUNT_USDC_TO_ADD, 1); // Verify USDC amount is approximately correct
+            expect(positionInfo.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
+            edwinLogger.info('🚀 ~ it ~ position info:', positionInfo);
+
+            const positionAddress = positionInfo.positionAddress;
             // Get positions after adding liquidity
             const positions = await meteora.getPositionsFromPool({
                 poolAddress: topPoolAddress,
@@ -104,7 +113,9 @@ describe('Meteora utils', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
-    const wallet = new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY);
+    
+    // Create a wallet using the factory method instead of direct instantiation
+    const wallet = SolanaWalletFactory.fromPrivateKey(process.env.SOLANA_PRIVATE_KEY);
 
     describe('calculateAmounts', () => {
         // Mock DLMM instance

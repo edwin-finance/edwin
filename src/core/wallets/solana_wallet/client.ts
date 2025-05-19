@@ -78,19 +78,6 @@ export interface SolanaWalletClient {
     sendTransaction(connection: Connection, transaction: Transaction, signers?: Keypair[]): Promise<string>;
 
     /**
-     * Wait for transaction confirmation
-     * @param connection Solana connection to use
-     * @param signature Transaction signature to wait for
-     * @param timeout Optional timeout in milliseconds
-     * @returns Object containing confirmation status and possible error
-     */
-    waitForConfirmationGracefully(
-        connection: Connection,
-        signature: string,
-        timeout?: number
-    ): Promise<{ err: unknown; confirmationStatus?: 'confirmed' | 'finalized' | 'processed' }>;
-
-    /**
      * Get balance changes for a token from a transaction
      * @param signature Transaction signature
      * @param mint Token mint address

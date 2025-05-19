@@ -4,6 +4,7 @@ import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 import { createJupiterApiClient } from '@jup-ag/api';
+import edwinLogger from '../../utils/logger';
 
 interface SwapInfo {
     ammKey: string;
@@ -102,7 +103,7 @@ export class JupiterService {
         this.jupiterClient = createJupiterApiClient();
     }
 
-    async swap(params: SwapParameters): Promise<number> {
+    async swap(params: SwapParameters): Promise<string> {
         const { inputMint, outputMint, amount } = params;
         if (!inputMint || !outputMint || !amount) {
             throw new Error('Invalid swap params. Need: inputMint, outputMint, amount');
@@ -144,11 +145,8 @@ export class JupiterService {
             skipPreflight: true,
         });
 
-        // 7. Wait for confirmation
-        await this.wallet.waitForConfirmationGracefully(connection, signature);
-
-        // 8. Retrieve the actual output amount based on the output mint
-        return await this.wallet.getTransactionTokenBalanceChange(signature, outputMint);
+        // Return the transaction signature
+        return signature;
     }
 
     async getQuote(params: JupiterQuoteParameters): Promise<JupiterQuoteResponse> {
@@ -198,6 +196,32 @@ export class JupiterService {
         }
 
         return response.json();
+    }
+
+    /**
+     * Get swap details from transaction hash
+     * @param txHash The transaction hash/signature
+     * @param outputMint The output token mint address
+     * @returns Amount of output tokens received
+     */
+    async getSwapDetailsFromTransaction(txHash: string, outputMint: string): Promise<number> {
+        try {
+            const connection = this.wallet.getConnection();
+
+            // Wait for confirmation if needed
+            try {
+                await connection.confirmTransaction(txHash);
+            } catch (error) {
+                edwinLogger.debug(`Transaction already confirmed or error waiting: ${error}`);
+                // Continue even if we can't confirm again (might already be confirmed)
+            }
+
+            // Get the token balance change
+            return await this.wallet.getTransactionTokenBalanceChange(txHash, outputMint);
+        } catch (error) {
+            edwinLogger.error('Error getting swap details from transaction:', error);
+            throw new Error(`Failed to get swap details: ${error}`);
+        }
     }
 
     /**

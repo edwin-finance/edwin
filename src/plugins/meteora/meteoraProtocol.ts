@@ -150,13 +150,14 @@ export class MeteoraProtocol {
 
     /**
      * Helper method for adding liquidity to a Meteora pool
+     * @returns Transaction signature
      */
     private async innerAddLiquidity(
         poolAddress: string,
         amount: string,
         amountB: string,
         rangeInterval: number = 10
-    ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
+    ): Promise<string> {
         const connection = this.wallet.getConnection();
         const dlmmPool = await withRetry(
             async () => DLMM.create(connection, new PublicKey(poolAddress)),
@@ -259,33 +260,23 @@ export class MeteoraProtocol {
 
         // Send the signed transaction
         const signature = await this.wallet.sendTransaction(connection, tx, signers);
-        const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
+
+        // Wait for transaction confirmation
+        const { value: confirmation } = await connection.confirmTransaction(signature, 'confirmed');
 
         if (confirmation.err) {
             throw new Error(`Transaction failed: Signature: ${signature}, Error: ${confirmation.err.toString()}`);
         }
         edwinLogger.info(`Transaction successful: ${signature}`);
 
-        const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, positionPubKey.toString());
-        if (verifiedTokenAmounts.length != 2) {
-            throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
-        }
-        if (
-            (Number(amount) > 0 && verifiedTokenAmounts[0].uiAmount == 0) ||
-            (Number(amountB) > 0 && verifiedTokenAmounts[1].uiAmount == 0)
-        ) {
-            edwinLogger.info('Encountered a statistical bug where not all of the liquidity was added to the pool');
-            throw new MeteoraStatisticalBugError('Meteora statistical bug', positionPubKey.toString());
-        }
-        return {
-            positionAddress: positionPubKey.toString(),
-            liquidityAdded: [verifiedTokenAmounts[0].uiAmount, verifiedTokenAmounts[1].uiAmount],
-        };
+        // Store the position address in our logs for reference
+        edwinLogger.info(`Position public key: ${positionPubKey.toString()}`);
+
+        // Just return the transaction signature
+        return signature;
     }
 
-    async addLiquidity(
-        params: AddLiquidityParameters
-    ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
+    async addLiquidity(params: AddLiquidityParameters): Promise<string> {
         const { amount, amountB, poolAddress, rangeInterval } = params;
         edwinLogger.info(
             `Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`
@@ -334,6 +325,51 @@ export class MeteoraProtocol {
         }
     }
 
+    /**
+     * Get position information from a transaction hash
+     * @param txHash The transaction hash/signature from the addLiquidity operation
+     * @returns Position address and liquidity added
+     */
+    async getPositionInfoFromTransaction(
+        txHash: string
+    ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
+        try {
+            const connection = this.wallet.getConnection();
+
+            // Fetch transaction information
+            const txInfo = await connection.getParsedTransaction(txHash, { maxSupportedTransactionVersion: 0 });
+            if (!txInfo || !txInfo.meta) {
+                throw new Error('Transaction information not found');
+            }
+
+            // Extract the position account (will be a signer other than the wallet)
+            const positionAccount = txInfo.transaction.message.accountKeys.find(
+                (account: { signer: boolean; pubkey: PublicKey }) =>
+                    account.signer && !account.pubkey.equals(this.wallet.publicKey)
+            );
+
+            if (!positionAccount) {
+                throw new Error('Position account not found in transaction');
+            }
+
+            const positionPubKey = positionAccount.pubkey.toString();
+
+            // Get token amounts
+            const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, txHash);
+            if (verifiedTokenAmounts.length !== 2) {
+                throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
+            }
+
+            return {
+                positionAddress: positionPubKey,
+                liquidityAdded: [verifiedTokenAmounts[0].uiAmount, verifiedTokenAmounts[1].uiAmount],
+            };
+        } catch (error) {
+            edwinLogger.error('Error getting position info from transaction:', error);
+            throw new Error(`Failed to get position info: ${error}`);
+        }
+    }
+
     async claimFees(params: PoolParameters): Promise<string> {
         const { poolAddress } = params;
 
@@ -368,7 +404,7 @@ export class MeteoraProtocol {
                 maxRetries: 3,
             });
 
-            await this.wallet.waitForConfirmationGracefully(connection, signature);
+            await connection.confirmTransaction(signature, 'confirmed');
 
             // Get updated position data after claiming
             const { userPositions: updatedPositions } = await dlmmPool.getPositionsByUserAndLbPair(
@@ -455,7 +491,7 @@ Fees claimed:
                     maxRetries: 3,
                 });
 
-                await this.wallet.waitForConfirmationGracefully(connection, signature);
+                await connection.confirmTransaction(signature, 'confirmed');
                 edwinLogger.info(`Transaction successful: ${signature}`);
 
                 const balanceChanges = await extractBalanceChanges(connection, signature, tokenXAddress, tokenYAddress);
