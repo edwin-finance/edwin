@@ -1,5 +1,5 @@
 import { EdwinEVMWallet, EdwinEVMPublicKeyWallet } from '../core/wallets';
-import { EdwinSolanaWallet, EdwinSolanaPublicKeyWallet } from '../core/wallets/solana_wallet';
+import { SolanaWalletClient, canSign } from '../core/wallets/solana_wallet';
 import type { EdwinTool } from '../core/types';
 import { EdwinPlugin } from '../core/classes/edwinPlugin';
 import {
@@ -32,15 +32,17 @@ import { EVMWalletPlugin } from '../plugins/evm_wallet/evmWalletPlugin';
 import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin';
 
 export interface EdwinConfig {
+    // EVM wallet options
     evmPrivateKey?: `0x${string}`;
     evmPublicKey?: `0x${string}`;
-    solanaPrivateKey?: string;
-    solanaPublicKey?: string;
+
+    // Solana wallet client
+    solanaClient?: SolanaWalletClient;
 }
 
 interface EdwinWallets {
     evm?: EdwinEVMPublicKeyWallet;
-    solana?: EdwinSolanaPublicKeyWallet;
+    solana?: SolanaWalletClient;
 }
 
 interface EdwinPlugins {
@@ -71,11 +73,9 @@ export class Edwin {
             this.wallets.evm = new EdwinEVMPublicKeyWallet(config.evmPublicKey);
         }
 
-        // Initialize Solana wallet based on whether private or public key is provided
-        if (config.solanaPrivateKey) {
-            this.wallets.solana = new EdwinSolanaWallet(config.solanaPrivateKey);
-        } else if (config.solanaPublicKey) {
-            this.wallets.solana = new EdwinSolanaPublicKeyWallet(config.solanaPublicKey);
+        // Use the provided Solana wallet client directly
+        if (config.solanaClient) {
+            this.wallets.solana = config.solanaClient;
         }
 
         // Initialize EVM plugins
@@ -95,6 +95,7 @@ export class Edwin {
             }
         }
 
+        // Initialize Solana plugins if we have a Solana wallet
         if (this.wallets.solana) {
             this.plugins.lulo = lulo(this.wallets.solana);
             this.plugins.meteora = meteora(this.wallets.solana);
@@ -102,6 +103,7 @@ export class Edwin {
             this.plugins.solanaWallet = solanaWallet(this.wallets.solana);
         }
 
+        // Initialize non-wallet-dependent plugins
         if (process.env.COOKIE_API_KEY) {
             this.plugins.cookie = cookie(process.env.COOKIE_API_KEY);
         }
@@ -148,7 +150,8 @@ export class Edwin {
             plugin instanceof LuloPlugin ||
             plugin instanceof SolanaWalletPlugin
         ) {
-            return this.wallets.solana instanceof EdwinSolanaWallet;
+            // Check if we have a Solana wallet and it supports signing
+            return !!this.wallets.solana && canSign(this.wallets.solana);
         }
 
         // Check if the plugin is an EVM plugin

@@ -3,7 +3,7 @@ config();
 
 import { describe, expect, it } from 'vitest';
 import { JupiterService } from '../src/plugins/jupiter/jupiterService';
-import { EdwinSolanaWallet } from '../src/core/wallets';
+import { SolanaWalletFactory } from '../src/core/wallets/solana_wallet/factory';
 
 const AMOUNT_SOL_TO_SWAP = 0.0001;
 
@@ -11,7 +11,9 @@ describe('Jupiter Swap Test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
-    const wallet = new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY);
+
+    // Create a wallet using the factory method instead of direct instantiation
+    const wallet = SolanaWalletFactory.fromPrivateKey(process.env.SOLANA_PRIVATE_KEY);
     const jupiter = new JupiterService(wallet);
 
     // USDC mint address on Solana
@@ -26,12 +28,16 @@ describe('Jupiter Swap Test', () => {
         console.log('SOL:', initialSolBalance);
         console.log('USDC:', initialUsdcBalance);
 
-        // First swap: USDC to SOL
-        const swapResult1 = await jupiter.swap({
+        // First swap: SOL to USDC
+        const txSignature1 = await jupiter.swap({
             inputMint: SOL_MINT,
             outputMint: USDC_MINT,
-            amount: AMOUNT_SOL_TO_SWAP, // 1 USDC
+            amount: AMOUNT_SOL_TO_SWAP,
         });
+        console.log(`Swap transaction signature: ${txSignature1}`);
+
+        // Get the swap details from the transaction
+        const swapResult1 = await jupiter.getSwapDetailsFromTransaction(txSignature1, USDC_MINT);
         console.log(`Swap ${AMOUNT_SOL_TO_SWAP} SOL to USDC output amount: ${swapResult1}`);
 
         // Check balances after first swap
@@ -45,11 +51,15 @@ describe('Jupiter Swap Test', () => {
 
         // Second swap: USDC back to SOL
         const usdcSwapBack = swapResult1;
-        const swapResult2 = await jupiter.swap({
+        const txSignature2 = await jupiter.swap({
             inputMint: USDC_MINT,
             outputMint: SOL_MINT,
-            amount: usdcSwapBack.toString(), // Swap a smaller amount of SOL back
+            amount: usdcSwapBack.toString(),
         });
+        console.log(`Swap transaction signature: ${txSignature2}`);
+
+        // Get the swap details from the transaction
+        const swapResult2 = await jupiter.getSwapDetailsFromTransaction(txSignature2, SOL_MINT);
         console.log(`Swap ${usdcSwapBack} USDC to SOL output amount: ${swapResult2}`);
 
         // Final balances

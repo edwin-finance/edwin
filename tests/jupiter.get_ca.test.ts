@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { JupiterService } from '../src/plugins/jupiter/jupiterService';
-import { EdwinSolanaWallet } from '../src/core/wallets';
-
+import { PublicKeyClient } from '../src/core/wallets/solana_wallet/clients/publickey';
 describe('Jupiter Service - Get Token Address Integration Test', () => {
     let jupiterService: JupiterService;
 
@@ -12,10 +11,9 @@ describe('Jupiter Service - Get Token Address Integration Test', () => {
         getConnection: () => ({}),
         getPublicKey: () => ({}),
         signTransaction: () => {},
-        waitForConfirmationGracefully: async () => {},
         getTransactionTokenBalanceChange: async () => 0,
         getBalance: async () => 0,
-    } as unknown as EdwinSolanaWallet;
+    } as unknown as PublicKeyClient;
 
     beforeEach(() => {
         jupiterService = new JupiterService(dummyWallet);

@@ -1,11 +1,11 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { LuloProtocol } from './luloProtocol';
-import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SupplyParametersSchema, WithdrawParametersSchema, SupplyParameters, WithdrawParameters } from './parameters';
 
 export class LuloPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         super('lulo', [new LuloProtocol(wallet)]);
     }
 
@@ -48,4 +48,4 @@ export class LuloPlugin extends EdwinPlugin {
     supportsChain = (chain: Chain) => chain.type === 'solana';
 }
 
-export const lulo = (wallet: EdwinSolanaPublicKeyWallet) => new LuloPlugin(wallet);
+export const lulo = (wallet: SolanaWalletClient) => new LuloPlugin(wallet);

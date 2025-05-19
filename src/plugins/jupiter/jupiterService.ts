@@ -1,9 +1,10 @@
 import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 import { createJupiterApiClient } from '@jup-ag/api';
+import edwinLogger from '../../utils/logger';
 
 interface SwapInfo {
     ammKey: string;
@@ -94,23 +95,18 @@ export class JupiterService {
     JUPITER_API_URL = 'https://api.jup.ag/swap/v1/';
     TOKEN_LIST_URL = 'https://tokens.jup.ag/tokens?tags=verified';
 
-    private wallet: EdwinSolanaPublicKeyWallet;
+    private wallet: SolanaWalletClient;
     private jupiterClient: ReturnType<typeof createJupiterApiClient>;
 
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         this.wallet = wallet;
         this.jupiterClient = createJupiterApiClient();
     }
 
-    async swap(params: SwapParameters): Promise<number> {
+    async swap(params: SwapParameters): Promise<string> {
         const { inputMint, outputMint, amount } = params;
         if (!inputMint || !outputMint || !amount) {
             throw new Error('Invalid swap params. Need: inputMint, outputMint, amount');
-        }
-
-        // Check if wallet has signing capability
-        if (!(this.wallet instanceof EdwinSolanaWallet)) {
-            throw new Error('Swap operation requires a wallet with signing capabilities');
         }
 
         const balance = await this.wallet.getBalance(inputMint);
@@ -133,13 +129,13 @@ export class JupiterService {
         const quote = await this.getQuote(quoteParams);
 
         // 2. Get serialized transaction
-        const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getPublicKey().toString());
+        const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getAddress());
 
         // 3. Deserialize the transaction
         const transaction = VersionedTransaction.deserialize(Buffer.from(swapResponse.swapTransaction, 'base64'));
 
         // 4. Sign the transaction
-        this.wallet.signTransaction(transaction);
+        await this.wallet.signTransaction(transaction);
 
         // 5. Serialize and send the transaction
         const rawTransaction = transaction.serialize();
@@ -149,11 +145,8 @@ export class JupiterService {
             skipPreflight: true,
         });
 
-        // 7. Wait for confirmation
-        await this.wallet.waitForConfirmationGracefully(connection, signature);
-
-        // 8. Retrieve the actual output amount based on the output mint
-        return await this.wallet.getTransactionTokenBalanceChange(signature, outputMint);
+        // Return the transaction signature
+        return signature;
     }
 
     async getQuote(params: JupiterQuoteParameters): Promise<JupiterQuoteResponse> {
@@ -203,6 +196,32 @@ export class JupiterService {
         }
 
         return response.json();
+    }
+
+    /**
+     * Get swap details from transaction hash
+     * @param txHash The transaction hash/signature
+     * @param outputMint The output token mint address
+     * @returns Amount of output tokens received
+     */
+    async getSwapDetailsFromTransaction(txHash: string, outputMint: string): Promise<number> {
+        try {
+            const connection = this.wallet.getConnection();
+
+            // Wait for confirmation if needed
+            try {
+                await connection.confirmTransaction(txHash);
+            } catch (error) {
+                edwinLogger.debug(`Transaction already confirmed or error waiting: ${error}`);
+                // Continue even if we can't confirm again (might already be confirmed)
+            }
+
+            // Get the token balance change
+            return await this.wallet.getTransactionTokenBalanceChange(txHash, outputMint);
+        } catch (error) {
+            edwinLogger.error('Error getting swap details from transaction:', error);
+            throw new Error(`Failed to get swap details: ${error}`);
+        }
     }
 
     /**

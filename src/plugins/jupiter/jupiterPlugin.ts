@@ -1,11 +1,11 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { JupiterService } from './jupiterService';
-import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SwapParametersSchema, SwapParameters, GetTokenAddressSchema, GetTokenAddressParameters } from './parameters';
 
 export class JupiterPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         super('jupiter', [new JupiterService(wallet)]);
     }
 
@@ -70,4 +70,4 @@ export class JupiterPlugin extends EdwinPlugin {
     supportsChain = (chain: Chain) => chain.type === 'solana';
 }
 
-export const jupiter = (wallet: EdwinSolanaPublicKeyWallet) => new JupiterPlugin(wallet);
+export const jupiter = (wallet: SolanaWalletClient) => new JupiterPlugin(wallet);
