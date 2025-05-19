@@ -1,4 +1,13 @@
-import { Connection, Commitment, PublicKey, LAMPORTS_PER_SOL, Finality } from '@solana/web3.js';
+import {
+    Connection,
+    Commitment,
+    PublicKey,
+    LAMPORTS_PER_SOL,
+    Finality,
+    Transaction,
+    VersionedTransaction,
+    Keypair,
+} from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
 import { withRetry } from '../../../utils';
 import edwinLogger from '../../../utils/logger';
@@ -162,18 +171,10 @@ export abstract class BaseSolanaWalletClient implements SolanaWalletClient {
     }
 
     // Abstract methods that must be implemented by derived classes
-    abstract signTransaction<
-        T extends import('@solana/web3.js').Transaction | import('@solana/web3.js').VersionedTransaction,
-    >(transaction: T): Promise<T>;
-    abstract signAllTransactions<
-        T extends import('@solana/web3.js').Transaction | import('@solana/web3.js').VersionedTransaction,
-    >(transactions: T[]): Promise<T[]>;
+    abstract signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T>;
+    abstract signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]>;
     abstract signMessage(message: Uint8Array): Promise<Uint8Array>;
-    abstract sendTransaction(
-        connection: Connection,
-        transaction: import('@solana/web3.js').Transaction,
-        signers?: import('@solana/web3.js').Keypair[]
-    ): Promise<string>;
+    abstract sendTransaction(connection: Connection, transaction: Transaction, signers?: Keypair[]): Promise<string>;
     abstract waitForConfirmationGracefully(
         connection: Connection,
         signature: string,

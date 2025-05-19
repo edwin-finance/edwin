@@ -120,9 +120,5 @@ class CustomWalletClient extends BaseSolanaWalletClient {
     async sendTransaction(connection, transaction) {
         return this.wallet.sendTransaction(transaction);
     }
-
-    async waitForConfirmationGracefully(connection, signature, timeout) {
-        // Implementation
-    }
 }
 ```

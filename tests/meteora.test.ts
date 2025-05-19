@@ -17,7 +17,7 @@ describe('Meteora test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
-    
+
     // Create a wallet using the factory method instead of direct instantiation
     const wallet = SolanaWalletFactory.fromPrivateKey(process.env.SOLANA_PRIVATE_KEY);
     const meteora = new MeteoraProtocol(wallet);
@@ -113,7 +113,7 @@ describe('Meteora utils', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {
         throw new Error('SOLANA_PRIVATE_KEY is not set');
     }
-    
+
     // Create a wallet using the factory method instead of direct instantiation
     const wallet = SolanaWalletFactory.fromPrivateKey(process.env.SOLANA_PRIVATE_KEY);
 
