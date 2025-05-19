@@ -2,7 +2,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SupportedChain } from '../../core/types';
 import { SupplyParameters, WithdrawParameters } from './parameters';
 
-import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient, canSign } from '../../core/wallets/solana_wallet';
 import edwinLogger from '../../utils/logger';
 
 interface LuloDepositResponse {
@@ -19,9 +19,9 @@ interface LuloWithdrawResponse {
 
 export class LuloProtocol {
     public supportedChains: SupportedChain[] = ['solana'];
-    private wallet: EdwinSolanaPublicKeyWallet;
+    private wallet: SolanaWalletClient;
 
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         this.wallet = wallet;
     }
 
@@ -32,7 +32,7 @@ export class LuloProtocol {
     async supply(params: SupplyParameters): Promise<string> {
         try {
             // Check if wallet has signing capability
-            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+            if (!canSign(this.wallet)) {
                 throw new Error('Supply operation requires a wallet with signing capabilities');
             }
 
@@ -48,11 +48,11 @@ export class LuloProtocol {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-wallet-pubkey': this.wallet.getPublicKey().toBase58(),
+                    'x-wallet-pubkey': this.wallet.publicKey.toBase58(),
                     'x-api-key': process.env.FLEXLEND_API_KEY!,
                 },
                 body: JSON.stringify({
-                    owner: this.wallet.getPublicKey().toBase58(),
+                    owner: this.wallet.publicKey.toBase58(),
                     mintAddress: params.asset, // This should be the mint address of the asset
                     depositAmount: params.amount.toString(),
                 }),
@@ -103,7 +103,7 @@ export class LuloProtocol {
     async withdraw(params: WithdrawParameters): Promise<string> {
         try {
             // Check if wallet has signing capability
-            if (!(this.wallet instanceof EdwinSolanaWallet)) {
+            if (!canSign(this.wallet)) {
                 throw new Error('Withdraw operation requires a wallet with signing capabilities');
             }
 
@@ -115,7 +115,7 @@ export class LuloProtocol {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        account: this.wallet.getPublicKey().toBase58(),
+                        account: this.wallet.publicKey.toBase58(),
                     }),
                 }
             );

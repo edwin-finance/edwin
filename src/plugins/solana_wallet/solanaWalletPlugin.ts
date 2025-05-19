@@ -1,7 +1,7 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { SolanaWalletService } from './solanaWalletService';
-import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import {
     SolanaWalletTokenBalanceParameters,
     SolanaWalletTokenBalanceParametersSchema,
@@ -14,7 +14,7 @@ import {
 } from './parameters';
 
 export class SolanaWalletPlugin extends EdwinPlugin {
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         super('solana_wallet', [new SolanaWalletService(wallet)]);
     }
 
@@ -76,4 +76,4 @@ export class SolanaWalletPlugin extends EdwinPlugin {
 }
 
 // Factory function to create a new instance of the plugin
-export const solanaWallet = (wallet: EdwinSolanaPublicKeyWallet) => new SolanaWalletPlugin(wallet);
+export const solanaWallet = (wallet: SolanaWalletClient) => new SolanaWalletPlugin(wallet);

@@ -1,6 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { EdwinSolanaPublicKeyWallet, EdwinSolanaWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
 import { createJupiterApiClient } from '@jup-ag/api';
@@ -94,10 +94,10 @@ export class JupiterService {
     JUPITER_API_URL = 'https://api.jup.ag/swap/v1/';
     TOKEN_LIST_URL = 'https://tokens.jup.ag/tokens?tags=verified';
 
-    private wallet: EdwinSolanaPublicKeyWallet;
+    private wallet: SolanaWalletClient;
     private jupiterClient: ReturnType<typeof createJupiterApiClient>;
 
-    constructor(wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(wallet: SolanaWalletClient) {
         this.wallet = wallet;
         this.jupiterClient = createJupiterApiClient();
     }
@@ -106,11 +106,6 @@ export class JupiterService {
         const { inputMint, outputMint, amount } = params;
         if (!inputMint || !outputMint || !amount) {
             throw new Error('Invalid swap params. Need: inputMint, outputMint, amount');
-        }
-
-        // Check if wallet has signing capability
-        if (!(this.wallet instanceof EdwinSolanaWallet)) {
-            throw new Error('Swap operation requires a wallet with signing capabilities');
         }
 
         const balance = await this.wallet.getBalance(inputMint);
@@ -133,13 +128,13 @@ export class JupiterService {
         const quote = await this.getQuote(quoteParams);
 
         // 2. Get serialized transaction
-        const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getPublicKey().toString());
+        const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getAddress());
 
         // 3. Deserialize the transaction
         const transaction = VersionedTransaction.deserialize(Buffer.from(swapResponse.swapTransaction, 'base64'));
 
         // 4. Sign the transaction
-        this.wallet.signTransaction(transaction);
+        await this.wallet.signTransaction(transaction);
 
         // 5. Serialize and send the transaction
         const rawTransaction = transaction.serialize();

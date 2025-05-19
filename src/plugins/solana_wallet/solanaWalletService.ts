@@ -1,5 +1,5 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
-import { EdwinSolanaPublicKeyWallet } from '../../core/wallets/solana_wallet';
+import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import edwinLogger from '../../utils/logger';
 import { SolanaWalletTokenBalanceParameters, SolanaWalletBalancesParameters } from './parameters';
 import { Helius } from 'helius-sdk';
@@ -16,7 +16,7 @@ interface TokenInfo {
 export class SolanaWalletService extends EdwinService {
     private helius: Helius;
 
-    constructor(private wallet: EdwinSolanaPublicKeyWallet) {
+    constructor(private wallet: SolanaWalletClient) {
         super();
         this.helius = new Helius(process.env.HELIUS_KEY!);
     }

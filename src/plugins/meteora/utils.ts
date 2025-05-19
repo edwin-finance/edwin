@@ -9,7 +9,7 @@ import {
 import { BN } from '@coral-xyz/anchor';
 import DLMM, { TokenReserve } from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
-import { EdwinSolanaWallet } from '../../core/wallets';
+import { SolanaWalletClient } from '../../core/wallets';
 
 interface TokenAmount {
     amount: string;
@@ -212,11 +212,11 @@ interface SimulationResult {
 export async function simulateAddLiquidityTransaction(
     connection: Connection,
     tx: Transaction,
-    wallet: EdwinSolanaWallet
+    wallet: SolanaWalletClient
 ): Promise<TokenAmount[]> {
     const latestBlockhash = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
-        payerKey: wallet.getPublicKey(),
+        payerKey: wallet.publicKey,
         recentBlockhash: latestBlockhash.blockhash,
         instructions: tx.instructions,
     }).compileToV0Message();
