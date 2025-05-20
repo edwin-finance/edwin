@@ -12,3 +12,4 @@ export * from './mendi';
 export * from './dexscreener';
 export * from './evm_wallet';
 export * from './solana_wallet';
+export * from './silo';

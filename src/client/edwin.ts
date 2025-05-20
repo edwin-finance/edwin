@@ -16,6 +16,7 @@ import {
     dexscreener,
     evmWallet,
     solanaWallet,
+    silo,
 } from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
@@ -30,6 +31,7 @@ import { MendiPlugin } from '../plugins/mendi/mendiPlugin';
 import { DexScreenerPlugin } from '../plugins/dexscreener/dexscreenerPlugin';
 import { EVMWalletPlugin } from '../plugins/evm_wallet/evmWalletPlugin';
 import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin';
+import { SiloPlugin } from '../plugins/silo/siloPlugin';
 
 export interface EdwinConfig {
     // EVM wallet options
@@ -59,6 +61,7 @@ interface EdwinPlugins {
     dexscreener?: DexScreenerPlugin;
     evmWallet?: EVMWalletPlugin;
     solanaWallet?: SolanaWalletPlugin;
+    silo?: SiloPlugin;
 }
 
 export class Edwin {
@@ -89,6 +92,7 @@ export class Edwin {
                 this.plugins.lido = lido(this.wallets.evm);
                 this.plugins.uniswap = uniswap(this.wallets.evm);
                 this.plugins.mendi = mendi(this.wallets.evm);
+                this.plugins.silo = silo(this.wallets.evm);
                 if (process.env.NFT_CONTRACT_ADDRESS && process.env.SPG_NFT_CONTRACT_ADDRESS) {
                     this.plugins.storyprotocol = storyprotocol(this.wallets.evm);
                 }
@@ -161,7 +165,8 @@ export class Edwin {
             plugin instanceof UniswapPlugin ||
             plugin instanceof MendiPlugin ||
             plugin instanceof StoryProtocolPlugin ||
-            plugin instanceof EVMWalletPlugin
+            plugin instanceof EVMWalletPlugin ||
+            plugin instanceof SiloPlugin
         ) {
             return this.wallets.evm instanceof EdwinEVMWallet;
         }
