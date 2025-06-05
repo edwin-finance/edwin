@@ -1,7 +1,13 @@
 // Export wallet types
 export { EdwinWallet } from './core/wallets/wallet';
 export { EdwinEVMWallet } from './core/wallets/evm_wallet';
-export { EdwinSolanaWallet } from './core/wallets/solana_wallet';
+export {
+    EdwinSolanaWallet,
+    EdwinSolanaPublicKeyWallet,
+    BaseSolanaWalletClient,
+    SolanaWalletFactory,
+} from './core/wallets/solana_wallet';
+export type { SolanaWalletClient } from './core/wallets/solana_wallet';
 
 // Export core types
 export type * from './core/types';
