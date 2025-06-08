@@ -102,64 +102,95 @@ export class KeypairClient extends BaseSolanaWalletClient {
 
     /**
      * Send a transaction using Jito's low latency transaction send API.
+     * Supports both legacy Transaction and VersionedTransaction.
      */
-    async sendTransaction(connection: Connection, transaction: Transaction, signers: Keypair[] = []): Promise<string> {
-        // For versioned transactions, handle differently
-        if ('version' in transaction) {
-            // This is a VersionedTransaction
-            const versionedTx = transaction as unknown as VersionedTransaction;
+    async sendTransaction<T extends Transaction | VersionedTransaction>(
+        connection: Connection,
+        transaction: T,
+        signers: Keypair[] = []
+    ): Promise<string> {
+        const isVersioned = 'version' in transaction;
 
-            // Make sure the transaction is signed
-            if (signers.length > 0) {
-                versionedTx.sign(signers);
-            } else {
-                await this.signTransaction(versionedTx as VersionedTransaction);
-            }
-
-            const serializedTx = versionedTx.serialize();
-            return await connection.sendRawTransaction(serializedTx);
+        // Handle transaction-specific preparation
+        if (isVersioned) {
+            await this.prepareVersionedTransaction(transaction as VersionedTransaction, signers);
+        } else {
+            await this.prepareLegacyTransaction(connection, transaction as Transaction, signers);
         }
 
-        // For legacy transactions, use Jito
-        // Initialize Jito client
+        // Send via Jito
+        return this.sendViaJito(transaction);
+    }
+
+    /**
+     * Prepare a versioned transaction for sending
+     */
+    private async prepareVersionedTransaction(transaction: VersionedTransaction, signers: Keypair[]): Promise<void> {
+        // Sign with all required signers
+        const allSigners = signers.length > 0 ? [...signers, this.keypair] : [this.keypair];
+
+        // Only sign if not already signed
+        if (!transaction.signatures[0]) {
+            transaction.sign(allSigners);
+        } else if (signers.length > 0) {
+            // Add additional signatures if needed
+            transaction.sign(signers);
+        }
+    }
+
+    /**
+     * Prepare a legacy transaction for sending
+     */
+    private async prepareLegacyTransaction(
+        connection: Connection,
+        transaction: Transaction,
+        signers: Keypair[]
+    ): Promise<void> {
+        // Initialize Jito client for tip account
         const jitoClient = new JitoJsonRpcClient(
             process.env.JITO_RPC_URL || 'https://mainnet.block-engine.jito.wtf/api/v1',
             process.env.JITO_UUID
         );
 
-        // Get a random Jito tip account
+        // Add Jito tip
         const jitoTipAccount = new PublicKey(await jitoClient.getRandomTipAccount());
-        const jitoTipAmount = 1000; // 0.000001 SOL tip
-
-        // Add Jito tip instruction to the transaction
         transaction.add(
             SystemProgram.transfer({
                 fromPubkey: this.publicKey,
                 toPubkey: jitoTipAccount,
-                lamports: jitoTipAmount,
+                lamports: 1000, // 0.000001 SOL tip
             })
         );
 
-        // Fetch a fresh blockhash
+        // Set blockhash and fee payer
         const { blockhash } = await connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = this.publicKey;
 
-        // Sign the transaction with all signers
-        if (signers.length > 0) {
-            transaction.sign(...signers);
-        } else {
-            await this.signTransaction(transaction);
-        }
+        // Sign transaction
+        const allSigners = [this.keypair, ...signers];
+        transaction.sign(...allSigners);
+    }
 
-        // Serialize the transaction and encode it as base64
+    /**
+     * Send transaction via Jito API
+     */
+    private async sendViaJito<T extends Transaction | VersionedTransaction>(transaction: T): Promise<string> {
+        // Serialize transaction
         const serializedTx = transaction.serialize();
         const base64Tx = Buffer.from(serializedTx).toString('base64');
 
-        // Use Jito RPC URL
+        // Prepare Jito API request
         const jitoRpcUrl = process.env.JITO_RPC_URL || 'https://mainnet.block-engine.jito.wtf';
         const jitoApiEndpoint = `${jitoRpcUrl}/api/v1/transactions`;
 
+        // Determine send options based on transaction type
+        const isVersioned = 'version' in transaction;
+        const sendOptions = isVersioned
+            ? { encoding: 'base64', maxRetries: 3, skipPreflight: true }
+            : { encoding: 'base64' };
+
+        // Send transaction
         const response = await fetch(jitoApiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -167,12 +198,7 @@ export class KeypairClient extends BaseSolanaWalletClient {
                 jsonrpc: '2.0',
                 id: 1,
                 method: 'sendTransaction',
-                params: [
-                    base64Tx,
-                    {
-                        encoding: 'base64',
-                    },
-                ],
+                params: [base64Tx, sendOptions],
             }),
         });
 
@@ -180,6 +206,7 @@ export class KeypairClient extends BaseSolanaWalletClient {
         if (data.error) {
             throw new Error(data.error.message);
         }
-        return data.result; // Transaction signature returned by Jito
+
+        return data.result;
     }
 }

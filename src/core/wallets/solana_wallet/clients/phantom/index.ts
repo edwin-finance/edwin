@@ -73,7 +73,11 @@ export class PhantomClient extends BaseSolanaWalletClient {
      * Note: In Phantom's case, we don't need Connection or additional signers
      * as Phantom handles the sending internally
      */
-    async sendTransaction(_connection: Connection, transaction: Transaction, _signers?: Keypair[]): Promise<string> {
+    async sendTransaction<T extends Transaction | VersionedTransaction>(
+        _connection: Connection,
+        transaction: T,
+        _signers?: Keypair[]
+    ): Promise<string> {
         if (!this.provider.solana) {
             throw new Error('Phantom wallet is not connected');
         }

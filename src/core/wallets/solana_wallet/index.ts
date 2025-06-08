@@ -9,5 +9,5 @@ export * from './clients';
 export { SolanaWalletFactory, canSign } from './factory';
 
 // Re-export legacy wallet types for backwards compatibility
-export { EdwinSolanaWallet } from './solana_wallet';
-export { EdwinSolanaPublicKeyWallet } from './solana_public_key_wallet';
+export { KeypairClient } from './clients/keypair';
+export { PublicKeyClient } from './clients/publickey';

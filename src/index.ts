@@ -2,8 +2,8 @@
 export { EdwinWallet } from './core/wallets/wallet';
 export { EdwinEVMWallet } from './core/wallets/evm_wallet';
 export {
-    EdwinSolanaWallet,
-    EdwinSolanaPublicKeyWallet,
+    KeypairClient,
+    PublicKeyClient,
     BaseSolanaWalletClient,
     SolanaWalletFactory,
 } from './core/wallets/solana_wallet';
