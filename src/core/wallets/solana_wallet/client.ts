@@ -71,11 +71,15 @@ export interface SolanaWalletClient {
     /**
      * Send a transaction
      * @param connection Solana connection to use
-     * @param transaction Transaction to send
+     * @param transaction Transaction to send (can be Transaction or VersionedTransaction)
      * @param signers Optional additional signers
      * @returns Transaction signature
      */
-    sendTransaction(connection: Connection, transaction: Transaction, signers?: Keypair[]): Promise<string>;
+    sendTransaction<T extends Transaction | VersionedTransaction>(
+        connection: Connection,
+        transaction: T,
+        signers?: Keypair[]
+    ): Promise<string>;
 
     /**
      * Get balance changes for a token from a transaction

@@ -137,13 +137,8 @@ export class JupiterService {
         // 4. Sign the transaction
         await this.wallet.signTransaction(transaction);
 
-        // 5. Serialize and send the transaction
-        const rawTransaction = transaction.serialize();
-        // 6. Send transaction with optimized parameters
-        const signature = await connection.sendRawTransaction(rawTransaction, {
-            maxRetries: 2,
-            skipPreflight: true,
-        });
+        // 5. Send the transaction
+        const signature = await this.wallet.sendTransaction(connection, transaction, []);
 
         // Return the transaction signature
         return signature;

@@ -174,7 +174,11 @@ export abstract class BaseSolanaWalletClient implements SolanaWalletClient {
     abstract signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T>;
     abstract signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]>;
     abstract signMessage(message: Uint8Array): Promise<Uint8Array>;
-    abstract sendTransaction(connection: Connection, transaction: Transaction, signers?: Keypair[]): Promise<string>;
+    abstract sendTransaction<T extends Transaction | VersionedTransaction>(
+        connection: Connection,
+        transaction: T,
+        signers?: Keypair[]
+    ): Promise<string>;
     abstract waitForConfirmationGracefully(
         connection: Connection,
         signature: string,

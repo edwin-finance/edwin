@@ -33,7 +33,11 @@ export class PublicKeyClient extends BaseSolanaWalletClient {
     /**
      * Not supported in public key client - throws error
      */
-    async sendTransaction(_connection: Connection, _transaction: Transaction, _signers?: Keypair[]): Promise<string> {
+    async sendTransaction<T extends Transaction | VersionedTransaction>(
+        _connection: Connection,
+        _transaction: T,
+        _signers?: Keypair[]
+    ): Promise<string> {
         throw new Error('Cannot send transactions with a read-only PublicKeyClient');
     }
 
