@@ -2,8 +2,9 @@ import { config } from 'dotenv';
 config(); // Load test environment variables from .env file
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { EdwinSolanaPublicKeyWallet } from '../src/core/wallets/solana_wallet';
+import { SolanaWalletFactory } from '../src/core/wallets/solana_wallet/factory';
 import { SolanaWalletService } from '../src/plugins/solana_wallet/solanaWalletService';
+import { PublicKeyClient } from '../src/core/wallets/solana_wallet/clients/publickey';
 
 // Check if Helius API key is available
 const hasHeliusKey = Boolean(process.env.HELIUS_KEY);
@@ -12,16 +13,15 @@ const hasHeliusKey = Boolean(process.env.HELIUS_KEY);
 const describeIf = hasHeliusKey ? describe : describe.skip;
 
 // Known Solana wallets with tokens for testing
-// Using Solana Foundation's wallet as an example
 const TEST_WALLET_ADDRESS = process.env.SOLANA_PUBLIC_KEY as string;
 
 describeIf('Solana Wallet Token Balances Tests', () => {
-    let wallet: EdwinSolanaPublicKeyWallet;
+    let wallet: PublicKeyClient;
     let solanaWalletService: SolanaWalletService;
 
     beforeAll(() => {
         // Create a public key wallet for testing
-        wallet = new EdwinSolanaPublicKeyWallet(TEST_WALLET_ADDRESS);
+        wallet = SolanaWalletFactory.fromPublicKey(TEST_WALLET_ADDRESS as string);
         solanaWalletService = new SolanaWalletService(wallet);
         console.log('Running Solana wallet tests with Helius API key');
     });
