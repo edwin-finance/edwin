@@ -3,24 +3,8 @@ import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import { SwapParameters } from './parameters';
 import { InsufficientBalanceError } from '../../errors';
-import { createJupiterApiClient } from '@jup-ag/api';
+import { QuoteResponse } from '@jup-ag/api';
 import edwinLogger from '../../utils/logger';
-
-interface SwapInfo {
-    ammKey: string;
-    label: string;
-    inputMint: string;
-    outputMint: string;
-    inAmount: string;
-    outAmount: string;
-    feeAmount: string;
-    feeMint: string;
-}
-
-interface RoutePlan {
-    swapInfo: SwapInfo;
-    percent: number;
-}
 
 export interface JupiterQuoteParameters {
     inputMint: string;
@@ -29,78 +13,15 @@ export interface JupiterQuoteParameters {
     slippageBps?: number;
 }
 
-interface PlatformFee {
-    amount: string;
-    feeBps: number;
-}
-
-interface JupiterQuoteResponse {
-    inputMint: string;
-    inAmount: string;
-    outputMint: string;
-    outAmount: string;
-    otherAmountThreshold: string;
-    swapMode: string;
-    slippageBps: number;
-    platformFee: PlatformFee | null;
-    priceImpactPct: string;
-    routePlan: RoutePlan[];
-    contextSlot: number;
-    timeTaken: number;
-}
-
-interface PriorityLevel {
-    maxLamports: number;
-    priorityLevel: 'veryHigh' | 'high' | 'medium' | 'low';
-}
-
-interface SwapRequestBody {
-    quoteResponse: JupiterQuoteResponse;
-    userPublicKey: string;
-    dynamicComputeUnitLimit?: boolean;
-    dynamicSlippage?: boolean;
-    prioritizationFeeLamports?: {
-        priorityLevelWithMaxLamports: PriorityLevel;
-    };
-}
-
-interface DynamicSlippageReport {
-    slippageBps: number;
-    otherAmount: number;
-    simulatedIncurredSlippageBps: number;
-    amplificationRatio: string;
-    categoryName: string;
-    heuristicMaxSlippageBps: number;
-}
-
-interface PrioritizationType {
-    computeBudget: {
-        microLamports: number;
-        estimatedMicroLamports: number;
-    };
-}
-
-interface SwapResponse {
-    swapTransaction: string;
-    lastValidBlockHeight: number;
-    prioritizationFeeLamports: number;
-    computeUnitLimit: number;
-    prioritizationType: PrioritizationType;
-    dynamicSlippageReport: DynamicSlippageReport;
-    simulationError: null | string;
-}
-
 export class JupiterService {
     supportedChains: SupportedChain[] = ['solana'];
-    JUPITER_API_URL = 'https://api.jup.ag/swap/v1/';
     TOKEN_LIST_URL = 'https://tokens.jup.ag/tokens?tags=verified';
+    JUPITER_QUOTE_API_URL = 'https://quote-api.jup.ag/v6';
 
     private wallet: SolanaWalletClient;
-    private jupiterClient: ReturnType<typeof createJupiterApiClient>;
 
     constructor(wallet: SolanaWalletClient) {
         this.wallet = wallet;
-        this.jupiterClient = createJupiterApiClient();
     }
 
     async swap(params: SwapParameters): Promise<string> {
@@ -128,15 +49,16 @@ export class JupiterService {
         const quoteParams = { inputMint, outputMint, amount: adjustedAmountInt };
         const quote = await this.getQuote(quoteParams);
 
-        // 2. Get serialized transaction
-        const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getAddress());
+        // 2. Get swap transaction
+        const { swapTransaction } = await this.getSerializedTransaction(quote, this.wallet.getAddress());
 
         // 3. Deserialize the transaction
-        const transaction = VersionedTransaction.deserialize(Buffer.from(swapResponse.swapTransaction, 'base64'));
-
+        const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+        const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+        
         // 4. Sign the transaction
         await this.wallet.signTransaction(transaction);
-
+        
         // 5. Send the transaction
         const signature = await this.wallet.sendTransaction(connection, transaction, []);
 
@@ -144,7 +66,7 @@ export class JupiterService {
         return signature;
     }
 
-    async getQuote(params: JupiterQuoteParameters): Promise<JupiterQuoteResponse> {
+    async getQuote(params: JupiterQuoteParameters): Promise<QuoteResponse> {
         const { inputMint, outputMint, amount, slippageBps = 50 } = params;
 
         const queryParams = new URLSearchParams({
@@ -154,43 +76,55 @@ export class JupiterService {
             slippageBps: slippageBps.toString(),
         });
 
-        const response = await fetch(`${this.JUPITER_API_URL}quote?${queryParams}`);
-
-        if (!response.ok) {
-            throw new Error(`Jupiter API error: ${response.statusText}`);
+        try {
+            const response = await fetch(`${this.JUPITER_QUOTE_API_URL}/quote?${queryParams}`);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                edwinLogger.error('Jupiter API error response:', errorText);
+                throw new Error(`Jupiter API error: ${response.statusText}`);
+            }
+            
+            const quote = await response.json();
+            return quote;
+        } catch (error) {
+            edwinLogger.error('Error getting quote from Jupiter:', error);
+            throw new Error(`Jupiter API error: ${error}`);
         }
-
-        return response.json();
     }
 
-    async getSerializedTransaction(quote: JupiterQuoteResponse, walletAddress: string): Promise<SwapResponse> {
-        const body: SwapRequestBody = {
-            quoteResponse: quote,
-            userPublicKey: walletAddress,
-            // Optimize for transaction landing
-            dynamicComputeUnitLimit: true,
-            dynamicSlippage: true,
-            prioritizationFeeLamports: {
-                priorityLevelWithMaxLamports: {
-                    maxLamports: 1000000,
-                    priorityLevel: 'veryHigh',
+    async getSerializedTransaction(quote: QuoteResponse, walletAddress: string): Promise<{ swapTransaction: string }> {
+        try {
+            const response = await fetch(`${this.JUPITER_QUOTE_API_URL}/swap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-            },
-        };
-
-        const response = await fetch(`${this.JUPITER_API_URL}swap`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Jupiter API error: ${response.statusText}`);
+                body: JSON.stringify({
+                    quoteResponse: quote,
+                    userPublicKey: walletAddress,
+                    dynamicComputeUnitLimit: true,
+                    prioritizationFeeLamports: 'auto',
+                }),
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                edwinLogger.error('Jupiter swap API error response:', errorText);
+                throw new Error(`Jupiter swap API error: ${response.statusText}`);
+            }
+            
+            const swapResult = await response.json();
+            
+            if (!swapResult.swapTransaction) {
+                throw new Error('No swap transaction returned from Jupiter API');
+            }
+            
+            return { swapTransaction: swapResult.swapTransaction };
+        } catch (error) {
+            edwinLogger.error('Error getting swap transaction from Jupiter:', error);
+            throw new Error(`Jupiter API error: ${error}`);
         }
-
-        return response.json();
     }
 
     /**
