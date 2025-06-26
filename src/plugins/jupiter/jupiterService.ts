@@ -55,10 +55,10 @@ export class JupiterService {
         // 3. Deserialize the transaction
         const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
         const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-        
+
         // 4. Sign the transaction
         await this.wallet.signTransaction(transaction);
-        
+
         // 5. Send the transaction
         const signature = await this.wallet.sendTransaction(connection, transaction, []);
 
@@ -78,13 +78,13 @@ export class JupiterService {
 
         try {
             const response = await fetch(`${this.JUPITER_QUOTE_API_URL}/quote?${queryParams}`);
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 edwinLogger.error('Jupiter API error response:', errorText);
                 throw new Error(`Jupiter API error: ${response.statusText}`);
             }
-            
+
             const quote = await response.json();
             return quote;
         } catch (error) {
@@ -107,19 +107,19 @@ export class JupiterService {
                     prioritizationFeeLamports: 'auto',
                 }),
             });
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 edwinLogger.error('Jupiter swap API error response:', errorText);
                 throw new Error(`Jupiter swap API error: ${response.statusText}`);
             }
-            
+
             const swapResult = await response.json();
-            
+
             if (!swapResult.swapTransaction) {
                 throw new Error('No swap transaction returned from Jupiter API');
             }
-            
+
             return { swapTransaction: swapResult.swapTransaction };
         } catch (error) {
             edwinLogger.error('Error getting swap transaction from Jupiter:', error);
