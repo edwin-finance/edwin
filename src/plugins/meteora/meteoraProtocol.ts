@@ -1,6 +1,6 @@
 import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition, PositionInfo } from '@meteora-ag/dlmm';
-import { Keypair, PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
 import { calculateAmounts, extractBalanceChanges, verifyAddLiquidityTokenAmounts } from './utils';
@@ -282,12 +282,20 @@ export class MeteoraProtocol {
             }
         }
 
-        // Simplified: Skip transaction simulation checks as they may be working around old SDK bugs
-
-        // Unified approach: Let the wallet's sendTransaction method handle all signing
-        // KeypairClient will handle additional signers in its sendTransaction method
-        // Terminal wallet will need to handle multiple signers differently
-        const signature = await this.wallet.sendTransaction(connection, tx, signers);
+        // Debug logging before sending transaction
+        const signersToUse = signers || [];
+        if (signersToUse.length > 0) {
+            edwinLogger.debug(`Sending transaction with ${signersToUse.length} additional signers:`);
+            signersToUse.forEach((signer, index) => {
+                edwinLogger.debug(`  Signer ${index}: ${signer.publicKey.toString()}`);
+            });
+        } else {
+            edwinLogger.debug('Sending transaction with no additional signers');
+        }
+        
+        // Send the transaction with additional signers
+        // KeypairClient will handle both the main keypair and additional signers
+        const signature = await this.wallet.sendTransaction(connection, tx, signersToUse);
 
         // Wait for transaction confirmation
         const { value: confirmation } = await connection.confirmTransaction(signature, 'confirmed');
