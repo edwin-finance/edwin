@@ -9,6 +9,7 @@ export const EVMBalanceParametersSchema = createParameterSchema(
         tokenAddress: z
             .string()
             .optional()
+            .nullable()
             .describe('The optional ERC-20 token address (or empty for native token balance)'),
     })
 );
@@ -16,10 +17,15 @@ export const EVMBalanceParametersSchema = createParameterSchema(
 // Schema for checking current wallet balance
 export const CurrentEVMBalanceParametersSchema = createParameterSchema(
     z.object({
-        chainName: z.string().optional().describe('The chain name (defaults to current chain if not specified)'),
+        chainName: z
+            .string()
+            .optional()
+            .nullable()
+            .describe('The chain name (defaults to current chain if not specified)'),
         tokenAddress: z
             .string()
             .optional()
+            .nullable()
             .describe('The optional ERC-20 token address (or empty for native token balance)'),
     })
 );

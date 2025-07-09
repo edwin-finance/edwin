@@ -5,13 +5,21 @@ import { createParameterSchema } from '../../core/utils/createParameterSchema';
 export const SolanaWalletTokenBalanceParametersSchema = createParameterSchema(
     z.object({
         walletAddress: z.string().describe('The Solana wallet address to check the balance of'),
-        mintAddress: z.string().optional().describe('The optional SPL token mint address (or empty for SOL balance)'),
+        mintAddress: z
+            .string()
+            .optional()
+            .nullable()
+            .describe('The optional SPL token mint address (or empty for SOL balance)'),
     })
 );
 
 export const CurrentSolanaWalletTokenBalanceParametersSchema = createParameterSchema(
     z.object({
-        mintAddress: z.string().optional().describe('The optional SPL token mint address (or empty for SOL balance)'),
+        mintAddress: z
+            .string()
+            .optional()
+            .nullable()
+            .describe('The optional SPL token mint address (or empty for SOL balance)'),
     })
 );
 

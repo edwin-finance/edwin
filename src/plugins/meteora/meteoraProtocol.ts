@@ -284,12 +284,9 @@ export class MeteoraProtocol {
 
         // Simplified: Skip transaction simulation checks as they may be working around old SDK bugs
 
-        // First sign the transaction with the wallet
-        await this.wallet.signTransaction(tx);
-
-        // Note: The sendTransaction method will handle the additional signers appropriately
-
-        // Send the signed transaction
+        // Unified approach: Let the wallet's sendTransaction method handle all signing
+        // KeypairClient will handle additional signers in its sendTransaction method
+        // Terminal wallet will need to handle multiple signers differently
         const signature = await this.wallet.sendTransaction(connection, tx, signers);
 
         // Wait for transaction confirmation
@@ -332,7 +329,7 @@ export class MeteoraProtocol {
                         poolAddress,
                         amount.toString(),
                         amountB.toString(),
-                        rangeInterval
+                        rangeInterval ?? undefined
                     );
                     return result;
                 } catch (error: unknown) {
@@ -513,7 +510,7 @@ Fees claimed:
             if (!poolAddress) {
                 throw new Error('Pool address is required for Meteora liquidity removal');
             }
-            const shouldClaimAndClose = shouldClosePosition !== undefined ? shouldClosePosition : true;
+            const shouldClaimAndClose = shouldClosePosition ?? true;
 
             // Use Helius connection to avoid rate limits
             const connection = this.wallet.getConnection();

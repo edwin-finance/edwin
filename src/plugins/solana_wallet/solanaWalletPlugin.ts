@@ -45,7 +45,9 @@ export class SolanaWalletPlugin extends EdwinPlugin {
                 description: 'Get the balance of your current Solana wallet and a specific token mint (default is SOL)',
                 schema: CurrentSolanaWalletTokenBalanceParametersSchema.schema,
                 execute: async (params: CurrentSolanaWalletTokenBalanceParameters) => {
-                    return await solanaWalletService.getCurrentSolanaWalletTokenBalance(params.mintAddress);
+                    return await solanaWalletService.getCurrentSolanaWalletTokenBalance(
+                        params.mintAddress ?? undefined
+                    );
                 },
             },
             getSolanaWalletBalances: {

@@ -14,15 +14,15 @@ export const AddLiquidityParametersSchema = createParameterSchema(
                 'The amount of token B to add as liquidity, or the string "auto" to auto-calculate the amount of token B based on amount'
             ),
         poolAddress: z.string().min(1).describe('The address of the Meteora pool'),
-        rangeInterval: z.number().optional().describe('The price range interval for concentrated liquidity'),
+        rangeInterval: z.number().optional().nullable().describe('The price range interval for concentrated liquidity'),
     })
 );
 
 export const RemoveLiquidityParametersSchema = createParameterSchema(
     z.object({
         poolAddress: z.string().min(1).describe('The address of the Meteora pool'),
-        positionAddress: z.string().optional().describe('The address of the liquidity position to remove'),
-        shouldClosePosition: z.boolean().optional().describe('Whether to completely close the position'),
+        positionAddress: z.string().optional().nullable().describe('The address of the liquidity position to remove'),
+        shouldClosePosition: z.boolean().optional().nullable().describe('Whether to completely close the position'),
     })
 );
 
