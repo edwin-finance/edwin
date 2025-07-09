@@ -7,8 +7,8 @@ export const SolanaWalletTokenBalanceParametersSchema = createParameterSchema(
         walletAddress: z.string().describe('The Solana wallet address to check the balance of'),
         mintAddress: z
             .string()
-            .optional()
             .nullable()
+            .optional()
             .describe('The optional SPL token mint address (or empty for SOL balance)'),
     })
 );
@@ -17,8 +17,8 @@ export const CurrentSolanaWalletTokenBalanceParametersSchema = createParameterSc
     z.object({
         mintAddress: z
             .string()
-            .optional()
             .nullable()
+            .optional()
             .describe('The optional SPL token mint address (or empty for SOL balance)'),
     })
 );

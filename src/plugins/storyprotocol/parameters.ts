@@ -7,7 +7,7 @@ export const RegisterIPAssetParametersSchema = createParameterSchema(
         description: z.string().min(1).describe('The description of the IP asset'),
         mediaUrl: z.string().url().describe('The URL to the media file of the IP asset'),
         contentHash: z.string().min(1).describe('The hash of the content'),
-        externalUrl: z.string().url().optional().nullable().describe('An optional external URL for the IP asset'),
+        externalUrl: z.string().url().nullable().optional().describe('An optional external URL for the IP asset'),
     })
 );
 
@@ -39,8 +39,8 @@ export const RegisterDerivativeParametersSchema = createParameterSchema(
         externalUrl: z
             .string()
             .url()
-            .optional()
             .nullable()
+            .optional()
             .describe('An optional external URL for the derivative IP asset'),
         isCommercial: z.boolean().describe('Whether the derivative is for commercial use'),
     })

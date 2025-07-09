@@ -9,7 +9,7 @@ export const SupplyParametersSchema = createParameterSchema(
         chain: z.string().min(1).describe('The chain to supply assets on (e.g., sonic)'),
         asset: z.string().min(1).describe('The asset to supply (e.g., USDC.e)'),
         amount: z.number().positive().describe('The amount to supply'),
-        collateralOnly: z.boolean().optional().nullable().describe('True if depositing collateral only'),
+        collateralOnly: z.boolean().nullable().optional().describe('True if depositing collateral only'),
     })
 );
 

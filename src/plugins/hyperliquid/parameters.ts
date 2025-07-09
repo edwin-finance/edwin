@@ -81,7 +81,7 @@ export const OpenPositionParameters = z.object({
     /**
      * Limit price (required for limit orders)
      */
-    price: z.number().positive().optional().nullable(),
+    price: z.number().positive().nullable().optional(),
     /**
      * Whether to reduce only (close position)
      */
@@ -112,7 +112,7 @@ export const ClosePositionParameters = z.object({
     /**
      * Limit price (required for limit orders)
      */
-    price: z.number().positive().optional().nullable(),
+    price: z.number().positive().nullable().optional(),
 });
 
 /**
