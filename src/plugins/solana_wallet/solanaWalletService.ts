@@ -28,7 +28,10 @@ export class SolanaWalletService extends EdwinService {
         edwinLogger.info(`Getting balance for Solana wallet: ${params.walletAddress}`);
 
         try {
-            return await this.wallet.getBalanceOfWallet(params.walletAddress, params.mintAddress);
+            return await this.wallet.getBalanceOfWallet(
+                params.walletAddress,
+                params.mintAddress === null ? undefined : params.mintAddress
+            );
         } catch (error) {
             edwinLogger.error('Failed to get Solana wallet balance:', error);
             throw error;
