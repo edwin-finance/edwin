@@ -1,6 +1,6 @@
 import { SolanaWalletClient } from '../../core/wallets/solana_wallet';
 import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition, PositionInfo } from '@meteora-ag/dlmm';
-import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
 import { calculateAmounts, extractBalanceChanges, verifyAddLiquidityTokenAmounts } from './utils';
@@ -292,7 +292,7 @@ export class MeteoraProtocol {
         } else {
             edwinLogger.debug('Sending transaction with no additional signers');
         }
-        
+
         // Send the transaction with additional signers
         // KeypairClient will handle both the main keypair and additional signers
         const signature = await this.wallet.sendTransaction(connection, tx, signersToUse);
