@@ -21,8 +21,7 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Getting HBAR balance for Hedera account: ${params.accountId}`);
 
         try {
-            // TODO: Implement balance retrieval
-            throw new Error('Method not implemented');
+            return await this.wallet.getBalanceOfAccount(params.accountId);
         } catch (error) {
             edwinLogger.error('Failed to get Hedera wallet balance:', error);
             throw error;
@@ -36,8 +35,7 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info('Getting HBAR balance for current Hedera account');
 
         try {
-            // TODO: Implement current wallet balance retrieval
-            throw new Error('Method not implemented');
+            return await this.wallet.getBalance();
         } catch (error) {
             edwinLogger.error('Failed to get current Hedera wallet balance:', error);
             throw error;

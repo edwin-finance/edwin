@@ -1,13 +1,4 @@
-import {
-    PrivateKey,
-    AccountId,
-    Transaction,
-    TransferTransaction,
-    TokenTransferTransaction,
-    Hbar,
-    TokenId,
-    TransactionId,
-} from '@hashgraph/sdk';
+import { PrivateKey, AccountId, Transaction, TransferTransaction, Hbar, TokenId } from '@hashgraph/sdk';
 import edwinLogger from '../../../../../utils/logger';
 import { BaseHederaWalletClient } from '../../base_client';
 
@@ -42,7 +33,8 @@ export class KeypairClient extends BaseHederaWalletClient {
      */
     async signTransaction(transaction: Transaction): Promise<Transaction> {
         try {
-            return transaction.sign(this.privateKey);
+            // Sign the transaction with the private key
+            return await transaction.sign(this.privateKey);
         } catch (error) {
             edwinLogger.error('Failed to sign transaction:', error);
             throw new Error(`Failed to sign transaction: ${error}`);
@@ -56,11 +48,11 @@ export class KeypairClient extends BaseHederaWalletClient {
         try {
             const client = this.getClient();
 
-            // Sign the transaction
-            const signedTransaction = await this.signTransaction(transaction);
+            // Set the operator for the client
+            client.setOperator(this.accountId, this.privateKey);
 
-            // Execute the transaction
-            const response = await signedTransaction.execute(client);
+            // Execute the transaction (it will be automatically signed)
+            const response = await transaction.execute(client);
 
             // Get the transaction receipt to ensure it was successful
             const receipt = await response.getReceipt(client);
@@ -81,7 +73,6 @@ export class KeypairClient extends BaseHederaWalletClient {
      */
     async transferHbar(toAccountId: string, amount: number): Promise<string> {
         try {
-            const client = this.getClient();
             const toAccount = AccountId.fromString(toAccountId);
             const transferAmount = Hbar.fromTinybars(Math.floor(amount * 100000000)); // Convert HBAR to tinybars
 
@@ -89,9 +80,7 @@ export class KeypairClient extends BaseHederaWalletClient {
 
             const transaction = new TransferTransaction()
                 .addHbarTransfer(this.accountId, transferAmount.negated())
-                .addHbarTransfer(toAccount, transferAmount)
-                .setTransactionId(TransactionId.generate(this.accountId))
-                .freezeWith(client);
+                .addHbarTransfer(toAccount, transferAmount);
 
             return await this.sendTransaction(transaction);
         } catch (error) {
@@ -105,17 +94,14 @@ export class KeypairClient extends BaseHederaWalletClient {
      */
     async transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string> {
         try {
-            const client = this.getClient();
             const toAccount = AccountId.fromString(toAccountId);
             const token = TokenId.fromString(tokenId);
 
             edwinLogger.info(`Transferring ${amount} of token ${tokenId} from ${this.getAddress()} to ${toAccountId}`);
 
-            const transaction = new TokenTransferTransaction()
+            const transaction = new TransferTransaction()
                 .addTokenTransfer(token, this.accountId, -amount)
-                .addTokenTransfer(token, toAccount, amount)
-                .setTransactionId(TransactionId.generate(this.accountId))
-                .freezeWith(client);
+                .addTokenTransfer(token, toAccount, amount);
 
             return await this.sendTransaction(transaction);
         } catch (error) {
