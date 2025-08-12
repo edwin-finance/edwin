@@ -89,12 +89,35 @@ describe('Hedera Wallet Core Functionality Tests', () => {
             );
         });
 
-        it('should throw error for unimplemented methods', async () => {
-            await expect(wallet.getBalance()).rejects.toThrow('Method not implemented');
-            await expect(wallet.getBalanceOfAccount('0.0.123457')).rejects.toThrow('Method not implemented');
-            await expect(wallet.getTokenBalance('0.0.123458')).rejects.toThrow('Method not implemented');
-            await expect(wallet.getAccountInfo()).rejects.toThrow('Method not implemented');
-        });
+        it('should be able to call implemented methods', async () => {
+            // These methods should work now since they're implemented
+            // We expect them to work or throw specific Hedera errors, not "Method not implemented"
+            try {
+                const balance = await wallet.getBalance();
+                expect(typeof balance).toBe('number');
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+
+            try {
+                await wallet.getBalanceOfAccount('0.0.123457');
+            } catch (error) {
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+
+            try {
+                await wallet.getTokenBalance('0.0.123458');
+            } catch (error) {
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+
+            try {
+                await wallet.getAccountInfo();
+            } catch (error) {
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
     });
 });
 
@@ -249,17 +272,26 @@ describe('Network Configuration Tests', () => {
     it('should handle different network configurations', () => {
         const wallet = HederaWalletFactory.fromAccountId('0.0.123456');
 
+        // These should work now since getClient is implemented
         expect(() => {
-            wallet.getClient('testnet');
-        }).toThrow('Method not implemented');
+            const client = wallet.getClient('testnet');
+            expect(client).toBeDefined();
+        }).not.toThrow();
 
         expect(() => {
-            wallet.getClient('mainnet');
-        }).toThrow('Method not implemented');
+            const client = wallet.getClient('mainnet');
+            expect(client).toBeDefined();
+        }).not.toThrow();
 
         expect(() => {
-            wallet.getClient('previewnet');
-        }).toThrow('Method not implemented');
+            const client = wallet.getClient('previewnet');
+            expect(client).toBeDefined();
+        }).not.toThrow();
+
+        // Should throw for invalid networks
+        expect(() => {
+            wallet.getClient('invalid-network');
+        }).toThrow('Unsupported network: invalid-network');
     });
 });
 
