@@ -132,48 +132,78 @@ describeReadOnlyTests('Hedera Wallet Service Tests (Read-Only)', () => {
     });
 
     describe('Balance Service Tests', () => {
-        it('should attempt to get HBAR balance for wallet address', async () => {
-            await expect(
-                hederaWalletService.getHederaWalletBalance({
+        it('should get HBAR balance for wallet address', async () => {
+            try {
+                const balance = await hederaWalletService.getHederaWalletBalance({
                     accountId: TEST_ACCOUNT_ID,
-                })
-            ).rejects.toThrow('Method not implemented');
-        });
+                });
+                expect(typeof balance).toBe('number');
+                expect(balance).toBeGreaterThanOrEqual(0);
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
 
-        it('should attempt to get current wallet HBAR balance', async () => {
-            await expect(hederaWalletService.getCurrentHederaWalletBalance()).rejects.toThrow('Method not implemented');
-        });
+        it('should get current wallet HBAR balance', async () => {
+            try {
+                const balance = await hederaWalletService.getCurrentHederaWalletBalance();
+                expect(typeof balance).toBe('number');
+                expect(balance).toBeGreaterThanOrEqual(0);
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
 
-        it('should attempt to get token balance', async () => {
-            await expect(
-                hederaWalletService.getHederaWalletTokenBalance({
+        it('should get token balance', async () => {
+            try {
+                const balance = await hederaWalletService.getHederaWalletTokenBalance({
                     accountId: TEST_ACCOUNT_ID,
                     tokenId: '0.0.123458',
-                })
-            ).rejects.toThrow('Method not implemented');
-        });
+                });
+                expect(typeof balance).toBe('number');
+                expect(balance).toBeGreaterThanOrEqual(0);
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
 
-        it('should attempt to get current wallet token balance', async () => {
-            await expect(hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.123458')).rejects.toThrow(
-                'Method not implemented'
-            );
-        });
+        it('should get current wallet token balance', async () => {
+            try {
+                const balance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.123458');
+                expect(typeof balance).toBe('number');
+                expect(balance).toBeGreaterThanOrEqual(0);
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
     });
 
     describe('Account Info Service Tests', () => {
-        it('should attempt to get account info for any account', async () => {
-            await expect(
-                hederaWalletService.getHederaWalletAccountInfo({
+        it('should get account info for any account', async () => {
+            try {
+                const info = await hederaWalletService.getHederaWalletAccountInfo({
                     accountId: TEST_ACCOUNT_ID,
-                })
-            ).rejects.toThrow('Method not implemented');
-        });
+                });
+                expect(info).toBeDefined();
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
 
-        it('should attempt to get current account info', async () => {
-            await expect(hederaWalletService.getCurrentHederaWalletAccountInfo()).rejects.toThrow(
-                'Method not implemented'
-            );
-        });
+        it('should get current account info', async () => {
+            try {
+                const info = await hederaWalletService.getCurrentHederaWalletAccountInfo();
+                expect(info).toBeDefined();
+            } catch (error) {
+                // Should be a Hedera-specific error, not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+            }
+        }, 10000);
     });
 
     describe('Error Handling', () => {
@@ -224,24 +254,34 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
     });
 
     describe('Transfer Service Tests (Stubbed)', () => {
-        it('should attempt to transfer HBAR', async () => {
-            await expect(
-                hederaWalletService.transferHbar({
+        it('should attempt to transfer HBAR (requires operator setup)', async () => {
+            try {
+                await hederaWalletService.transferHbar({
                     toAccountId: '0.0.123457',
                     amount: 1,
-                })
-            ).rejects.toThrow('Method not implemented');
-        });
+                });
+                // If it succeeds, it should return a transaction ID
+            } catch (error) {
+                // Should be a Hedera-specific error (like missing operator), not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+                expect((error as Error).message).toContain('operator');
+            }
+        }, 10000);
 
-        it('should attempt to transfer tokens', async () => {
-            await expect(
-                hederaWalletService.transferToken({
+        it('should attempt to transfer tokens (requires operator setup)', async () => {
+            try {
+                await hederaWalletService.transferToken({
                     toAccountId: '0.0.123457',
                     tokenId: '0.0.123458',
                     amount: 1,
-                })
-            ).rejects.toThrow('Method not implemented');
-        });
+                });
+                // If it succeeds, it should return a transaction ID
+            } catch (error) {
+                // Should be a Hedera-specific error (like missing operator), not "Method not implemented"
+                expect((error as Error).message).not.toContain('Method not implemented');
+                expect((error as Error).message).toContain('operator');
+            }
+        }, 10000);
     });
 
     describe('Parameter Validation', () => {

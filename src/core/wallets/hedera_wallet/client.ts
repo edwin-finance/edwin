@@ -43,6 +43,21 @@ export interface HederaWalletClient {
     getTokenBalance?(tokenId: string): Promise<number>;
 
     /**
+     * Get token balance for any account
+     * @param accountId Account ID to check
+     * @param tokenId Token ID to check balance for
+     * @returns The token balance as a number
+     */
+    getTokenBalanceOfAccount?(accountId: string, tokenId: string): Promise<number>;
+
+    /**
+     * Get account information for any account
+     * @param accountId Account ID to get information for
+     * @returns Account information object
+     */
+    getAccountInfoForAccount?(accountId: string): Promise<unknown>;
+
+    /**
      * Get account information
      * @returns Account information object
      */

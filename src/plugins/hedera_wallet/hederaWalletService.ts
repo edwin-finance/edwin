@@ -51,8 +51,11 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Getting token balance for account: ${params.accountId}, token: ${params.tokenId}`);
 
         try {
-            // TODO: Implement token balance retrieval
-            throw new Error('Method not implemented');
+            // Use the base client's token balance method
+            if (!this.wallet.getTokenBalanceOfAccount) {
+                throw new Error('Token balance for accounts not supported by this wallet client');
+            }
+            return await this.wallet.getTokenBalanceOfAccount(params.accountId, params.tokenId);
         } catch (error) {
             edwinLogger.error('Failed to get Hedera wallet token balance:', error);
             throw error;
@@ -66,8 +69,10 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Getting token balance for current account, token: ${tokenId}`);
 
         try {
-            // TODO: Implement current wallet token balance retrieval
-            throw new Error('Method not implemented');
+            if (!this.wallet.getTokenBalance) {
+                throw new Error('Token balance not supported by this wallet client');
+            }
+            return await this.wallet.getTokenBalance(tokenId);
         } catch (error) {
             edwinLogger.error('Failed to get current Hedera wallet token balance:', error);
             throw error;
@@ -81,8 +86,11 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Getting account info for Hedera account: ${params.accountId}`);
 
         try {
-            // TODO: Implement account info retrieval
-            throw new Error('Method not implemented');
+            // Use the base client's account info method
+            if (!this.wallet.getAccountInfoForAccount) {
+                throw new Error('Account info for accounts not supported by this wallet client');
+            }
+            return await this.wallet.getAccountInfoForAccount(params.accountId);
         } catch (error) {
             edwinLogger.error('Failed to get Hedera account info:', error);
             throw error;
@@ -96,8 +104,7 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info('Getting account info for current Hedera account');
 
         try {
-            // TODO: Implement current account info retrieval
-            throw new Error('Method not implemented');
+            return await this.wallet.getAccountInfo();
         } catch (error) {
             edwinLogger.error('Failed to get current Hedera account info:', error);
             throw error;
@@ -111,8 +118,7 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Transferring ${params.amount} HBAR to account: ${params.toAccountId}`);
 
         try {
-            // TODO: Implement HBAR transfer
-            throw new Error('Method not implemented');
+            return await this.wallet.transferHbar(params.toAccountId, params.amount);
         } catch (error) {
             edwinLogger.error('Failed to transfer HBAR:', error);
             throw error;
@@ -126,8 +132,7 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Transferring ${params.amount} of token ${params.tokenId} to account: ${params.toAccountId}`);
 
         try {
-            // TODO: Implement token transfer
-            throw new Error('Method not implemented');
+            return await this.wallet.transferToken(params.toAccountId, params.tokenId, params.amount);
         } catch (error) {
             edwinLogger.error('Failed to transfer token:', error);
             throw error;
