@@ -1,6 +1,7 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { HederaWalletClient } from '../../core/wallets/hedera_wallet';
 import edwinLogger from '../../utils/logger';
+import { TransferTransaction, AccountId, Hbar, TokenId } from '@hashgraph/sdk';
 import {
     HederaWalletBalanceParameters,
     HederaWalletTokenBalanceParameters,
@@ -116,7 +117,17 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Transferring ${params.amount} HBAR to account: ${params.toAccountId}`);
 
         try {
-            return await this.wallet.transferHbar(params.toAccountId, params.amount);
+            // Construct the transfer transaction
+            const fromAccount = AccountId.fromString(this.wallet.getAddress());
+            const toAccount = AccountId.fromString(params.toAccountId);
+            const transferAmount = Hbar.fromTinybars(Math.floor(params.amount * 100000000)); // Convert HBAR to tinybars
+
+            const transaction = new TransferTransaction()
+                .addHbarTransfer(fromAccount, transferAmount.negated())
+                .addHbarTransfer(toAccount, transferAmount);
+
+            // Use the wallet's generic sendTransaction method
+            return await this.wallet.sendTransaction(transaction);
         } catch (error) {
             edwinLogger.error('Failed to transfer HBAR:', error);
             throw error;
@@ -130,7 +141,17 @@ export class HederaWalletService extends EdwinService {
         edwinLogger.info(`Transferring ${params.amount} of token ${params.tokenId} to account: ${params.toAccountId}`);
 
         try {
-            return await this.wallet.transferToken(params.toAccountId, params.tokenId, params.amount);
+            // Construct the token transfer transaction
+            const fromAccount = AccountId.fromString(this.wallet.getAddress());
+            const toAccount = AccountId.fromString(params.toAccountId);
+            const token = TokenId.fromString(params.tokenId);
+
+            const transaction = new TransferTransaction()
+                .addTokenTransfer(token, fromAccount, -params.amount)
+                .addTokenTransfer(token, toAccount, params.amount);
+
+            // Use the wallet's generic sendTransaction method
+            return await this.wallet.sendTransaction(transaction);
         } catch (error) {
             edwinLogger.error('Failed to transfer token:', error);
             throw error;

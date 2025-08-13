@@ -1,0 +1,199 @@
+# Hedera Blockchain Wallet Support
+
+## 1. Feature Overview
+
+This feature introduces comprehensive support for Hedera blockchain wallets within the Edwin SDK. Its primary purpose is to enable interaction with the Hedera network, allowing users and agents to perform operations such as querying HBAR and Hedera Token Service (HTS) token balances, retrieving account information, and executing HBAR and HTS token transfers. The implementation follows the existing modular architecture of the SDK, providing both read-only and full-capability (signing) wallet clients, integrated seamlessly through a plugin system.
+
+## 2. High Level Flow of the Feature
+
+The Hedera wallet support is integrated into the Edwin SDK through two main layers: the `core/wallets` layer and the `plugins` layer.
+
+1.  **Wallet Creation**: A user or system component initiates the creation of a Hedera wallet client using a factory. This client can be either a read-only client (for public account queries) or a full-capability client (for signing transactions).
+2.  **Core Wallet Operations**: The created wallet client interacts directly with the Hedera network using the `@hashgraph/sdk`. It handles fundamental blockchain interactions like establishing a connection, querying account balances (HBAR and HTS tokens), retrieving account details, and signing/sending transactions.
+3.  **Plugin Integration**: A Hedera wallet plugin is instantiated with a wallet client. This plugin exposes a set of high-level tools (functions) that abstract the core wallet operations into a more user-friendly and agent-consumable format. These tools include functionalities for checking balances, getting account information, and performing transfers.
+4.  **Tool Execution**: When a plugin tool is invoked, it delegates the request to the underlying Hedera wallet service, which in turn uses the core wallet client to interact with the Hedera network. For signing-required operations (like transfers), the plugin ensures that a signing-capable wallet client is provided.
+
+## 3. Detailed Flow of the Feature and Each Component
+
+### 3.1. Core Wallet Classes (`src/core/wallets/hedera_wallet/`)
+
+This section defines the fundamental interfaces and classes for interacting with the Hedera network.
+
+**File Structure:**
+```
+src/core/wallets/hedera_wallet/
+├── index.ts              # Main exports for Hedera wallet components
+├── client.ts             # HederaWalletClient interface definition
+├── base_client.ts        # Abstract base class for common Hedera wallet functionality
+├── factory.ts            # Factory for creating Hedera wallet instances
+└── clients/
+    ├── index.ts          # Exports for specific client implementations
+    ├── keypair/
+    │   └── index.ts      # KeypairClient (private key wallet implementation)
+    └── publickey/
+        └── index.ts      # PublicKeyClient (read-only wallet implementation)
+```
+
+**Components and Logic:**
+
+#### `src/core/wallets/hedera_wallet/client.ts`
+-   **Interface**: `HederaWalletClient`
+-   **Purpose**: Defines the contract for any Hedera wallet client in the SDK. It specifies the public methods that all Hedera wallet implementations must adhere to.
+-   **Key Methods Defined (Interface)**:
+    -   `readonly accountId: AccountId`: The Hedera account ID associated with the wallet.
+    -   `getClient(network?: string): Client`: Returns a configured Hedera SDK `Client` instance for a specified network (e.g., 'testnet', 'mainnet').
+    -   `getAddress(): string`: Returns the wallet's account ID as a string.
+    -   `getBalance(): Promise<number>`: Retrieves the HBAR balance of the current wallet.
+    -   `getBalanceOfAccount(accountId: string): Promise<number>`: Retrieves the HBAR balance of any specified Hedera account.
+    -   `getTokenBalance?(tokenId: string): Promise<number>`: (Optional) Retrieves the balance of a specific HTS token for the current wallet.
+    -   `getTokenBalanceOfAccount?(accountId: string, tokenId: string): Promise<number>`: (Optional) Retrieves the balance of a specific HTS token for any specified account.
+    -   `getAccountInfo(): Promise<unknown>`: Retrieves detailed information about the current wallet's account.
+    -   `getAccountInfoForAccount?(accountId: string): Promise<unknown>`: (Optional) Retrieves detailed information about any specified Hedera account.
+    -   `signTransaction(transaction: Transaction): Promise<Transaction>`: Signs a given Hedera transaction.
+    -   `sendTransaction(transaction: Transaction): Promise<string>`: Sends a signed Hedera transaction to the network.
+    -   `transferHbar(toAccountId: string, amount: number): Promise<string>`: Initiates an HBAR transfer.
+    -   `transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string>`: Initiates an HTS token transfer.
+
+#### `src/core/wallets/hedera_wallet/base_client.ts`
+-   **Class**: `BaseHederaWalletClient` (abstract)
+-   **Purpose**: Provides common, non-signing functionalities and shared logic for all Hedera wallet clients. It implements the read-only parts of `HederaWalletClient` and leaves signing-related methods abstract.
+-   **Key Methods Implemented**:
+    -   `constructor(accountId: string | AccountId)`: Initializes the `accountId` property.
+    -   `getAddress(): string`: Returns `this.accountId.toString()`.
+    -   `getClient(network: string = 'testnet'): Client`: Creates and returns a Hedera SDK `Client` instance. It supports 'mainnet', 'testnet', and 'previewnet'. It also sets a `defaultMaxTransactionFee` of 2 HBAR (200,000,000 tinybars). Includes error handling for unsupported networks.
+    -   `async getBalance(): Promise<number>`: Calls `this.getBalanceOfAccount(this.getAddress())`.
+    -   `async getBalanceOfAccount(accountId: string): Promise<number>`: Fetches the HBAR balance of the given `accountId` using `AccountBalanceQuery`. Converts the balance from tinybars to HBAR (dividing by 100,000,000). Includes error logging.
+    -   `async getTokenBalance(tokenId: string): Promise<number>`: Calls `this.getTokenBalanceOfAccount(this.getAddress(), tokenId)`.
+    -   `async getTokenBalanceOfAccount(accountId: string, tokenId: string): Promise<number>`: Fetches the token balance for a specific `tokenId` on a given `accountId` using `AccountBalanceQuery`. Retrieves the token balance from the `balance.tokens` map and converts it to a number. Returns 0 if the token is not found or has no balance. Includes error logging.
+    -   `async getAccountInfo(): Promise<unknown>`: Calls `this.getAccountInfoForAccount(this.getAddress())`.
+    -   `async getAccountInfoForAccount(accountId: string): Promise<unknown>`: Fetches detailed account information for a given `accountId` using `AccountInfoQuery`. Returns a structured object containing `accountId`, `balance` (in HBAR), `key`, `expirationTime`, `autoRenewPeriod`, `isDeleted`, `memo`, and `ethereumNonce`. Includes error logging.
+-   **Abstract Methods (to be implemented by subclasses)**:
+    -   `signTransaction(transaction: Transaction): Promise<Transaction>`
+    -   `sendTransaction(transaction: Transaction): Promise<string>`
+    -   `transferHbar(toAccountId: string, amount: number): Promise<string>`
+    -   `transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string>`
+
+#### `src/core/wallets/hedera_wallet/clients/keypair/index.ts`
+-   **Class**: `KeypairClient`
+-   **Purpose**: Implements a full-capability Hedera wallet client that can sign and send transactions using a private key.
+-   **Inheritance**: Extends `BaseHederaWalletClient`.
+-   **Key Methods Implemented**:
+    -   `constructor(privateKey: string | PrivateKey, accountId?: string | AccountId)`: Initializes the `privateKey`. If `accountId` is not provided, it derives it from the public key associated with the `privateKey`.
+    -   `getPrivateKey(): PrivateKey`: Returns the internal `PrivateKey` object.
+    -   `async signTransaction(transaction: Transaction): Promise<Transaction>`: Signs the provided `transaction` using `this.privateKey`. Includes error handling.
+    -   `async sendTransaction(transaction: Transaction): Promise<string>`: This is the core method for sending transactions. It first obtains a Hedera `Client` instance, then sets the client's operator using `client.setOperator(this.accountId, this.privateKey)`. It then executes the `transaction` (which will be automatically signed by the operator) and retrieves the transaction receipt. It validates that the transaction status is 'SUCCESS' and returns the `transactionId` as a string. Includes comprehensive error logging.
+    -   `async transferHbar(toAccountId: string, amount: number): Promise<string>`: Constructs a `TransferTransaction` to send HBAR from the current account to `toAccountId`. It converts the `amount` from HBAR to tinybars. It then calls `this.sendTransaction` to execute the transfer. Includes error logging.
+    -   `async transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string>`: Constructs a `TransferTransaction` (note: `TransferTransaction` is used for both HBAR and HTS token transfers in Hedera SDK) to send HTS tokens from the current account to `toAccountId`. It specifies the `tokenId` and `amount`. It then calls `this.sendTransaction` to execute the transfer. Includes error logging.
+
+#### `src/core/wallets/hedera_wallet/clients/publickey/index.ts`
+-   **Class**: `PublicKeyClient`
+-   **Purpose**: Implements a read-only Hedera wallet client that can only perform queries and does not support signing or sending transactions.
+-   **Inheritance**: Extends `BaseHederaWalletClient`.
+-   **Key Methods Implemented**:
+    -   `constructor(accountId: string | AccountId)`: Initializes the `accountId` property by calling the super constructor.
+    -   `async signTransaction(_transaction: Transaction): Promise<Transaction>`: Throws an `Error` indicating that signing is not supported.
+    -   `async sendTransaction(_transaction: Transaction): Promise<string>`: Throws an `Error` indicating that sending transactions is not supported.
+    -   `async transferHbar(_toAccountId: string, _amount: number): Promise<string>`: Throws an `Error` indicating that HBAR transfers are not supported.
+    -   `async transferToken(_toAccountId: string, _tokenId: string, _amount: number): Promise<string>`: Throws an `Error` indicating that token transfers are not supported.
+
+#### `src/core/wallets/hedera_wallet/factory.ts`
+-   **Object**: `HederaWalletFactory`
+-   **Purpose**: Provides static factory methods to create instances of `KeypairClient` and `PublicKeyClient`.
+-   **Key Methods**:
+    -   `fromPrivateKey(privateKey: string | PrivateKey, accountId?: string | AccountId): KeypairClient`: Creates a `KeypairClient` instance. If `accountId` is not provided, it's derived from the private key.
+    -   `fromAccountId(accountId: string | AccountId): PublicKeyClient`: Creates a `PublicKeyClient` instance.
+-   **Function**: `canSign(client: HederaWalletClient): boolean`
+    -   **Purpose**: A type guard function to determine if a given `HederaWalletClient` instance supports signing operations. It returns `true` if the client is not an instance of `PublicKeyClient`.
+
+#### `src/core/wallets/hedera_wallet/index.ts`
+-   **Purpose**: Serves as the main entry point for exporting all core Hedera wallet components, including interfaces, base classes, client implementations, and the factory.
+
+### 3.2. Plugin Implementation (`src/plugins/hedera_wallet/`)
+
+This section describes how the core Hedera wallet functionality is exposed as Edwin SDK plugins and tools.
+
+**File Structure:**
+```
+src/plugins/hedera_wallet/
+├── index.ts              # Plugin exports
+├── hederaWalletPlugin.ts # Main plugin class
+├── hederaWalletService.ts# Service implementation that uses core wallet clients
+└── parameters.ts         # Zod schemas and types for plugin tool parameters
+```
+
+**Components and Logic:**
+
+#### `src/plugins/hedera_wallet/parameters.ts`
+-   **Purpose**: Defines Zod schemas for validating input parameters for each Hedera wallet plugin tool. This ensures type safety and robust input validation.
+-   **Key Schemas and Types**:
+    -   `HederaWalletBalanceParametersSchema` / `HederaWalletBalanceParameters`: For getting HBAR balance of any account.
+    -   `CurrentHederaWalletBalanceParametersSchema` / `CurrentHederaWalletBalanceParameters`: For getting HBAR balance of the current wallet (no parameters).
+    -   `HederaWalletTokenBalanceParametersSchema` / `HederaWalletTokenBalanceParameters`: For getting token balance of any account for a specific token.
+    -   `CurrentHederaWalletTokenBalanceParametersSchema` / `CurrentHederaWalletTokenBalanceParameters`: For getting token balance of the current wallet for a specific token.
+    -   `HederaWalletAccountInfoParametersSchema` / `HederaWalletAccountInfoParameters`: For getting account information of any account.
+    -   `CurrentHederaWalletAccountInfoParametersSchema` / `CurrentHederaWalletAccountInfoParameters`: For getting account information of the current wallet (no parameters).
+    -   `HederaWalletTransferHbarParametersSchema` / `HederaWalletTransferHbarParameters`: For transferring HBAR (recipient account ID and amount).
+    -   `HederaWalletTransferTokenParametersSchema` / `HederaWalletTransferTokenParameters`: For transferring HTS tokens (recipient account ID, token ID, and amount).
+
+#### `src/plugins/hedera_wallet/hederaWalletService.ts`
+-   **Class**: `HederaWalletService`
+-   **Purpose**: Acts as an intermediary between the plugin tools and the core Hedera wallet client. It encapsulates the business logic for each tool, delegating to the appropriate methods of the `HederaWalletClient`.
+-   **Inheritance**: Extends `EdwinService`.
+-   **Key Methods Implemented**:
+    -   `constructor(private wallet: HederaWalletClient)`: Initializes the service with a `HederaWalletClient` instance.
+    -   `async getHederaWalletBalance(params: HederaWalletBalanceParameters): Promise<number>`: Calls `this.wallet.getBalanceOfAccount(params.accountId)`.
+    -   `async getCurrentHederaWalletBalance(): Promise<number>`: Calls `this.wallet.getBalance()`.
+    -   `async getHederaWalletTokenBalance(params: HederaWalletTokenBalanceParameters): Promise<number>`: Calls `this.wallet.getTokenBalanceOfAccount(params.accountId, params.tokenId)`. Includes a runtime check to ensure `getTokenBalanceOfAccount` is supported by the underlying wallet client, throwing an error if not.
+    -   `async getCurrentHederaWalletTokenBalance(tokenId: string): Promise<number>`: Calls `this.wallet.getTokenBalance!(tokenId)`. Includes a runtime check to ensure `getTokenBalance` is supported.
+    -   `async getHederaWalletAccountInfo(params: HederaWalletAccountInfoParameters): Promise<unknown>`: Calls `this.wallet.getAccountInfoForAccount(params.accountId)`. Includes a runtime check for `getAccountInfoForAccount` support.
+    -   `async getCurrentHederaWalletAccountInfo(): Promise<unknown>`: Calls `this.wallet.getAccountInfo()`.
+    -   `async transferHbar(params: HederaWalletTransferHbarParameters): Promise<string>`: Calls `this.wallet.transferHbar(params.toAccountId, params.amount)`.
+    -   `async transferToken(params: HederaWalletTransferTokenParameters): Promise<string>`: Calls `this.wallet.transferToken(params.toAccountId, params.tokenId, params.amount)`.
+    -   All methods include `edwinLogger.info` for logging and robust `try-catch` blocks for error handling.
+
+#### `src/plugins/hedera_wallet/hederaWalletPlugin.ts`
+-   **Class**: `HederaWalletPlugin`
+-   **Purpose**: The main plugin class that registers and exposes the Hedera wallet functionalities as Edwin tools. It categorizes tools into public (read-only) and private (signing-required) based on the capabilities of the provided wallet client.
+-   **Inheritance**: Extends `EdwinPlugin`.
+-   **Key Methods Implemented**:
+    -   `constructor(private wallet: HederaWalletClient)`: Initializes the plugin with a name ('hedera_wallet') and an instance of `HederaWalletService`.
+    -   `getTools(): Record<string, EdwinTool>`: Combines and returns both public and private tools.
+    -   `getPublicTools(): Record<string, EdwinTool>`: Returns a map of public tools:
+        -   `getHederaWalletBalance`
+        -   `getCurrentHederaWalletBalance`
+        -   `getHederaWalletTokenBalance`
+        -   `getCurrentHederaWalletTokenBalance`
+        -   `getHederaWalletAccountInfo`
+        -   `getCurrentHederaWalletAccountInfo`
+        Each tool is defined with a `name`, `description`, `schema` (from `parameters.ts`), and an `execute` function that calls the corresponding method in `HederaWalletService`.
+    -   `getPrivateTools(): Record<string, EdwinTool>`: Returns a map of private tools. These tools are only included if the `this.wallet` instance `canSign` (checked using the `canSign` utility from `core/wallets/hedera_wallet/factory.ts`).
+        -   `transferHbar`
+        -   `transferToken`
+        Similar to public tools, each is defined with `name`, `description`, `schema`, and `execute` function.
+    -   `supportsChain = (chain: Chain) => chain.type === 'hedera'`: A property indicating that this plugin supports the 'hedera' chain type.
+-   **Factory Function**: `export const hederaWallet = (wallet: HederaWalletClient) => new HederaWalletPlugin(wallet);` provides a convenient way to create plugin instances.
+
+#### `src/plugins/hedera_wallet/index.ts`
+-   **Purpose**: Serves as the main entry point for exporting all Hedera wallet plugin components.
+
+### 3.3. Chain Type Integration (`src/core/types/chain.ts`)
+
+-   **Purpose**: Extends the existing chain type definitions to include Hedera.
+-   **Changes**: 
+    -   `export type Chain = EvmChain | SolanaChain | HederaChain;` (added `HederaChain` to the union type).
+    -   `export type HederaChain = { type: 'hedera'; };` (defined the new `HederaChain` type).
+    -   `export type SupportedChain = SupportedEVMChain | 'solana' | 'hedera';` (added 'hedera' to the `SupportedChain` union type).
+
+### 3.4. Dependencies
+
+-   The `@hashgraph/sdk` package (version `^2.70.0`) was added to the `dependencies` section of `package.json`.
+
+### 3.5. Testing
+
+-   **Test File**: `tests/hedera_wallet.test.ts`
+-   **Framework**: Uses `vitest` for testing.
+-   **Environment Variables**: Tests are conditionally run based on the presence of `HEDERA_PRIVATE_KEY` and `HEDERA_ACCOUNT_ID` environment variables, allowing for both unit/mocked tests and real network integration tests.
+-   **Test Suites**: The test file is structured into several `describe` blocks:
+    -   `Hedera Wallet Core Functionality Tests`:
+        -   `Factory Tests`: Verifies correct instantiation of `PublicKeyClient` and `KeypairClient` from account IDs and private keys, and validates input parameters.
+        -   `PublicKeyClient Tests`: Confirms `getAddress()` works and verifies that signing/sending/transfer methods throw errors as expected for a read-only client. Also checks that implemented methods (like `getBalance()`, `getAccountInfo()`) do not throw 

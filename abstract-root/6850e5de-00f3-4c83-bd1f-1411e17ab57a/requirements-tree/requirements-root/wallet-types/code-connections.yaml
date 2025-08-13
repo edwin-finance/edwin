@@ -1,0 +1,120 @@
+- absLineContent: To provide secure and flexible wallet connection options.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 9
+          end: 28
+- absLineContent: "Read-Only Wallet:"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      entireFile: true
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 25
+          end: 27
+- absLineContent: Connects using only a public account ID.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 8
+          end: 10
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 25
+          end: 27
+- absLineContent: Safely view public blockchain data.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 59
+          end: 81
+        - start: 86
+          end: 116
+        - start: 121
+          end: 151
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 7
+          end: 7
+- absLineContent: Cannot sign or send transactions.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 15
+          end: 17
+        - start: 22
+          end: 24
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 31
+          end: 34
+- absLineContent: Ideal for checking balances and account info.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 59
+          end: 61
+        - start: 66
+          end: 81
+        - start: 121
+          end: 123
+        - start: 128
+          end: 151
+- absLineContent: "Full-Access Wallet:"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      entireFile: true
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 16
+          end: 18
+- absLineContent: Connects using a private key.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 11
+          end: 22
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 16
+          end: 18
+- absLineContent: Enables all wallet actions.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 8
+          end: 112
+- absLineContent: Can view data, sign, and send assets.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 56
+          end: 151
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 34
+          end: 42
+        - start: 47
+          end: 69
+        - start: 74
+          end: 90
+        - start: 95
+          end: 111
+- absLineContent: Required for all transfers.
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 74
+          end: 90
+        - start: 95
+          end: 111
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 29
+          end: 31
+        - start: 36
+          end: 38
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 31
+          end: 34

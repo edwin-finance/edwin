@@ -1,0 +1,66 @@
+- absLineContent: "- To register Hedera functionalities as discoverable SDK tools."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 24
+          end: 125
+- absLineContent: "- The plugin is created with a `HederaWalletClient`."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 25
+          end: 25
+        - start: 128
+          end: 128
+- absLineContent: "- It then creates a `<hedera-wallet-service.abs>` using this client."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 26
+          end: 26
+- absLineContent: "- It always registers a set of public, read-only tools."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 37
+          end: 92
+        - start: 32
+          end: 32
+- absLineContent: "- These include `getHederaWalletBalance` and `getHederaWalletAccountInfo`."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 43
+          end: 50
+        - start: 75
+          end: 82
+- absLineContent: "- It uses the `canSign` utility from the `<factory.abs>`."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 96
+          end: 96
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 31
+          end: 34
+- absLineContent: "- If `canSign` is true, it also registers private tools."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 94
+          end: 122
+- absLineContent: "- These include `transferHbar` and `transferToken`."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 105
+          end: 112
+        - start: 113
+          end: 120
+- absLineContent: "- If `canSign` is false, these tools are not exposed."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 96
+          end: 98

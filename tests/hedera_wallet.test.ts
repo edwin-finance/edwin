@@ -80,13 +80,9 @@ describe('Hedera Wallet Core Functionality Tests', () => {
                 'Cannot send transactions with a read-only PublicKeyClient'
             );
 
-            await expect(wallet.transferHbar('0.0.123457', 1)).rejects.toThrow(
-                'Cannot transfer HBAR with a read-only PublicKeyClient'
-            );
-
-            await expect(wallet.transferToken('0.0.123457', '0.0.123458', 1)).rejects.toThrow(
-                'Cannot transfer tokens with a read-only PublicKeyClient'
-            );
+            // Transfer methods are no longer on the wallet - they're in the plugin service
+            expect(wallet.transferHbar).toBeUndefined();
+            expect(wallet.transferToken).toBeUndefined();
         });
 
         it('should be able to call implemented methods', async () => {
@@ -246,18 +242,13 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
         });
 
         it('should have working signing methods', async () => {
-            // These methods should work now, but will fail due to invalid transaction objects or network issues
+            // These methods should work now, but will fail due to invalid transaction objects
             await expect(wallet.signTransaction({} as any)).rejects.toThrow();
             await expect(wallet.sendTransaction({} as any)).rejects.toThrow();
-            await expect(wallet.transferHbar('0.0.123457', 1)).rejects.toThrow();
-            await expect(wallet.transferToken('0.0.123457', '0.0.123458', 1)).rejects.toThrow();
 
-            // Should not throw "Method not implemented"
-            try {
-                await wallet.transferHbar('0.0.123457', 1);
-            } catch (error) {
-                expect((error as Error).message).not.toContain('Method not implemented');
-            }
+            // Transfer methods are no longer on the wallet - they're in the plugin service
+            expect(wallet.transferHbar).toBeUndefined();
+            expect(wallet.transferToken).toBeUndefined();
         }, 15000);
     });
 

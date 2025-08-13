@@ -1,0 +1,13 @@
+# Hedera Wallet Feature
+
+## 🎯 Purpose
+- To integrate Hedera blockchain capabilities into the SDK.
+- Enables querying balances, account info, and executing transfers.
+
+## 🧩 Key Components
+- Core Wallet Layer <core-wallet.abs>
+  - Provides fundamental classes for direct Hedera network interaction.
+  - Manages connections, queries, and transaction signing.
+- Plugin Integration Layer <plugin-integration.abs>
+  - Wraps core functions into user-friendly tools.
+  - Exposes capabilities to agents and other SDK components.

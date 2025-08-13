@@ -1,0 +1,14 @@
+# Hedera Wallet Capabilities
+
+## 🎯 Purpose
+- To provide a complete set of tools for Hedera assets.
+
+## 🧩 What It Brings
+- View Account and Token Data:
+  - Check balances for HBAR and HTS tokens.
+  - Retrieve detailed account information.
+  - See more details here: <query-functions.abs>
+- Send Assets:
+  - Transfer HBAR and HTS tokens.
+  - Requires a Full-Access wallet.
+  - See more details here: <transaction-functions.abs>

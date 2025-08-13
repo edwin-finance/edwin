@@ -1,0 +1,82 @@
+- absLineContent: "# Keypair Client (Signing Wallet)"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 8
+          end: 8
+      entireFile: false
+- absLineContent: "- To implement a full-capability wallet that signs transactions
+    using a private key."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      entireFile: true
+- absLineContent: "- Constructed with a private key."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 11
+          end: 22
+      entireFile: false
+- absLineContent: "- Derives the public account ID if not provided."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 14
+          end: 18
+      entireFile: false
+- absLineContent: "- The `sendTransaction` method is the core of execution."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 47
+          end: 69
+      entireFile: false
+- absLineContent: "- It gets a network client from the base class."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 49
+          end: 49
+      entireFile: false
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 28
+          end: 54
+      entireFile: false
+- absLineContent: "- It sets the client's operator with its account ID and private key."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 52
+          end: 52
+      entireFile: false
+- absLineContent: "- The Hedera SDK then automatically signs transactions upon execution."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 55
+          end: 55
+      entireFile: false
+- absLineContent: "- It executes the transaction and waits for a success receipt."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 55
+          end: 62
+      entireFile: false
+- absLineContent: "- Methods like `transferHbar` build a `TransferTransaction`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 81
+          end: 83
+      entireFile: false
+- absLineContent: "- They then call `sendTransaction` to execute it."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 85
+          end: 85
+        - start: 106
+          end: 106
+      entireFile: false

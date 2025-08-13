@@ -153,6 +153,4 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     // Abstract methods that must be implemented by derived classes
     abstract signTransaction(transaction: Transaction): Promise<Transaction>;
     abstract sendTransaction(transaction: Transaction): Promise<string>;
-    abstract transferHbar(toAccountId: string, amount: number): Promise<string>;
-    abstract transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string>;
 }

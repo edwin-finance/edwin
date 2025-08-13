@@ -1,0 +1,18 @@
+# Base Hedera Wallet Client
+
+## 🎯 Purpose
+- To provide shared, non-signing functionality for all Hedera clients.
+
+## ⚙️ How it Works
+- Initialization
+  - The constructor accepts a Hedera `accountId`.
+- Client Creation
+  - `getClient` method creates a configured `@hashgraph/sdk` client.
+  - It supports mainnet, testnet, and previewnet.
+- Read-Only Operations
+  - Implements `getBalanceOfAccount` using `AccountBalanceQuery`.
+  - Implements `getAccountInfoForAccount` using `AccountInfoQuery`.
+  - Handles data conversion, like tinybars to HBAR.
+- Abstract Methods
+  - Defines abstract methods like `signTransaction` and `transferHbar`.
+  - These must be implemented by signing-capable subclasses like `<keypair-client.abs>`.

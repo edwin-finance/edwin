@@ -1,0 +1,67 @@
+- absLineContent: "# Base Hedera Wallet Client"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 8
+          end: 8
+- absLineContent: "- To provide shared, non-signing functionality for all Hedera clients."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 8
+          end: 8
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 154
+          end: 157
+- absLineContent: "- The constructor accepts a Hedera `accountId`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 14
+          end: 16
+- absLineContent: "- `getClient` method creates a configured `@hashgraph/sdk` client."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 28
+          end: 54
+- absLineContent: "- It supports mainnet, testnet, and previewnet."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 32
+          end: 43
+- absLineContent: "- Implements `getBalanceOfAccount` using `AccountBalanceQuery`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 66
+          end: 81
+- absLineContent: "- Implements `getAccountInfoForAccount` using `AccountInfoQuery`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 128
+          end: 151
+- absLineContent: "- Handles data conversion, like tinybars to HBAR."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 76
+          end: 76
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 139
+          end: 139
+- absLineContent: "- Defines abstract methods like `signTransaction` and `transferHbar`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 154
+          end: 157
+- absLineContent: "- These must be implemented by signing-capable subclasses like
+    `<keypair-client.abs>`."
+  connections:
+    - fileName: feature-root/core-wallet/clients/keypair/keypair-client.abs
+      entireFile: true

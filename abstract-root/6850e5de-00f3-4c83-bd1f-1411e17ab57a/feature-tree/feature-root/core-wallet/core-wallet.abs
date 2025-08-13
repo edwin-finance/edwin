@@ -1,0 +1,16 @@
+# Core Wallet Layer
+
+## 🎯 Purpose
+- To provide the fundamental components for Hedera network interaction.
+
+## 🧩 Key Components
+- Client Interface
+  - `HederaWalletClient` defines a standard contract for all wallets.
+- Base Implementation <base-client.abs>
+  - An abstract class with shared, read-only logic.
+  - Implements balance and account info queries.
+- Specific Clients
+  - `KeypairClient`: A full-capability client for signing transactions. <keypair-client.abs>
+  - `PublicKeyClient`: A read-only client for public data queries. <publickey-client.abs>
+- Client Factory <factory.abs>
+  - Simplifies the creation of wallet client instances.

@@ -1,0 +1,74 @@
+- absLineContent: "- To provide the fundamental components for Hedera network interaction."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/index.ts
+      entireFile: true
+- absLineContent: "- `HederaWalletClient` defines a standard contract for all wallets."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 6
+          end: 96
+- absLineContent: "- Base Implementation <base-client.abs>"
+  connections:
+    - fileName: abstract-root/6850e5de-00f3-4c83-bd1f-1411e17ab57a/feature-tree/feature-root/core-wallet/base-client/base-client.abs
+      entireFile: true
+- absLineContent: "- An abstract class with shared, read-only logic."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 8
+          end: 8
+- absLineContent: "- Implements balance and account info queries."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 59
+          end: 61
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 66
+          end: 81
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 86
+          end: 88
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 93
+          end: 116
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 121
+          end: 123
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 128
+          end: 151
+- absLineContent: "- `KeypairClient`: A full-capability client for signing
+    transactions. <keypair-client.abs>"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 8
+          end: 8
+    - fileName: abstract-root/6850e5de-00f3-4c83-bd1f-1411e17ab57a/feature-tree/feature-root/core-wallet/keypair-client/keypair-client.abs
+      entireFile: true
+- absLineContent: "- `PublicKeyClient`: A read-only client for public data
+    queries. <publickey-client.abs>"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 7
+          end: 7
+    - fileName: abstract-root/6850e5de-00f3-4c83-bd1f-1411e17ab57a/feature-tree/feature-root/core-wallet/publickey-client/publickey-client.abs
+      entireFile: true
+- absLineContent: "- Client Factory <factory.abs>"
+  connections:
+    - fileName: abstract-root/6850e5de-00f3-4c83-bd1f-1411e17ab57a/feature-tree/feature-root/core-wallet/factory/factory.abs
+      entireFile: true
+- absLineContent: "- Simplifies the creation of wallet client instances."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 9
+          end: 28

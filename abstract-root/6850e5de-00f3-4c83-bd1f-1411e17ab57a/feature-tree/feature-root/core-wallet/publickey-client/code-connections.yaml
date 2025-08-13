@@ -1,0 +1,84 @@
+- absLineContent: "# PublicKey Client (Read-Only Wallet)"
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 7
+          end: 7
+- absLineContent: "- To implement a read-only wallet for public data queries."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 4
+          end: 7
+- absLineContent: "- Extends `<base-client.abs>`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 7
+          end: 7
+- absLineContent: "- Inherits all read-only logic like getting balances and account info."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 59
+          end: 61
+        - start: 66
+          end: 81
+        - start: 86
+          end: 88
+        - start: 93
+          end: 116
+        - start: 121
+          end: 123
+        - start: 128
+          end: 151
+- absLineContent: "- Only requires a public `accountId` to be constructed."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 8
+          end: 10
+- absLineContent: "- Implements all methods defined as abstract in the base class."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 154
+          end: 157
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 15
+          end: 38
+- absLineContent: "- These include `signTransaction`, `sendTransaction`, and `transferHbar`."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 15
+          end: 17
+        - start: 22
+          end: 24
+        - start: 29
+          end: 31
+- absLineContent: "- Each implementation immediately throws an error."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 16
+          end: 16
+        - start: 23
+          end: 23
+        - start: 30
+          end: 30
+        - start: 37
+          end: 37
+- absLineContent: "- This enforces its read-only nature at runtime."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 16
+          end: 16
+        - start: 23
+          end: 23
+        - start: 30
+          end: 30
+        - start: 37
+          end: 37

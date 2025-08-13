@@ -1,0 +1,18 @@
+# Keypair Client (Signing Wallet)
+
+## 🎯 Purpose
+- To implement a full-capability wallet that signs transactions using a private key.
+
+## ⚙️ How it Works
+- Initialization
+  - Constructed with a private key.
+  - Derives the public account ID if not provided.
+- Transaction Sending Flow
+  - The `sendTransaction` method is the core of execution.
+  - It gets a network client from the base class.
+  - It sets the client's operator with its account ID and private key.
+  - The Hedera SDK then automatically signs transactions upon execution.
+  - It executes the transaction and waits for a success receipt.
+- Transfer Logic
+  - Methods like `transferHbar` build a `TransferTransaction`.
+  - They then call `sendTransaction` to execute it.

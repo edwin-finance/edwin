@@ -1,0 +1,132 @@
+- absLineContent: "- To send HBAR and HTS tokens on the Hedera network."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 86
+          end: 86
+        - start: 95
+          end: 95
+    - fileName: src/core/wallets/hedera_wallet/base_client.ts
+      lineRanges:
+        - start: 156
+          end: 156
+        - start: 157
+          end: 157
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 74
+          end: 90
+        - start: 95
+          end: 111
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 115
+          end: 124
+        - start: 129
+          end: 138
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 105
+          end: 112
+        - start: 113
+          end: 120
+- absLineContent: "- Requires a Full-Access wallet for all actions."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/factory.ts
+      lineRanges:
+        - start: 31
+          end: 34
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 96
+          end: 98
+    - fileName: src/core/wallets/hedera_wallet/clients/publickey/index.ts
+      lineRanges:
+        - start: 29
+          end: 31
+        - start: 36
+          end: 38
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      entireFile: true
+- absLineContent: "- Send HBAR to another Hedera account."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 86
+          end: 86
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 74
+          end: 90
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 115
+          end: 124
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 107
+          end: 107
+- absLineContent: "- Specify recipient account ID and amount."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 86
+          end: 86
+    - fileName: src/plugins/hedera_wallet/parameters.ts
+      lineRanges:
+        - start: 41
+          end: 46
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 108
+          end: 108
+- absLineContent: "- Returns a transaction ID upon success."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 86
+          end: 86
+        - start: 95
+          end: 95
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 64
+          end: 64
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 115
+          end: 115
+        - start: 129
+          end: 129
+- absLineContent: "- Send HTS tokens to another account."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 95
+          end: 95
+    - fileName: src/core/wallets/hedera_wallet/clients/keypair/index.ts
+      lineRanges:
+        - start: 95
+          end: 111
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 129
+          end: 138
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 115
+          end: 115
+- absLineContent: "- Specify recipient, token ID, and amount."
+  connections:
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 95
+          end: 95
+    - fileName: src/plugins/hedera_wallet/parameters.ts
+      lineRanges:
+        - start: 49
+          end: 55
+    - fileName: src/plugins/hedera_wallet/hederaWalletPlugin.ts
+      lineRanges:
+        - start: 116
+          end: 116

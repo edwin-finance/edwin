@@ -1,0 +1,62 @@
+- absLineContent: "- To act as an intermediary between plugin tools and the core
+    wallet client."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      entireFile: true
+- absLineContent: "- The service is constructed with a `HederaWalletClient` instance."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 13
+          end: 15
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 6
+          end: 96
+- absLineContent: "- Each method in the service corresponds to a specific tool."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      entireFile: true
+- absLineContent: "- Example: `getHederaWalletBalance` calls `wallet.getBalanceOfAccount`."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 20
+          end: 29
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 32
+          end: 36
+- absLineContent: "- This decouples the tool definition from the core client logic."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      entireFile: true
+- absLineContent: "- It passes parameters from the tool to the wallet client."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      entireFile: true
+    - fileName: src/plugins/hedera_wallet/parameters.ts
+      entireFile: true
+- absLineContent: "- It adds logging and error handling for each operation."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      entireFile: true
+- absLineContent: "- It performs runtime checks for optional client methods before
+    calling them."
+  connections:
+    - fileName: src/plugins/hedera_wallet/hederaWalletService.ts
+      lineRanges:
+        - start: 53
+          end: 55
+        - start: 70
+          end: 72
+        - start: 88
+          end: 90
+    - fileName: src/core/wallets/hedera_wallet/client.ts
+      lineRanges:
+        - start: 39
+          end: 43
+        - start: 46
+          end: 51
+        - start: 54
+          end: 58

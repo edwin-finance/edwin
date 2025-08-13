@@ -76,21 +76,4 @@ export interface HederaWalletClient {
      * @returns Transaction ID
      */
     sendTransaction(transaction: Transaction): Promise<string>;
-
-    /**
-     * Transfer HBAR to another account
-     * @param toAccountId Recipient account ID
-     * @param amount Amount in HBAR
-     * @returns Transaction ID
-     */
-    transferHbar(toAccountId: string, amount: number): Promise<string>;
-
-    /**
-     * Transfer tokens to another account
-     * @param toAccountId Recipient account ID
-     * @param tokenId Token ID to transfer
-     * @param amount Amount to transfer
-     * @returns Transaction ID
-     */
-    transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string>;
 }

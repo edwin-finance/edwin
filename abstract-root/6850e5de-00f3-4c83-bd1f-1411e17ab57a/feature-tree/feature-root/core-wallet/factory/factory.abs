@@ -1,0 +1,17 @@
+# Hedera Wallet Factory
+
+## 🎯 Purpose
+- To provide simple, clear methods for creating Hedera wallet clients.
+
+## 🧩 Key Components
+- `fromPrivateKey` Method
+  - Creates a full-capability `<keypair-client.abs>`.
+  - Takes a private key and an optional account ID.
+- `fromAccountId` Method
+  - Creates a read-only `<publickey-client.abs>`.
+  - Takes a public account ID.
+- `canSign` Utility
+  - A type guard function.
+  - Checks if a given client is an instance of `<keypair-client.abs>`.
+  - It returns `false` for a `<publickey-client.abs>`.
+  - Used by the `<hedera-wallet-plugin.abs>` to conditionally add tools.

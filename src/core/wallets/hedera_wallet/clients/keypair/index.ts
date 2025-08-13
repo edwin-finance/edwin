@@ -1,4 +1,4 @@
-import { PrivateKey, AccountId, Transaction, TransferTransaction, Hbar, TokenId } from '@hashgraph/sdk';
+import { PrivateKey, AccountId, Transaction } from '@hashgraph/sdk';
 import edwinLogger from '../../../../../utils/logger';
 import { BaseHederaWalletClient } from '../../base_client';
 
@@ -65,48 +65,6 @@ export class KeypairClient extends BaseHederaWalletClient {
         } catch (error) {
             edwinLogger.error('Failed to send transaction:', error);
             throw new Error(`Failed to send transaction: ${error}`);
-        }
-    }
-
-    /**
-     * Transfer HBAR to another account
-     */
-    async transferHbar(toAccountId: string, amount: number): Promise<string> {
-        try {
-            const toAccount = AccountId.fromString(toAccountId);
-            const transferAmount = Hbar.fromTinybars(Math.floor(amount * 100000000)); // Convert HBAR to tinybars
-
-            edwinLogger.info(`Transferring ${amount} HBAR from ${this.getAddress()} to ${toAccountId}`);
-
-            const transaction = new TransferTransaction()
-                .addHbarTransfer(this.accountId, transferAmount.negated())
-                .addHbarTransfer(toAccount, transferAmount);
-
-            return await this.sendTransaction(transaction);
-        } catch (error) {
-            edwinLogger.error(`Failed to transfer HBAR to ${toAccountId}:`, error);
-            throw new Error(`Failed to transfer HBAR to ${toAccountId}: ${error}`);
-        }
-    }
-
-    /**
-     * Transfer tokens to another account
-     */
-    async transferToken(toAccountId: string, tokenId: string, amount: number): Promise<string> {
-        try {
-            const toAccount = AccountId.fromString(toAccountId);
-            const token = TokenId.fromString(tokenId);
-
-            edwinLogger.info(`Transferring ${amount} of token ${tokenId} from ${this.getAddress()} to ${toAccountId}`);
-
-            const transaction = new TransferTransaction()
-                .addTokenTransfer(token, this.accountId, -amount)
-                .addTokenTransfer(token, toAccount, amount);
-
-            return await this.sendTransaction(transaction);
-        } catch (error) {
-            edwinLogger.error(`Failed to transfer token ${tokenId} to ${toAccountId}:`, error);
-            throw new Error(`Failed to transfer token ${tokenId} to ${toAccountId}: ${error}`);
         }
     }
 }
