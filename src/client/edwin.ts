@@ -168,7 +168,7 @@ export class Edwin {
         if (plugin instanceof HederaWalletPlugin) {
             return !!this.wallets.hedera && HederaCanSign(this.wallets.hedera);
         }
-        
+
         // Check if the plugin is a Solana plugin
         if (
             plugin instanceof JupiterPlugin ||

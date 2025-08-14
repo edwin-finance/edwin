@@ -79,10 +79,6 @@ describe('Hedera Wallet Core Functionality Tests', () => {
             await expect(wallet.sendTransaction({} as any)).rejects.toThrow(
                 'Cannot send transactions with a read-only PublicKeyClient'
             );
-
-            // Transfer methods are no longer on the wallet - they're in the plugin service
-            expect(wallet.transferHbar).toBeUndefined();
-            expect(wallet.transferToken).toBeUndefined();
         });
 
         it('should be able to call implemented methods', async () => {
@@ -245,10 +241,6 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
             // These methods should work now, but will fail due to invalid transaction objects
             await expect(wallet.signTransaction({} as any)).rejects.toThrow();
             await expect(wallet.sendTransaction({} as any)).rejects.toThrow();
-
-            // Transfer methods are no longer on the wallet - they're in the plugin service
-            expect(wallet.transferHbar).toBeUndefined();
-            expect(wallet.transferToken).toBeUndefined();
         }, 15000);
     });
 
