@@ -23,7 +23,6 @@ function createToolFromEdwinTool(edwinTool: EdwinTool) {
         {
             name: edwinTool.name.toLowerCase(),
             description: edwinTool.description,
-            schema: edwinTool.schema,
         }
     );
 }
