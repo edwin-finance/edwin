@@ -72,7 +72,7 @@
         "@langchain/core": "^0.3.37",
         "@langchain/langgraph": "^0.2.39",
         "@langchain/openai": "^0.3.17",
-        "@meteora-ag/dlmm": "^1.5.4",
+        "@meteora-ag/dlmm": "1.5.4",
         "@modelcontextprotocol/sdk": "^1.7.0",
         "@solana/spl-token-registry": "^0.2.4574",
         "@solana/web3.js": "^1.98.0",
