@@ -9,6 +9,14 @@ export {
 } from './core/wallets/solana_wallet';
 export type { SolanaWalletClient } from './core/wallets/solana_wallet';
 
+// Export Hedera wallet types
+export { BaseHederaWalletClient, HederaWalletFactory, canSign as hederaCanSign } from './core/wallets/hedera_wallet';
+export type { HederaWalletClient } from './core/wallets/hedera_wallet';
+export {
+    KeypairClient as HederaKeypairClient,
+    PublicKeyClient as HederaPublicKeyClient,
+} from './core/wallets/hedera_wallet/clients';
+
 // Export core types
 export type * from './core/types';
 
@@ -23,6 +31,9 @@ export * from './plugins/cookie';
 export * from './plugins/eoracle';
 export * from './plugins/storyprotocol';
 export * from './plugins/hyperliquid';
+export * from './plugins/hedera_wallet';
+export * from './plugins/solana_wallet';
+export * from './plugins/evm_wallet';
 
 // Export client
 export { Edwin } from './client/edwin';

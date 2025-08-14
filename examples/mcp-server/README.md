@@ -40,7 +40,6 @@ cp .env.example .env
 ```
 
 2. Configure your `.env` file with the following required settings:
-
     - `SOLANA_RPC_URL`: Your RPC endpoint
     - `EVM_PRIVATE_KEY`: Your EVM wallet private key
     - `SOLANA_PRIVATE_KEY`: Your Solana wallet private key
@@ -53,7 +52,6 @@ cp .env.example .env
 ### Option 2: Using with Claude Desktop
 
 1. After building the project, use the provided `claude_desktop_config.json` to configure your Claude Desktop:
-
     - Open Claude Desktop
     - Go to Settings
     - Import the configuration from `claude_desktop_config.json`
@@ -80,13 +78,11 @@ The server exposes all tools configured in your Edwin instance. Common tools inc
 ## Troubleshooting
 
 1. **Server won't start**:
-
     - Check if the port is already in use
     - Verify your environment variables are set correctly
     - Check the logs for specific error messages
 
 2. **Tools not available**:
-
     - Ensure your Edwin instance is properly configured
     - Check if the tools are properly registered
     - Verify your wallet keys are correct

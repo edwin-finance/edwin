@@ -258,12 +258,10 @@ pnpm test tests/plugins/yourplugin
 When implementing tests for DeFi protocol integrations:
 
 1. **Maintain two types of tests**:
-
     - Mock tests that use test doubles for reliable CI/CD pipeline execution
     - Integration tests that use properly funded wallets to verify actual protocol interactions
 
 2. **Never replace or remove actual protocol implementations** just to make tests pass. Tests should be fixed by:
-
     - Properly configuring test environments with required wallet keys and balances
     - Adding supplementary mocks where needed while preserving core implementation logic
     - Using test doubles only for external API calls and network interactions

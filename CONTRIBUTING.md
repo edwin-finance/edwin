@@ -20,28 +20,23 @@ By contributing to Edwin, you accept that your contributions will be released un
 ### For Developers
 
 1. **Extend Edwin's Capabilities**
-
     - Create new actions and protocols
     - Improve existing modules and components
 
 2. **Improve Infrastructure**
-
     - Tackle open issues and submit pull requests
     - Update and verify documentation
     - Enhance performance
     - Refine deployment methods
 
 3. **Fork and Branch**
-
     - Fork the repository and branch off from `main`.
     - Name the branch with the issue number and a short description (e.g., `9999--add-test-for-bug-123`).
 
 4. **Add Tests**
-
     - If you introduce or modify functionality, add the necessary tests.
 
 5. **Test and Lint**
-
     - Ensure that the full test suite passes.
     - Verify that your code follows linting requirements.
 

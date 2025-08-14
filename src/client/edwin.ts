@@ -1,5 +1,5 @@
-import { EdwinEVMWallet, EdwinEVMPublicKeyWallet } from '../core/wallets';
-import { SolanaWalletClient, canSign } from '../core/wallets/solana_wallet';
+import { EdwinEVMWallet, EdwinEVMPublicKeyWallet, HederaWalletClient, canSign as HederaCanSign } from '../core/wallets';
+import { SolanaWalletClient, canSign as SolanaCanSign } from '../core/wallets/solana_wallet';
 import type { EdwinTool } from '../core/types';
 import { EdwinPlugin } from '../core/classes/edwinPlugin';
 import {
@@ -17,6 +17,8 @@ import {
     evmWallet,
     solanaWallet,
     silo,
+    HederaWalletPlugin,
+    hederaWallet,
 } from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
@@ -40,11 +42,15 @@ export interface EdwinConfig {
 
     // Solana wallet client
     solanaClient?: SolanaWalletClient;
+
+    // Hedera wallet client
+    hederaClient?: HederaWalletClient;
 }
 
 interface EdwinWallets {
     evm?: EdwinEVMPublicKeyWallet;
     solana?: SolanaWalletClient;
+    hedera?: HederaWalletClient;
 }
 
 interface EdwinPlugins {
@@ -62,6 +68,7 @@ interface EdwinPlugins {
     evmWallet?: EVMWalletPlugin;
     solanaWallet?: SolanaWalletPlugin;
     silo?: SiloPlugin;
+    hedera?: HederaWalletPlugin;
 }
 
 export class Edwin {
@@ -79,6 +86,11 @@ export class Edwin {
         // Use the provided Solana wallet client directly
         if (config.solanaClient) {
             this.wallets.solana = config.solanaClient;
+        }
+
+        // Use the provided Hedera wallet client directly
+        if (config.hederaClient) {
+            this.wallets.hedera = config.hederaClient;
         }
 
         // Initialize EVM plugins
@@ -105,6 +117,11 @@ export class Edwin {
             this.plugins.meteora = meteora(this.wallets.solana);
             this.plugins.jupiter = jupiter(this.wallets.solana);
             this.plugins.solanaWallet = solanaWallet(this.wallets.solana);
+        }
+
+        // Initialize Hedera plugins if we have a Hedera wallet
+        if (this.wallets.hedera) {
+            this.plugins.hedera = hederaWallet(this.wallets.hedera);
         }
 
         // Initialize non-wallet-dependent plugins
@@ -147,6 +164,11 @@ export class Edwin {
      * @returns true if the wallet has signing capabilities for the plugin, false otherwise
      */
     private hasSigningCapabilitiesForPlugin(plugin: EdwinPlugin): boolean {
+        // Check if the plugin is a Hedera plugin
+        if (plugin instanceof HederaWalletPlugin) {
+            return !!this.wallets.hedera && HederaCanSign(this.wallets.hedera);
+        }
+
         // Check if the plugin is a Solana plugin
         if (
             plugin instanceof JupiterPlugin ||
@@ -155,7 +177,7 @@ export class Edwin {
             plugin instanceof SolanaWalletPlugin
         ) {
             // Check if we have a Solana wallet and it supports signing
-            return !!this.wallets.solana && canSign(this.wallets.solana);
+            return !!this.wallets.solana && SolanaCanSign(this.wallets.solana);
         }
 
         // Check if the plugin is an EVM plugin
