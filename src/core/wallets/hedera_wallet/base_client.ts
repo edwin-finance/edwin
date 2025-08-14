@@ -25,7 +25,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     /**
      * Get Hedera client
      */
-    getClient(network: string = 'testnet'): Client {
+    getClient(network: string = process.env.HEDERA_NETWORK || 'testnet'): Client {
         try {
             let client: Client;
 
