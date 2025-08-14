@@ -1,6 +1,6 @@
 {
     "name": "edwin-sdk",
-    "version": "0.8.41",
+    "version": "0.8.42",
     "description": "SDK for integrating AI agents with DeFi protocols",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
