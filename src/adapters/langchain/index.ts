@@ -8,23 +8,28 @@ export type GetEdwinToolsParams = {
 };
 
 function createToolFromEdwinTool(edwinTool: EdwinTool) {
-    return tool(
-        async (args: unknown) => {
-            try {
-                const result = await edwinTool.execute(args);
-                return JSON.stringify(result);
-            } catch (error) {
-                if (error instanceof Error) {
-                    throw new Error(`${edwinTool.name} failed: ${error.message}`);
-                }
-                throw error;
+    // Using `any` here to avoid TS2589: "Type instantiation is excessively deep and possibly infinite".
+    // This happens when passing Zod schemas into tool(), due to deep type inference.
+    // See: https://github.com/colinhacks/zod/issues/577
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const toolConfig: any = {
+        name: edwinTool.name.toLowerCase(),
+        description: edwinTool.description,
+        schema: edwinTool.schema,
+    };
+
+    return tool(async (args: unknown) => {
+        try {
+            const result = await edwinTool.execute(args);
+            return JSON.stringify(result);
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`${edwinTool.name} failed: ${error.message}`);
             }
-        },
-        {
-            name: edwinTool.name.toLowerCase(),
-            description: edwinTool.description,
+            throw error;
         }
-    );
+    }, toolConfig);
 }
 
 /**
