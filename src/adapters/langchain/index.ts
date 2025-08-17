@@ -8,7 +8,10 @@ export type GetEdwinToolsParams = {
 };
 
 function createToolFromEdwinTool(edwinTool: EdwinTool) {
-    // Type assertion to avoid deep type instantiation issues
+    // Using `any` here to avoid TS2589: "Type instantiation is excessively deep and possibly infinite".
+    // This happens when passing Zod schemas into tool(), due to deep type inference.
+    // See: https://github.com/colinhacks/zod/issues/577
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const toolConfig: any = {
         name: edwinTool.name.toLowerCase(),
