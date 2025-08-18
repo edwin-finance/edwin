@@ -9,7 +9,6 @@ import {
     meteora,
     uniswap,
     jupiter,
-    cookie,
     eoracle,
     storyprotocol,
     mendi,
@@ -26,7 +25,6 @@ import { UniswapPlugin } from '../plugins/uniswap/uniswapPlugin';
 import { LuloPlugin } from '../plugins/lulo/luloPlugin';
 import { MeteoraPlugin } from '../plugins/meteora/meteoraPlugin';
 import { JupiterPlugin } from '../plugins/jupiter/jupiterPlugin';
-import { CookiePlugin } from '../plugins/cookie/cookiePlugin';
 import { EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 import { StoryProtocolPlugin } from '../plugins/storyprotocol/storyProtocolPlugin';
 import { MendiPlugin } from '../plugins/mendi/mendiPlugin';
@@ -60,7 +58,6 @@ interface EdwinPlugins {
     lulo?: LuloPlugin;
     meteora?: MeteoraPlugin;
     jupiter?: JupiterPlugin;
-    cookie?: CookiePlugin;
     eoracle?: EOraclePlugin;
     storyprotocol?: StoryProtocolPlugin;
     mendi?: MendiPlugin;
@@ -125,9 +122,6 @@ export class Edwin {
         }
 
         // Initialize non-wallet-dependent plugins
-        if (process.env.COOKIE_API_KEY) {
-            this.plugins.cookie = cookie(process.env.COOKIE_API_KEY);
-        }
 
         if (process.env.EORACLE_API_KEY) {
             this.plugins.eoracle = eoracle(process.env.EORACLE_API_KEY);
