@@ -15,16 +15,22 @@ export class KeypairClient extends BaseHederaWalletClient {
             // Remove 0x prefix if present
             let cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
             
-            // Try to parse the private key - it could be DER or raw format
+            // Try to parse the private key - it could be DER, ED25519, or ECDSA format
             try {
                 // Check if it's DER format (starts with 302)
                 if (cleanKey.startsWith('302')) {
                     key = PrivateKey.fromStringDer(cleanKey);
                 } else if (cleanKey.length === 64) {
-                    // Raw ED25519 format (64 hex chars)
-                    key = PrivateKey.fromStringED25519(cleanKey);
+                    // Could be either ED25519 or ECDSA (both 64 hex chars)
+                    // Try ECDSA first since the key has 0x prefix (Ethereum-style)
+                    try {
+                        key = PrivateKey.fromStringECDSA(cleanKey);
+                    } catch {
+                        // If ECDSA fails, try ED25519
+                        key = PrivateKey.fromStringED25519(cleanKey);
+                    }
                 } else if (cleanKey.length === 96) {
-                    // DER-encoded ED25519 (96 hex chars)
+                    // DER-encoded format (96 hex chars)
                     key = PrivateKey.fromStringDer(cleanKey);
                 } else {
                     // Try the generic fromString as fallback
