@@ -85,13 +85,14 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
      */
     async getTokenDecimals(tokenId: string): Promise<number> {
         const network = process.env.HEDERA_NETWORK || 'testnet';
-        const mirrorNodeUrl = network === 'mainnet' 
-            ? 'https://mainnet-public.mirrornode.hedera.com'
-            : 'https://testnet.mirrornode.hedera.com';
-        
+        const mirrorNodeUrl =
+            network === 'mainnet'
+                ? 'https://mainnet-public.mirrornode.hedera.com'
+                : 'https://testnet.mirrornode.hedera.com';
+
         const response = await fetch(`${mirrorNodeUrl}/api/v1/tokens/${tokenId}`);
         const tokenInfo = await response.json();
-        
+
         if (!('decimals' in tokenInfo)) {
             throw new Error(`Token decimals field not found for tokenId: ${tokenId}`);
         }
@@ -124,10 +125,10 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
             if (tokenBalance) {
                 // Get the raw balance in smallest units
                 const rawBalance = tokenBalance.toNumber();
-                
+
                 // Get token decimals to convert to human-readable amount
                 const decimals = await this.getTokenDecimals(tokenId);
-                
+
                 // Convert from smallest units to human-readable amount
                 return rawBalance / Math.pow(10, decimals);
             }

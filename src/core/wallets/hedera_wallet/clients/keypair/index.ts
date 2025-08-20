@@ -13,8 +13,8 @@ export class KeypairClient extends BaseHederaWalletClient {
         let key: PrivateKey;
         if (typeof privateKey === 'string') {
             // Remove 0x prefix if present
-            let cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
-            
+            const cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+
             // Try to parse the private key - it could be DER, ED25519, or ECDSA format
             try {
                 // Check if it's DER format (starts with 302)
@@ -35,11 +35,13 @@ export class KeypairClient extends BaseHederaWalletClient {
                 } else {
                     // Try the generic fromString as fallback
                     edwinLogger.warn('Using generic PrivateKey.fromString method');
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     key = (PrivateKey as any).fromString(cleanKey);
                 }
             } catch (e) {
                 // If all parsing fails, log the error and try the original string
                 edwinLogger.error('Failed to parse private key:', e);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 key = (PrivateKey as any).fromString(privateKey);
             }
         } else {

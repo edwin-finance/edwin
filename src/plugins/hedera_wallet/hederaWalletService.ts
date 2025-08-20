@@ -134,7 +134,6 @@ export class HederaWalletService extends EdwinService {
         }
     }
 
-
     /**
      * Transfer tokens to another account (amount should be in human-readable format)
      */
@@ -146,7 +145,9 @@ export class HederaWalletService extends EdwinService {
             const decimals = await this.wallet.getTokenDecimals(params.tokenId);
             const amountInSmallestUnits = Math.floor(params.amount * Math.pow(10, decimals));
 
-            edwinLogger.info(`Converting ${params.amount} to ${amountInSmallestUnits} smallest units (${decimals} decimals)`);
+            edwinLogger.info(
+                `Converting ${params.amount} to ${amountInSmallestUnits} smallest units (${decimals} decimals)`
+            );
 
             // Construct the token transfer transaction
             const fromAccount = AccountId.fromString(this.wallet.getAddress());
