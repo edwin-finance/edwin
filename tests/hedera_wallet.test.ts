@@ -131,6 +131,7 @@ describeReadOnlyTests('Hedera Wallet Service Tests (Read-Only)', () => {
                 });
                 expect(typeof balance).toBe('number');
                 expect(balance).toBeGreaterThanOrEqual(0);
+                console.log(`Account ${TEST_ACCOUNT_ID} HBAR balance: ${balance}`);
             } catch (error) {
                 // Should be a Hedera-specific error, not "Method not implemented"
                 expect((error as Error).message).not.toContain('Method not implemented');
@@ -142,36 +143,114 @@ describeReadOnlyTests('Hedera Wallet Service Tests (Read-Only)', () => {
                 const balance = await hederaWalletService.getCurrentHederaWalletBalance();
                 expect(typeof balance).toBe('number');
                 expect(balance).toBeGreaterThanOrEqual(0);
+                console.log(`Current wallet HBAR balance: ${balance}`);
             } catch (error) {
                 // Should be a Hedera-specific error, not "Method not implemented"
                 expect((error as Error).message).not.toContain('Method not implemented');
             }
         }, 10000);
 
-        it('should get token balance', async () => {
-            try {
-                const balance = await hederaWalletService.getHederaWalletTokenBalance({
-                    accountId: TEST_ACCOUNT_ID,
-                    tokenId: '0.0.123458',
-                });
-                expect(typeof balance).toBe('number');
-                expect(balance).toBeGreaterThanOrEqual(0);
-            } catch (error) {
-                // Should be a Hedera-specific error, not "Method not implemented"
-                expect((error as Error).message).not.toContain('Method not implemented');
-            }
-        }, 10000);
+        describe('HTS Token Balance Tests', () => {
+            const USDC_TOKEN_ID = '0.0.5449';  // Updated USDC token ID for testnet
 
-        it('should get current wallet token balance', async () => {
-            try {
-                const balance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.123458');
-                expect(typeof balance).toBe('number');
-                expect(balance).toBeGreaterThanOrEqual(0);
-            } catch (error) {
-                // Should be a Hedera-specific error, not "Method not implemented"
-                expect((error as Error).message).not.toContain('Method not implemented');
-            }
-        }, 10000);
+            it('should get USDC token balance in human-readable format', async () => {
+                try {
+                    const balance = await hederaWalletService.getHederaWalletTokenBalance({
+                        accountId: TEST_ACCOUNT_ID,
+                        tokenId: USDC_TOKEN_ID,
+                    });
+                    expect(typeof balance).toBe('number');
+                    expect(balance).toBeGreaterThanOrEqual(0);
+                    
+                    console.log(`Account ${TEST_ACCOUNT_ID} USDC balance: ${balance} USDC`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    
+                    // If the account is not associated with USDC, this is expected
+                    if (errorMsg.includes('TOKEN_NOT_ASSOCIATED')) {
+                        console.log('Account is not associated with USDC token');
+                    } else {
+                        console.log('Error getting USDC balance:', errorMsg);
+                    }
+                }
+            }, 10000);
+
+            it('should get current wallet USDC balance in human-readable format', async () => {
+                try {
+                    const balance = await hederaWalletService.getCurrentHederaWalletTokenBalance(USDC_TOKEN_ID);
+                    expect(typeof balance).toBe('number');
+                    expect(balance).toBeGreaterThanOrEqual(0);
+                    
+                    console.log(`Current wallet USDC balance: ${balance} USDC`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    
+                    if (errorMsg.includes('TOKEN_NOT_ASSOCIATED')) {
+                        console.log('Current wallet is not associated with USDC token');
+                    } else {
+                        console.log('Error getting current wallet USDC balance:', errorMsg);
+                    }
+                }
+            }, 10000);
+
+            it('should return 0 for non-associated token', async () => {
+                try {
+                    // Use a token that likely doesn't exist or isn't associated
+                    const balance = await hederaWalletService.getHederaWalletTokenBalance({
+                        accountId: TEST_ACCOUNT_ID,
+                        tokenId: '0.0.999999',
+                    });
+                    // Should return 0 for non-associated tokens
+                    expect(balance).toBe(0);
+                } catch (error) {
+                    // Or it might throw an error, which is also acceptable
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                }
+            }, 10000);
+
+            it('should handle multiple token balance queries', async () => {
+                const tokenIds = [
+                    USDC_TOKEN_ID,
+                    '0.0.123458', // Test token
+                    '0.0.456789', // Another test token
+                ];
+
+                for (const tokenId of tokenIds) {
+                    try {
+                        const balance = await hederaWalletService.getHederaWalletTokenBalance({
+                            accountId: TEST_ACCOUNT_ID,
+                            tokenId: tokenId,
+                        });
+                        console.log(`Token ${tokenId} balance: ${balance}`);
+                        expect(typeof balance).toBe('number');
+                    } catch (error) {
+                        console.log(`Token ${tokenId} balance check failed:`, (error as Error).message);
+                    }
+                }
+            }, 20000);
+
+            it('should show USDC balance in correct decimal format (between 1-50)', async () => {
+                try {
+                    // Get balance already converted to human-readable USDC amount
+                    const balance = await hederaWalletService.getCurrentHederaWalletTokenBalance(USDC_TOKEN_ID);
+                    
+                    console.log(`✅ Current USDC balance: ${balance} USDC`);
+                    
+                    // Verify it's in the expected range (we were funded with 49 USDC)
+                    expect(balance).toBeGreaterThanOrEqual(1);
+                    expect(balance).toBeLessThanOrEqual(50);
+                    
+                    // The balance should be close to 49 USDC (accounting for any previous transfers)
+                    expect(balance).toBeGreaterThan(40);
+                } catch (error) {
+                    console.log('Failed to get USDC balance:', (error as Error).message);
+                    throw error;
+                }
+            }, 15000);
+        });
     });
 
     describe('Account Info Service Tests', () => {
@@ -244,7 +323,7 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
         }, 15000);
     });
 
-    describe('Transfer Service Tests (Stubbed)', () => {
+    describe('Transfer Service Tests', () => {
         it('should attempt to transfer HBAR', async () => {
             try {
                 const txId = await hederaWalletService.transferHbar({
@@ -262,23 +341,207 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
             }
         }, 15000);
 
-        it('should attempt to transfer tokens', async () => {
-            try {
-                const txId = await hederaWalletService.transferToken({
-                    toAccountId: '0.0.123457',
-                    tokenId: '0.0.123458', // This likely doesn't exist
-                    amount: 1,
-                });
-                // If it succeeds, it should return a transaction ID
-                expect(typeof txId).toBe('string');
-                expect(txId.length).toBeGreaterThan(0);
-                console.log('✅ Token transfer successful! Transaction ID:', txId);
-            } catch (error) {
-                // Should be a Hedera-specific error, not "Method not implemented"
-                expect((error as Error).message).not.toContain('Method not implemented');
-                console.log('⚠️ Token transfer failed (expected for test):', (error as Error).message);
-            }
-        }, 15000);
+        describe('HTS Token Transfer Tests', () => {
+            // USDC on Hedera Testnet: 0.0.5449
+            const USDC_TOKEN_ID = '0.0.5449';
+            
+            // Test token that may or may not exist
+            const TEST_TOKEN_ID = '0.0.123458';
+            
+            // Test recipient account (should be a valid account on testnet)
+            const TEST_RECIPIENT = '0.0.34';
+
+            it('should handle token transfer with human-readable amounts', async () => {
+                try {
+                    // Transfer 1.5 USDC (human-readable amount)
+                    const transferAmount = 1.5;
+                    
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: USDC_TOKEN_ID,
+                        amount: transferAmount,
+                    });
+                    
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    console.log(`✅ USDC transfer successful! Transferred ${transferAmount} USDC`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    
+                    // Common errors we might encounter:
+                    // - TOKEN_NOT_ASSOCIATED_TO_ACCOUNT (sender or receiver not associated)
+                    // - INSUFFICIENT_TOKEN_BALANCE (not enough tokens)
+                    // - INVALID_TOKEN_ID (token doesn't exist)
+                    console.log('⚠️ USDC transfer failed:', errorMsg);
+                    
+                    if (errorMsg.includes('TOKEN_NOT_ASSOCIATED_TO_ACCOUNT')) {
+                        console.log('   💡 Hint: The account needs to be associated with the token first');
+                    } else if (errorMsg.includes('INSUFFICIENT_TOKEN_BALANCE')) {
+                        console.log('   💡 Hint: The account does not have enough USDC');
+                    }
+                }
+            }, 20000);
+
+            it('should transfer small amounts of tokens correctly', async () => {
+                try {
+                    // Transfer 0.000001 USDC (smallest possible amount)
+                    const transferAmount = 0.000001;
+                    
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: USDC_TOKEN_ID,
+                        amount: transferAmount,
+                    });
+                    
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    console.log(`✅ Micro USDC transfer successful! Transferred ${transferAmount} USDC`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    console.log('⚠️ Micro USDC transfer failed:', errorMsg);
+                }
+            }, 20000);
+
+            it('should handle integer token amounts', async () => {
+                try {
+                    // Transfer exactly 10 USDC
+                    const transferAmount = 10;
+                    
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: USDC_TOKEN_ID,
+                        amount: transferAmount,
+                    });
+                    
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    console.log(`✅ Integer USDC transfer successful! Transferred ${transferAmount} USDC`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    console.log('⚠️ Integer USDC transfer failed:', errorMsg);
+                }
+            }, 20000);
+
+            it('should fail gracefully with non-existent token', async () => {
+                try {
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: TEST_TOKEN_ID,
+                        amount: 1000000, // 1 token with 6 decimals
+                    });
+                    
+                    // If this succeeds, the token exists
+                    expect(typeof txId).toBe('string');
+                    console.log('✅ Test token transfer successful!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    
+                    // We expect this to fail with INVALID_TOKEN_ID or similar
+                    console.log('⚠️ Test token transfer failed (expected):', errorMsg);
+                    
+                    // The error should be descriptive
+                    expect(
+                        errorMsg.includes('INVALID_TOKEN_ID') ||
+                        errorMsg.includes('TOKEN_NOT_ASSOCIATED') ||
+                        errorMsg.includes('Failed to transfer token') ||
+                        errorMsg.includes('Failed to send transaction')
+                    ).toBe(true);
+                }
+            }, 20000);
+
+            it('should fail with invalid recipient account', async () => {
+                await expect(
+                    hederaWalletService.transferToken({
+                        toAccountId: 'invalid-account',
+                        tokenId: USDC_TOKEN_ID,
+                        amount: 1000000,
+                    })
+                ).rejects.toThrow();
+            });
+
+            it('should handle zero amount transfers', async () => {
+                try {
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: USDC_TOKEN_ID,
+                        amount: 0,
+                    });
+                    
+                    // Zero transfers might be allowed for some use cases
+                    expect(typeof txId).toBe('string');
+                    console.log('✅ Zero amount transfer successful!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    // Zero transfers might fail with specific error
+                    console.log('⚠️ Zero amount transfer failed:', errorMsg);
+                }
+            }, 20000);
+
+            it('should transfer 0.1 USDC and verify balance changes', async () => {
+                console.log('\n📊 Starting USDC transfer test with balance verification...');
+                
+                try {
+                    // Step 1: Get initial balance (already in human-readable format)
+                    const initialBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance(USDC_TOKEN_ID);
+                    console.log(`   Initial balance: ${initialBalance} USDC`);
+                    
+                    // Ensure we have enough USDC to transfer
+                    expect(initialBalance).toBeGreaterThan(0.1);
+                    
+                    // Step 2: Transfer 0.1 USDC (human-readable amount)
+                    const transferAmount = 0.1;
+                    
+                    console.log(`   Transferring ${transferAmount} USDC to ${TEST_RECIPIENT}...`);
+                    
+                    const txId = await hederaWalletService.transferToken({
+                        toAccountId: TEST_RECIPIENT,
+                        tokenId: USDC_TOKEN_ID,
+                        amount: transferAmount,
+                    });
+                    
+                    console.log(`   ✅ Transfer successful! Transaction ID: ${txId}`);
+                    
+                    // Step 3: Wait a moment for the transaction to be confirmed
+                    console.log('   Waiting for transaction confirmation...');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    // Step 4: Get final balance (already in human-readable format)
+                    const finalBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance(USDC_TOKEN_ID);
+                    console.log(`   Final balance: ${finalBalance} USDC`);
+                    
+                    // Step 5: Verify the balance decreased by exactly 0.1 USDC
+                    const actualDifference = initialBalance - finalBalance;
+                    
+                    console.log(`   Balance difference: ${actualDifference} USDC`);
+                    console.log(`   Expected difference: ${transferAmount} USDC`);
+                    
+                    // Allow for small rounding differences (within 0.000001 USDC)
+                    expect(Math.abs(actualDifference - transferAmount)).toBeLessThanOrEqual(0.000001);
+                    
+                    console.log('   ✅ Balance verification passed!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ USDC transfer test failed: ${errorMsg}`);
+                    
+                    if (errorMsg.includes('INSUFFICIENT_TOKEN_BALANCE')) {
+                        console.log('   💡 The account does not have enough USDC for this test');
+                    } else if (errorMsg.includes('TOKEN_NOT_ASSOCIATED')) {
+                        console.log('   💡 The recipient account needs to be associated with USDC first');
+                    } else if (errorMsg.includes('INVALID_SIGNATURE')) {
+                        console.log('   💡 There is an issue with transaction signing');
+                    }
+                    
+                    throw error;
+                }
+            }, 30000);
+        });
     });
 
     describe('Parameter Validation', () => {

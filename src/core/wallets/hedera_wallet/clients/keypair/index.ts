@@ -10,7 +10,35 @@ export class KeypairClient extends BaseHederaWalletClient {
 
     constructor(privateKey: string | PrivateKey, accountId?: string | AccountId) {
         // If accountId is not provided, derive it from the private key
-        const key = typeof privateKey === 'string' ? PrivateKey.fromString(privateKey) : privateKey;
+        let key: PrivateKey;
+        if (typeof privateKey === 'string') {
+            // Remove 0x prefix if present
+            let cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+            
+            // Try to parse the private key - it could be DER or raw format
+            try {
+                // Check if it's DER format (starts with 302)
+                if (cleanKey.startsWith('302')) {
+                    key = PrivateKey.fromStringDer(cleanKey);
+                } else if (cleanKey.length === 64) {
+                    // Raw ED25519 format (64 hex chars)
+                    key = PrivateKey.fromStringED25519(cleanKey);
+                } else if (cleanKey.length === 96) {
+                    // DER-encoded ED25519 (96 hex chars)
+                    key = PrivateKey.fromStringDer(cleanKey);
+                } else {
+                    // Try the generic fromString as fallback
+                    edwinLogger.warn('Using generic PrivateKey.fromString method');
+                    key = (PrivateKey as any).fromString(cleanKey);
+                }
+            } catch (e) {
+                // If all parsing fails, log the error and try the original string
+                edwinLogger.error('Failed to parse private key:', e);
+                key = (PrivateKey as any).fromString(privateKey);
+            }
+        } else {
+            key = privateKey;
+        }
         const account = accountId
             ? typeof accountId === 'string'
                 ? AccountId.fromString(accountId)
@@ -48,10 +76,10 @@ export class KeypairClient extends BaseHederaWalletClient {
         try {
             const client = this.getClient();
 
-            // Set the operator for the client
+            // Set the operator for the client (this handles signing and fee payment)
             client.setOperator(this.accountId, this.privateKey);
 
-            // Execute the transaction (it will be automatically signed)
+            // Execute the transaction directly - the SDK will handle freezing and signing
             const response = await transaction.execute(client);
 
             // Get the transaction receipt to ensure it was successful

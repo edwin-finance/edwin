@@ -134,21 +134,28 @@ export class HederaWalletService extends EdwinService {
         }
     }
 
+
     /**
-     * Transfer tokens to another account
+     * Transfer tokens to another account (amount should be in human-readable format)
      */
     async transferToken(params: HederaWalletTransferTokenParameters): Promise<string> {
         edwinLogger.info(`Transferring ${params.amount} of token ${params.tokenId} to account: ${params.toAccountId}`);
 
         try {
+            // Get token decimals to convert human-readable amount to smallest units
+            const decimals = await this.wallet.getTokenDecimals(params.tokenId);
+            const amountInSmallestUnits = Math.floor(params.amount * Math.pow(10, decimals));
+
+            edwinLogger.info(`Converting ${params.amount} to ${amountInSmallestUnits} smallest units (${decimals} decimals)`);
+
             // Construct the token transfer transaction
             const fromAccount = AccountId.fromString(this.wallet.getAddress());
             const toAccount = AccountId.fromString(params.toAccountId);
             const token = TokenId.fromString(params.tokenId);
 
             const transaction = new TransferTransaction()
-                .addTokenTransfer(token, fromAccount, -params.amount)
-                .addTokenTransfer(token, toAccount, params.amount);
+                .addTokenTransfer(token, fromAccount, -amountInSmallestUnits)
+                .addTokenTransfer(token, toAccount, amountInSmallestUnits);
 
             // Use the wallet's generic sendTransaction method
             return await this.wallet.sendTransaction(transaction);

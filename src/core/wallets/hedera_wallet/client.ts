@@ -51,6 +51,13 @@ export interface HederaWalletClient {
     getTokenBalanceOfAccount?(accountId: string, tokenId: string): Promise<number>;
 
     /**
+     * Get token decimals for a specific token
+     * @param tokenId Token ID to get decimals for
+     * @returns The number of decimals for the token
+     */
+    getTokenDecimals(tokenId: string): Promise<number>;
+
+    /**
      * Get account information for any account
      * @param accountId Account ID to get information for
      * @returns Account information object
