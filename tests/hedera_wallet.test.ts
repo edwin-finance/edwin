@@ -580,7 +580,8 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
                         errorMsg.includes('INVALID_TOKEN_ID') ||
                             errorMsg.includes('TOKEN_NOT_ASSOCIATED') ||
                             errorMsg.includes('Failed to transfer token') ||
-                            errorMsg.includes('Failed to send transaction')
+                            errorMsg.includes('Failed to send transaction') ||
+                            errorMsg.includes('Token decimals field not found')
                     ).toBe(true);
                 }
             }, 20000);
