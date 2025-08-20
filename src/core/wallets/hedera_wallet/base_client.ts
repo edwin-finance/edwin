@@ -81,14 +81,33 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     }
 
     /**
-     * Get token balance for a specific token
+     * Get token decimals for a specific token using Mirror Node REST API
+     */
+    async getTokenDecimals(tokenId: string): Promise<number> {
+        const network = process.env.HEDERA_NETWORK || 'testnet';
+        const mirrorNodeUrl =
+            network === 'mainnet'
+                ? 'https://mainnet-public.mirrornode.hedera.com'
+                : 'https://testnet.mirrornode.hedera.com';
+
+        const response = await fetch(`${mirrorNodeUrl}/api/v1/tokens/${tokenId}`);
+        const tokenInfo = await response.json();
+
+        if (!('decimals' in tokenInfo)) {
+            throw new Error(`Token decimals field not found for tokenId: ${tokenId}`);
+        }
+        return tokenInfo.decimals;
+    }
+
+    /**
+     * Get token balance for a specific token (returns human-readable amount)
      */
     async getTokenBalance(tokenId: string): Promise<number> {
         return this.getTokenBalanceOfAccount(this.getAddress(), tokenId);
     }
 
     /**
-     * Get token balance for any account
+     * Get token balance for any account (returns human-readable amount)
      */
     async getTokenBalanceOfAccount(accountId: string, tokenId: string): Promise<number> {
         try {
@@ -104,8 +123,14 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
             const tokenBalance = balance.tokens?.get(token);
 
             if (tokenBalance) {
-                // Convert to number (token balances are in smallest units)
-                return tokenBalance.toNumber();
+                // Get the raw balance in smallest units
+                const rawBalance = tokenBalance.toNumber();
+
+                // Get token decimals to convert to human-readable amount
+                const decimals = await this.getTokenDecimals(tokenId);
+
+                // Convert from smallest units to human-readable amount
+                return rawBalance / Math.pow(10, decimals);
             }
 
             return 0;
