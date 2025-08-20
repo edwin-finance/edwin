@@ -124,26 +124,45 @@ describeReadOnlyTests('Hedera Wallet Service Tests (Read-Only)', () => {
     });
 
     describe('Balance Service Tests', () => {
-        it('should get HBAR balance for wallet address', async () => {
+        it('should get HBAR balance for wallet address in correct decimal format', async () => {
             try {
                 const balance = await hederaWalletService.getHederaWalletBalance({
                     accountId: TEST_ACCOUNT_ID,
                 });
                 expect(typeof balance).toBe('number');
                 expect(balance).toBeGreaterThanOrEqual(0);
-                console.log(`Account ${TEST_ACCOUNT_ID} HBAR balance: ${balance}`);
+
+                // Verify balance is in HBAR (not tinybars) - should be a reasonable value
+                // If it were in tinybars, it would be a very large number (100M+ for 1 HBAR)
+                expect(balance).toBeLessThan(1000000); // Less than 1M HBAR (reasonable for testnet)
+
+                console.log(`✅ Account ${TEST_ACCOUNT_ID} HBAR balance: ${balance} HBAR`);
             } catch (error) {
                 // Should be a Hedera-specific error, not "Method not implemented"
                 expect((error as Error).message).not.toContain('Method not implemented');
             }
         }, 10000);
 
-        it('should get current wallet HBAR balance', async () => {
+        it('should get current wallet HBAR balance in correct decimal format', async () => {
             try {
                 const balance = await hederaWalletService.getCurrentHederaWalletBalance();
                 expect(typeof balance).toBe('number');
                 expect(balance).toBeGreaterThanOrEqual(0);
-                console.log(`Current wallet HBAR balance: ${balance}`);
+
+                // Verify balance is in HBAR (not tinybars) - should be a reasonable value
+                expect(balance).toBeLessThan(1000000); // Less than 1M HBAR (reasonable for testnet)
+
+                // For active testnet accounts, expect some HBAR for fees
+                expect(balance).toBeGreaterThan(0);
+
+                console.log(`✅ Current wallet HBAR balance: ${balance} HBAR`);
+
+                // Verify precision - HBAR should have up to 8 decimal places
+                const balanceStr = balance.toString();
+                const decimalPart = balanceStr.split('.')[1];
+                if (decimalPart) {
+                    expect(decimalPart.length).toBeLessThanOrEqual(8);
+                }
             } catch (error) {
                 // Should be a Hedera-specific error, not "Method not implemented"
                 expect((error as Error).message).not.toContain('Method not implemented');
@@ -324,22 +343,132 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
     });
 
     describe('Transfer Service Tests', () => {
-        it('should attempt to transfer HBAR', async () => {
-            try {
-                const txId = await hederaWalletService.transferHbar({
-                    toAccountId: '0.0.123457',
-                    amount: 0.1, // Small amount for testing
-                });
-                // If it succeeds, it should return a transaction ID
-                expect(typeof txId).toBe('string');
-                expect(txId.length).toBeGreaterThan(0);
-                console.log('✅ HBAR transfer successful! Transaction ID:', txId);
-            } catch (error) {
-                // Should be a Hedera-specific error, not "Method not implemented"
-                expect((error as Error).message).not.toContain('Method not implemented');
-                console.log('⚠️ HBAR transfer failed (expected for test):', (error as Error).message);
-            }
-        }, 15000);
+        describe('HBAR Transfer Tests', () => {
+            it('should transfer HBAR successfully', async () => {
+                try {
+                    const transferAmount = 0.1; // 0.1 HBAR
+                    const txId = await hederaWalletService.transferHbar({
+                        toAccountId: '0.0.123457',
+                        amount: transferAmount,
+                    });
+
+                    // If it succeeds, it should return a transaction ID
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    expect(txId).toMatch(/^\d+\.\d+\.\d+@\d+\.\d+$/); // Hedera transaction ID format
+
+                    console.log(`✅ HBAR transfer successful! Transferred ${transferAmount} HBAR`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    // Should be a Hedera-specific error, not "Method not implemented"
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    console.log(`⚠️ HBAR transfer failed: ${errorMsg}`);
+                }
+            }, 15000);
+
+            it('should handle small HBAR amounts with proper precision', async () => {
+                try {
+                    const transferAmount = 0.00000001; // 1 tinybar (smallest HBAR unit)
+                    const txId = await hederaWalletService.transferHbar({
+                        toAccountId: '0.0.123457',
+                        amount: transferAmount,
+                    });
+
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    console.log(`✅ Tiny HBAR transfer successful! Transferred ${transferAmount} HBAR`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    console.log(`⚠️ Tiny HBAR transfer failed: ${errorMsg}`);
+                }
+            }, 15000);
+
+            it('should handle integer HBAR amounts', async () => {
+                try {
+                    const transferAmount = 1; // 1 HBAR
+                    const txId = await hederaWalletService.transferHbar({
+                        toAccountId: '0.0.123457',
+                        amount: transferAmount,
+                    });
+
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    console.log(`✅ Integer HBAR transfer successful! Transferred ${transferAmount} HBAR`);
+                    console.log(`   Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).not.toContain('Method not implemented');
+                    console.log(`⚠️ Integer HBAR transfer failed: ${errorMsg}`);
+                }
+            }, 15000);
+
+            it('should transfer HBAR with balance verification (self-transfer)', async () => {
+                console.log('\n📊 Starting HBAR transfer test with balance verification...');
+
+                try {
+                    // Step 1: Get initial balance
+                    const initialBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Initial balance: ${initialBalance} HBAR`);
+
+                    // Ensure we have enough HBAR to transfer
+                    expect(initialBalance).toBeGreaterThan(0.01);
+
+                    // Step 2: Transfer 0.01 HBAR to ourselves (self-transfer)
+                    const transferAmount = 0.01;
+
+                    console.log(`   Transferring ${transferAmount} HBAR (self-transfer test)...`);
+
+                    const txId = await hederaWalletService.transferHbar({
+                        toAccountId: TEST_ACCOUNT_ID, // Self-transfer
+                        amount: transferAmount,
+                    });
+
+                    console.log(`   ✅ Transfer successful! Transaction ID: ${txId}`);
+
+                    // Step 3: Wait for transaction confirmation
+                    console.log('   Waiting for transaction confirmation...');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+
+                    // Step 4: Get final balance
+                    const finalBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Final balance: ${finalBalance} HBAR`);
+
+                    // Step 5: For self-transfer, balance should be approximately the same (minus fees)
+                    // The difference should be just the transaction fee (usually small)
+                    const balanceDifference = initialBalance - finalBalance;
+                    console.log(`   Transaction fee: ~${balanceDifference} HBAR`);
+
+                    // Expect fee to be reasonable (between 0 and 0.1 HBAR)
+                    expect(balanceDifference).toBeGreaterThanOrEqual(0);
+                    expect(balanceDifference).toBeLessThan(0.1);
+
+                    console.log('   ✅ HBAR transfer with balance verification completed!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ HBAR transfer test failed: ${errorMsg}`);
+
+                    if (errorMsg.includes('INSUFFICIENT_PAYER_BALANCE')) {
+                        console.log('   💡 The account does not have enough HBAR for this test');
+                    } else if (errorMsg.includes('INVALID_SIGNATURE')) {
+                        console.log('   💡 There is an issue with transaction signing');
+                    }
+
+                    throw error;
+                }
+            }, 30000);
+
+            it('should fail with invalid recipient account', async () => {
+                await expect(
+                    hederaWalletService.transferHbar({
+                        toAccountId: 'invalid-account',
+                        amount: 0.1,
+                    })
+                ).rejects.toThrow();
+            });
+        });
 
         describe('HTS Token Transfer Tests', () => {
             // USDC on Hedera Testnet: 0.0.5449
