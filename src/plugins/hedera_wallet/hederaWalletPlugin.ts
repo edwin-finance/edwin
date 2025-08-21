@@ -19,6 +19,8 @@ import {
     HederaWalletTransferHbarParametersSchema,
     HederaWalletTransferTokenParameters,
     HederaWalletTransferTokenParametersSchema,
+    HederaWalletTokenLookupParameters,
+    HederaWalletTokenLookupParametersSchema,
 } from './parameters';
 
 export class HederaWalletPlugin extends EdwinPlugin {
@@ -86,6 +88,15 @@ export class HederaWalletPlugin extends EdwinPlugin {
                 schema: CurrentHederaWalletAccountInfoParametersSchema.schema,
                 execute: async (_params: CurrentHederaWalletAccountInfoParameters) => {
                     return await hederaWalletService.getCurrentHederaWalletAccountInfo();
+                },
+            },
+            lookupTokenByName: {
+                name: 'lookup_token_by_name',
+                description:
+                    'Lookup a token ID by name or symbol (e.g., "USDC" -> "0.0.456781"). This can be used to get token IDs for use with other token functions like transferToken.',
+                schema: HederaWalletTokenLookupParametersSchema.schema,
+                execute: async (params: HederaWalletTokenLookupParameters) => {
+                    return await hederaWalletService.lookupTokenByName(params);
                 },
             },
         };

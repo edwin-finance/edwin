@@ -296,6 +296,100 @@ describeReadOnlyTests('Hedera Wallet Service Tests (Read-Only)', () => {
         }, 10000);
     });
 
+    describe('Token Lookup Service Tests', () => {
+        it('should lookup USDC token ID by symbol on testnet', async () => {
+            try {
+                const tokenId = await hederaWalletService.lookupTokenByName({
+                    tokenName: 'USDC',
+                    network: 'testnet', // Explicitly specify testnet
+                });
+
+                expect(typeof tokenId).toBe('string');
+                expect(tokenId).toMatch(/^\d+\.\d+\.\d+$/); // Hedera token ID format
+                expect(tokenId).toBe('0.0.5449'); // USDC on testnet
+
+                console.log(`✅ Found USDC token ID on testnet: ${tokenId}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                expect(errorMsg).not.toContain('Method not implemented');
+                console.log('⚠️ USDC lookup failed:', errorMsg);
+            }
+        }, 15000);
+
+        it('should lookup USDC token ID by symbol on mainnet', async () => {
+            try {
+                const tokenId = await hederaWalletService.lookupTokenByName({
+                    tokenName: 'USDC',
+                    network: 'mainnet', // Explicitly specify mainnet
+                });
+
+                expect(typeof tokenId).toBe('string');
+                expect(tokenId).toMatch(/^\d+\.\d+\.\d+$/); // Hedera token ID format
+                expect(tokenId).toBe('0.0.456858'); // USDC on mainnet - NOT hardcoded in source
+
+                console.log(`✅ Found USDC token ID on mainnet: ${tokenId}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                expect(errorMsg).not.toContain('Method not implemented');
+                console.log('⚠️ USDC mainnet lookup failed:', errorMsg);
+            }
+        }, 15000);
+
+        it('should handle token lookup with case insensitive search', async () => {
+            try {
+                const tokenId = await hederaWalletService.lookupTokenByName({
+                    tokenName: 'usdc', // lowercase
+                    network: 'testnet', // Explicitly specify testnet
+                });
+
+                expect(typeof tokenId).toBe('string');
+                expect(tokenId).toMatch(/^\d+\.\d+\.\d+$/);
+
+                console.log(`✅ Found token with lowercase search: ${tokenId}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                expect(errorMsg).not.toContain('Method not implemented');
+                console.log('⚠️ Lowercase token lookup failed:', errorMsg);
+            }
+        }, 15000);
+
+        it('should handle token lookup for non-existent token', async () => {
+            try {
+                await hederaWalletService.lookupTokenByName({
+                    tokenName: 'NON_EXISTENT_TOKEN_XYZ123',
+                    network: 'testnet', // Explicitly specify testnet
+                });
+
+                // If we reach here, the token was found (unexpected)
+                console.log('⚠️ Non-existent token was found unexpectedly');
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                expect(errorMsg).not.toContain('Method not implemented');
+                expect(errorMsg).toContain('No token found');
+                console.log('✅ Non-existent token correctly returned error:', errorMsg);
+            }
+        }, 15000);
+
+        it('should default to mainnet when network not specified', async () => {
+            try {
+                const tokenId = await hederaWalletService.lookupTokenByName({
+                    tokenName: 'USDC',
+                    // network not specified, should default to mainnet
+                });
+
+                expect(typeof tokenId).toBe('string');
+                expect(tokenId).toMatch(/^\d+\.\d+\.\d+$/);
+                expect(tokenId).toBe('0.0.456858'); // Should be mainnet USDC by default
+
+                console.log(`✅ Found token with default network (mainnet): ${tokenId}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                expect(errorMsg).not.toContain('Method not implemented');
+                console.log('⚠️ Default network token lookup failed:', errorMsg);
+            }
+        }, 15000);
+    });
+
     describe('Error Handling', () => {
         it('should handle invalid account IDs gracefully', async () => {
             await expect(

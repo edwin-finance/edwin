@@ -8,6 +8,7 @@ import {
     HederaWalletAccountInfoParameters,
     HederaWalletTransferHbarParameters,
     HederaWalletTransferTokenParameters,
+    HederaWalletTokenLookupParameters,
 } from './parameters';
 
 export class HederaWalletService extends EdwinService {
@@ -163,6 +164,128 @@ export class HederaWalletService extends EdwinService {
         } catch (error) {
             edwinLogger.error('Failed to transfer token:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Lookup token ID by name or symbol using Hedera Mirror Node API
+     */
+    async lookupTokenByName(params: HederaWalletTokenLookupParameters): Promise<string> {
+        edwinLogger.info(`Looking up token ID for: ${params.tokenName} on ${params.network || 'mainnet'}`);
+
+        try {
+            const network = params.network || 'mainnet';
+            const mirrorNodeUrl = this.getMirrorNodeUrl(network);
+            const searchTerm = params.tokenName.toLowerCase();
+
+            // Define token type for better type safety
+            interface TokenInfo {
+                token_id: string;
+                name?: string;
+                symbol?: string;
+            }
+
+            // Search through paginated results to find the token
+            let nextUrl = `${mirrorNodeUrl}/api/v1/tokens?limit=100`;
+            let pageCount = 0;
+            const maxPages = 50; // Limit search to prevent infinite loops
+
+            let exactSymbolMatch: TokenInfo | null = null;
+            let exactNameMatch: TokenInfo | null = null;
+            let partialMatch: TokenInfo | null = null;
+
+            while (nextUrl && pageCount < maxPages) {
+                edwinLogger.info(`Fetching tokens from: ${nextUrl} (page ${pageCount + 1})`);
+
+                const response = await fetch(nextUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch tokens: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.tokens || !Array.isArray(data.tokens)) {
+                    throw new Error('Invalid response format from Mirror Node API');
+                }
+
+                // Search for exact symbol match (case-insensitive)
+                if (!exactSymbolMatch) {
+                    const match = data.tokens.find(
+                        (token: TokenInfo) => token.symbol && token.symbol.toLowerCase() === searchTerm
+                    );
+                    if (match) {
+                        exactSymbolMatch = match;
+                        edwinLogger.info(
+                            `Found exact symbol match: ${match.name} (${match.symbol}) with ID: ${match.token_id}`
+                        );
+                        // Return immediately for exact symbol matches
+                        return match.token_id;
+                    }
+                }
+
+                // Search for exact name match
+                if (!exactNameMatch) {
+                    const match = data.tokens.find(
+                        (token: TokenInfo) => token.name && token.name.toLowerCase() === searchTerm
+                    );
+                    if (match) {
+                        exactNameMatch = match;
+                        edwinLogger.info(
+                            `Found exact name match: ${match.name} (${match.symbol}) with ID: ${match.token_id}`
+                        );
+                    }
+                }
+
+                // Search for partial match (only if we don't have any match yet)
+                if (!partialMatch && !exactNameMatch) {
+                    const match = data.tokens.find(
+                        (token: TokenInfo) =>
+                            (token.name && token.name.toLowerCase().includes(searchTerm)) ||
+                            (token.symbol && token.symbol.toLowerCase().includes(searchTerm))
+                    );
+                    if (match) {
+                        partialMatch = match;
+                        edwinLogger.info(
+                            `Found partial match: ${match.name} (${match.symbol}) with ID: ${match.token_id}`
+                        );
+                    }
+                }
+
+                // Check for next page
+                nextUrl = data.links?.next ? `${mirrorNodeUrl}${data.links.next}` : '';
+                pageCount++;
+            }
+
+            // Return the best match found
+            if (exactNameMatch) {
+                return exactNameMatch.token_id;
+            }
+            if (partialMatch) {
+                return partialMatch.token_id;
+            }
+
+            throw new Error(
+                `No token found with name or symbol: ${params.tokenName}. Searched ${pageCount} pages of tokens.`
+            );
+        } catch (error) {
+            edwinLogger.error('Failed to lookup token by name:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get the Mirror Node URL for the specified network
+     */
+    private getMirrorNodeUrl(network: string): string {
+        switch (network) {
+            case 'mainnet':
+                return 'https://mainnet-public.mirrornode.hedera.com';
+            case 'testnet':
+                return 'https://testnet.mirrornode.hedera.com';
+            case 'previewnet':
+                return 'https://previewnet.mirrornode.hedera.com';
+            default:
+                throw new Error(`Unsupported network: ${network}`);
         }
     }
 }

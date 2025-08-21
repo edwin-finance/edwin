@@ -54,6 +54,17 @@ export const HederaWalletTransferTokenParametersSchema = createParameterSchema(
     })
 );
 
+// Schema for token lookup by name/symbol
+export const HederaWalletTokenLookupParametersSchema = createParameterSchema(
+    z.object({
+        tokenName: z.string().describe('The token name or symbol to lookup (e.g., "USDC", "HBAR", "ETH")'),
+        network: z
+            .enum(['mainnet', 'testnet', 'previewnet'])
+            .optional()
+            .describe('The Hedera network to search on (defaults to mainnet)'),
+    })
+);
+
 // Export clean parameter types
 export type HederaWalletBalanceParameters = typeof HederaWalletBalanceParametersSchema.type;
 export type CurrentHederaWalletBalanceParameters = typeof CurrentHederaWalletBalanceParametersSchema.type;
@@ -63,3 +74,4 @@ export type HederaWalletAccountInfoParameters = typeof HederaWalletAccountInfoPa
 export type CurrentHederaWalletAccountInfoParameters = typeof CurrentHederaWalletAccountInfoParametersSchema.type;
 export type HederaWalletTransferHbarParameters = typeof HederaWalletTransferHbarParametersSchema.type;
 export type HederaWalletTransferTokenParameters = typeof HederaWalletTransferTokenParametersSchema.type;
+export type HederaWalletTokenLookupParameters = typeof HederaWalletTokenLookupParametersSchema.type;
