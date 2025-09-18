@@ -13,6 +13,8 @@
         "format:check": "prettier -c .prettierrc --check \"**/*.{ts,js,cjs,json,md}\"",
         "start:chatagent": "ts-node examples/cli-chat-agent/chat-agent.ts",
         "start:mcp-server": "ts-node examples/mcp-server/src/index.ts",
+        "example:hedera": "ts-node examples/hedera-plugins-usage.ts",
+        "example:hedera:js": "node examples/hedera-plugins-usage.js",
         "clean": "rimraf node_modules"
     },
     "keywords": [
