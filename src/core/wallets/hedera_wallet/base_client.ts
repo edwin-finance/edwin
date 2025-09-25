@@ -25,7 +25,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     /**
      * Get Hedera client
      */
-    getClient(network: string = process.env.HEDERA_NETWORK || 'testnet'): Client {
+    getClient(network: string = process.env.HEDERA_NETWORK || 'mainnet'): Client {
         try {
             let client: Client;
 
@@ -84,7 +84,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
      * Get token decimals for a specific token using Mirror Node REST API
      */
     async getTokenDecimals(tokenId: string): Promise<number> {
-        const network = process.env.HEDERA_NETWORK || 'testnet';
+        const network = process.env.HEDERA_NETWORK || 'mainnet';
         const mirrorNodeUrl =
             network === 'mainnet'
                 ? 'https://mainnet-public.mirrornode.hedera.com'

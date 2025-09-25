@@ -4,27 +4,27 @@ import { createParameterSchema } from '../../core/utils/createParameterSchema';
 export const StaderStakeParametersSchema = createParameterSchema(
     z.object({
         amount: z.number().positive().describe('The amount of HBAR to stake for HBARX'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
 export const StaderUnstakeParametersSchema = createParameterSchema(
     z.object({
         amount: z.number().positive().describe('The amount of HBARX to unstake'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
 export const StaderWithdrawParametersSchema = createParameterSchema(
     z.object({
         unstakeIndex: z.number().min(0).describe('The unstake index to withdraw'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
 export const StaderGetBalanceParametersSchema = createParameterSchema(
     z.object({
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 

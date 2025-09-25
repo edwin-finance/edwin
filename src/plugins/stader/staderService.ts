@@ -16,12 +16,10 @@ export class StaderService extends EdwinService {
             stakingContractId: '0.0.1027588',
             undelegationContractId: '0.0.1027587',
         },
-        testnet: {
-            tokenId: '0.0.48247328',
-            stakingContractId: '0.0.48247334',
-            undelegationContractId: '0.0.48247333',
-        },
     };
+
+    private static readonly GAS_LIMIT = 2000000;
+    private static readonly HBARX_DECIMALS = 8;
 
     constructor(private wallet: HederaWalletClient) {
         super();
@@ -31,10 +29,10 @@ export class StaderService extends EdwinService {
      * Stake HBAR to receive HBARX
      */
     async stake(params: StaderStakeParameters): Promise<string> {
-        edwinLogger.info(`Staking ${params.amount} HBAR for HBARX on ${params.network}`);
+        edwinLogger.info(`Staking ${params.amount} HBAR for HBARX on mainnet`);
 
         try {
-            const config = StaderService.NETWORK_CONFIG[params.network || 'testnet'];
+            const config = StaderService.NETWORK_CONFIG.mainnet;
 
             // Check HBAR balance
             const balance = await this.wallet.getBalance();
@@ -42,15 +40,14 @@ export class StaderService extends EdwinService {
                 throw new Error(`Insufficient HBAR balance: ${balance} < ${params.amount}`);
             }
 
-            // Create contract execute transaction for staking
+            // Create contract execute transaction for staking (following official CLI pattern)
             const stakingContractId = ContractId.fromString(config.stakingContractId);
-            const stakeAmount = Hbar.fromTinybars(Math.floor(params.amount * 100000000));
 
             const transaction = new ContractExecuteTransaction()
                 .setContractId(stakingContractId)
                 .setFunction('stake')
-                .setGas(2000000)
-                .setPayableAmount(stakeAmount);
+                .setGas(StaderService.GAS_LIMIT)
+                .setPayableAmount(new Hbar(params.amount));
 
             // Use the wallet's sendTransaction method instead of manual freezing
             const transactionId = await this.wallet.sendTransaction(transaction);
@@ -67,28 +64,32 @@ export class StaderService extends EdwinService {
      * Unstake HBARX to initiate withdrawal process
      */
     async unstake(params: StaderUnstakeParameters): Promise<string> {
-        edwinLogger.info(`Unstaking ${params.amount} HBARX on ${params.network}`);
+        edwinLogger.info(`Unstaking ${params.amount} HBARX on mainnet`);
 
         try {
-            const config = StaderService.NETWORK_CONFIG[params.network || 'testnet'];
+            const config = StaderService.NETWORK_CONFIG.mainnet;
 
             // Check HBARX balance
-            const hbarxBalance = await this.wallet.getTokenBalance!(config.tokenId);
+            if (!this.wallet.getTokenBalance) {
+                throw new Error('Token balance not supported by this wallet client');
+            }
+            const hbarxBalance = await this.wallet.getTokenBalance(config.tokenId);
             if (hbarxBalance < params.amount) {
                 throw new Error(`Insufficient HBARX balance: ${hbarxBalance} < ${params.amount}`);
             }
 
-            // Create contract execute transaction for unstaking
-            const undelegationContractId = ContractId.fromString(config.undelegationContractId);
-            const unstakeAmount = Math.floor(params.amount * 100000000); // Convert to smallest units
+            // Create contract execute transaction for unstaking (following official CLI pattern)
+            // NOTE: Official CLI uses stakingContractId for unStake, not undelegationContractId
+            const stakingContractId = ContractId.fromString(config.stakingContractId);
+            const unstakeAmount = Math.floor(params.amount * Math.pow(10, StaderService.HBARX_DECIMALS)); // Convert to smallest units
 
             // Create function parameters
             const functionParameters = new ContractFunctionParameters().addUint256(unstakeAmount);
 
             const transaction = new ContractExecuteTransaction()
-                .setContractId(undelegationContractId)
+                .setContractId(stakingContractId)
                 .setFunction('unStake', functionParameters)
-                .setGas(2000000);
+                .setGas(StaderService.GAS_LIMIT);
 
             // Use the wallet's sendTransaction method instead of manual freezing
             const transactionId = await this.wallet.sendTransaction(transaction);
@@ -105,10 +106,10 @@ export class StaderService extends EdwinService {
      * Withdraw HBAR after unstaking period (24 hours)
      */
     async withdraw(params: StaderWithdrawParameters): Promise<string> {
-        edwinLogger.info(`Withdrawing unstake index ${params.unstakeIndex} on ${params.network}`);
+        edwinLogger.info(`Withdrawing unstake index ${params.unstakeIndex} on mainnet`);
 
         try {
-            const config = StaderService.NETWORK_CONFIG[params.network || 'testnet'];
+            const config = StaderService.NETWORK_CONFIG.mainnet;
 
             // Create contract execute transaction for withdrawal
             const undelegationContractId = ContractId.fromString(config.undelegationContractId);
@@ -119,7 +120,7 @@ export class StaderService extends EdwinService {
             const transaction = new ContractExecuteTransaction()
                 .setContractId(undelegationContractId)
                 .setFunction('withdraw', functionParameters)
-                .setGas(2000000);
+                .setGas(StaderService.GAS_LIMIT);
 
             // Use the wallet's sendTransaction method instead of manual freezing
             const transactionId = await this.wallet.sendTransaction(transaction);
@@ -141,9 +142,12 @@ export class StaderService extends EdwinService {
         edwinLogger.info('Getting current HBARX balance');
 
         try {
-            // Use testnet by default, but this could be made configurable
-            const config = StaderService.NETWORK_CONFIG.testnet;
-            return await this.wallet.getTokenBalance!(config.tokenId);
+            // Use mainnet configuration
+            const config = StaderService.NETWORK_CONFIG.mainnet;
+            if (!this.wallet.getTokenBalance) {
+                throw new Error('Token balance not supported by this wallet client');
+            }
+            return await this.wallet.getTokenBalance(config.tokenId);
         } catch (error) {
             edwinLogger.error('Failed to get HBARX balance:', error);
             throw error;
@@ -153,12 +157,15 @@ export class StaderService extends EdwinService {
     /**
      * Get HBARX balance for a specific network
      */
-    async getStakedBalanceByNetwork(params: StaderGetBalanceParameters): Promise<number> {
-        edwinLogger.info(`Getting HBARX balance on ${params.network}`);
+    async getStakedBalanceByNetwork(_params: StaderGetBalanceParameters): Promise<number> {
+        edwinLogger.info(`Getting HBARX balance on mainnet`);
 
         try {
-            const config = StaderService.NETWORK_CONFIG[params.network || 'testnet'];
-            return await this.wallet.getTokenBalance!(config.tokenId);
+            const config = StaderService.NETWORK_CONFIG.mainnet;
+            if (!this.wallet.getTokenBalance) {
+                throw new Error('Token balance not supported by this wallet client');
+            }
+            return await this.wallet.getTokenBalance(config.tokenId);
         } catch (error) {
             edwinLogger.error('Failed to get HBARX balance:', error);
             throw error;

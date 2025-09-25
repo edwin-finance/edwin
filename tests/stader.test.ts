@@ -9,7 +9,7 @@ import { KeypairClient } from '../src/core/wallets/hedera_wallet/clients/keypair
 // Check if Hedera credentials are available
 const hasPrivateKey = Boolean(process.env.HEDERA_PRIVATE_KEY);
 const hasAccountId = Boolean(process.env.HEDERA_ACCOUNT_ID);
-const hederaNetwork = (process.env.HEDERA_NETWORK || 'testnet') as 'testnet' | 'mainnet';
+const hederaNetwork = 'mainnet'; // Always use mainnet
 
 // Test account details
 const TEST_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID as string;
@@ -68,7 +68,7 @@ describe('Stader Plugin Tests', () => {
             await expect(
                 service.unstake({
                     amount: -1,
-                    network: 'testnet',
+                    network: 'mainnet',
                 })
             ).rejects.toThrow();
         });
@@ -78,7 +78,7 @@ describe('Stader Plugin Tests', () => {
             await expect(
                 service.withdraw({
                     unstakeIndex: -1,
-                    network: 'testnet',
+                    network: 'mainnet',
                 })
             ).rejects.toThrow();
         });
@@ -294,7 +294,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
 
     describe('Network Configuration', () => {
         it('should work with different network configurations', async () => {
-            const networks: ('testnet' | 'mainnet')[] = ['testnet', 'mainnet'];
+            const networks: 'mainnet'[] = ['mainnet'];
 
             for (const network of networks) {
                 try {
@@ -377,7 +377,7 @@ describe('Stader Test Setup Validation', () => {
             expect(TEST_ACCOUNT_ID).toMatch(/^\d+\.\d+\.\d+$/);
         }
 
-        expect(['testnet', 'mainnet']).toContain(hederaNetwork);
+        expect(hederaNetwork).toBe('mainnet');
     });
 
     it('should provide clear instructions for missing credentials', () => {
@@ -386,7 +386,7 @@ describe('Stader Test Setup Validation', () => {
             console.log('Set environment variables:');
             console.log('- HEDERA_PRIVATE_KEY: Your Hedera private key');
             console.log('- HEDERA_ACCOUNT_ID: Your Hedera account ID (e.g., 0.0.123456)');
-            console.log('- HEDERA_NETWORK: Network to use (testnet or mainnet)');
+            console.log('Note: All tests now use mainnet by default');
             console.log('\n💡 Note: You may need HBARX tokens for full functionality testing');
         }
     });

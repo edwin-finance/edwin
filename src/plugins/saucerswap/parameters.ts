@@ -6,7 +6,7 @@ export const SaucerSwapQuoteParametersSchema = createParameterSchema(
         inputTokenId: z.string().min(1).describe('The input token ID (use 0.0.1456986 for WHBAR)'),
         outputTokenId: z.string().min(1).describe('The output token ID'),
         amount: z.number().positive().describe('The amount of input tokens to quote'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
@@ -20,7 +20,7 @@ export const SaucerSwapExactInputParametersSchema = createParameterSchema(
             .number()
             .optional()
             .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
@@ -34,7 +34,7 @@ export const SaucerSwapExactOutputParametersSchema = createParameterSchema(
             .number()
             .optional()
             .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
-        network: z.enum(['mainnet', 'testnet']).optional().default('testnet').describe('The Hedera network to use'),
+        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
