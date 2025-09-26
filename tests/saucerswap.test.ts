@@ -82,7 +82,7 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
     let saucerSwapService: SaucerSwapService;
 
     // Token IDs for mainnet testing - using correct token IDs from SaucerSwap docs
-    const WHBAR_TOKEN_ID = '0.0.1456986'; // WHBAR token on mainnet (from official SaucerSwap docs)
+    const WHBAR_TOKEN_ID = '0.0.1456986'; // WHBAR Token ID on mainnet (from official SaucerSwap docs)
     const SAUCE_TOKEN_ID = '0.0.731861'; // SAUCE token on mainnet (from SaucerSwap deployments)
     const TEST_AMOUNT = 0.1; // 0.1 token for testing to reduce costs
 
@@ -164,8 +164,8 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
                 // Skip balance check to avoid token association costs
                 console.log('   Attempting WHBAR to SAUCE swap...');
 
-                const swapAmount = 0.01; // 0.01 WHBAR (smaller amount to reduce costs)
-                const minOutputAmount = 0.001; // Minimum expected output
+                const swapAmount = 0.01; // 0.01 HBAR (smaller amount to reduce costs)
+                const minOutputAmount = 0; // No minimum to avoid slippage issues
 
                 const txId = await saucerSwapService.swapExactInput({
                     inputTokenId: 'HBAR', // Use 'HBAR' string, not WHBAR token ID

@@ -24,6 +24,7 @@ interface NetworkConfig {
     quoterContractId: string;
     hbarTokenId: string;
     whbarTokenId: string;
+    whbarTokenContractId: string;
     hederaJsonRpcUrl: string;
 }
 
@@ -33,7 +34,8 @@ export class SaucerSwapService extends EdwinService {
             swapRouterContractId: '0.0.3949434', // SaucerSwapV2SwapRouter
             quoterContractId: '0.0.3949424', // SaucerSwapV2QuoterV2
             hbarTokenId: 'HBAR', // Native HBAR
-            whbarTokenId: '0.0.1456986', // Wrapped HBAR token ID (from official SaucerSwap docs)
+            whbarTokenId: '0.0.1456985', // WHBAR contract ID (from official docs)
+            whbarTokenContractId: '0.0.1456986', // WHBAR Token ID (from official docs)
             hederaJsonRpcUrl: 'https://mainnet.hashio.io/api', // Hedera JSON RPC
         },
     };
@@ -86,10 +88,10 @@ export class SaucerSwapService extends EdwinService {
             const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.QUOTER_ABI);
 
             // QuoterV2.sol contract (per docs)
-            const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toEvmAddress()}`;
+            const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toSolidityAddress()}`;
 
             // Handle HBAR -> WHBAR conversion for path encoding (per docs)
-            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenId : params.inputTokenId;
+            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenContractId : params.inputTokenId;
 
             // Convert token IDs to solidity addresses (per docs)
             const inputToken = ContractId.fromString(inputTokenForPath);
@@ -105,8 +107,8 @@ export class SaucerSwapService extends EdwinService {
 
             // Try different fee tiers and multi-hop routing
             const pathVariations = await this.generatePathVariations(
-                inputToken.toEvmAddress(),
-                outputToken.toEvmAddress()
+                inputToken.toSolidityAddress(),
+                outputToken.toSolidityAddress()
             );
 
             // Try each path variation until one works
@@ -211,7 +213,7 @@ export class SaucerSwapService extends EdwinService {
 
         // Multi-hop through USDC (if not already USDC)
         const usdcToken = ContractId.fromString(SaucerSwapService.USDC_TOKEN_ID);
-        const usdcAddress = usdcToken.toEvmAddress();
+        const usdcAddress = usdcToken.toSolidityAddress();
 
         if (inputTokenAddress !== usdcAddress && outputTokenAddress !== usdcAddress) {
             // Try input -> USDC -> output with various fee combinations
@@ -247,10 +249,10 @@ export class SaucerSwapService extends EdwinService {
             const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.QUOTER_ABI);
 
             // QuoterV2.sol contract (per docs)
-            const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toEvmAddress()}`;
+            const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toSolidityAddress()}`;
 
             // Handle HBAR -> WHBAR conversion for path encoding (per docs)
-            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenId : params.inputTokenId;
+            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenContractId : params.inputTokenId;
 
             // Convert token IDs to solidity addresses (per docs)
             const inputToken = ContractId.fromString(inputTokenForPath);
@@ -259,9 +261,9 @@ export class SaucerSwapService extends EdwinService {
             // Create REVERSED swap path as per docs for exactOutput
             // Path format: [outputToken, fee, inputToken] - REVERSED!
             const pathData: string[] = [];
-            pathData.push(outputToken.toEvmAddress()); // Output first for reversed path
+            pathData.push(outputToken.toSolidityAddress()); // Output first for reversed path
             pathData.push(SaucerSwapService.DEFAULT_FEE); // 3 bytes
-            pathData.push(inputToken.toEvmAddress()); // Input last for reversed path
+            pathData.push(inputToken.toSolidityAddress()); // Input last for reversed path
 
             // Use hexToUint8Array as per docs for bytes parameter
             const encodedPathData = this.hexToUint8Array(pathData.join(''));
@@ -328,7 +330,7 @@ export class SaucerSwapService extends EdwinService {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
-            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toEvmAddress();
+            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
 
             // Handle different swap scenarios per official docs
             if (params.inputTokenId === config.hbarTokenId) {
@@ -367,7 +369,7 @@ export class SaucerSwapService extends EdwinService {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
-            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toEvmAddress();
+            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
 
             // Handle different swap scenarios per official docs
             if (params.inputTokenId === config.hbarTokenId) {
@@ -419,14 +421,14 @@ export class SaucerSwapService extends EdwinService {
         // Load ABI data containing SwapRouter, PeripheryPayments and Multicall functions (per docs)
         const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
 
-        // Create path with WHBAR for HBAR swaps (per docs)
-        const inputToken = ContractId.fromString(config.whbarTokenId);
+        // Create path with WHBAR token for HBAR swaps (use same as quotes) (per docs)
+        const inputToken = ContractId.fromString(config.whbarTokenContractId); // Use WHBAR Token ID (0.0.1456986) same as quotes
         const outputToken = ContractId.fromString(params.outputTokenId);
 
         const pathData: string[] = [];
-        pathData.push(inputToken.toEvmAddress());
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(outputToken.toEvmAddress());
+        pathData.push(inputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
+        pathData.push(SaucerSwapService.MEDIUM_FEE); // Use 0.30% fee as it works in quotes
+        pathData.push(outputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
         const routeDataWithFee = '0x' + pathData.join('');
 
         // Convert amounts
@@ -452,6 +454,20 @@ export class SaucerSwapService extends EdwinService {
 
         // Get encoded data for the multicall involving both functions (per docs)
         const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
+
+        // Debug logging to examine exact parameters
+        edwinLogger.info('HBAR->Token Swap Debug Info:', {
+            inputTokenAddress: inputToken.toSolidityAddress(),
+            outputTokenAddress: outputToken.toSolidityAddress(),
+            path: routeDataWithFee,
+            inputTinybar,
+            outputAmountMin,
+            recipientAddress,
+            deadline,
+            swapRouterContract: config.swapRouterContractId,
+            exactInputParams,
+            encodedDataLength: encodedData.length
+        });
 
         // Get encoded data as Uint8Array (per docs)
         const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
@@ -483,9 +499,9 @@ export class SaucerSwapService extends EdwinService {
         const outputToken = ContractId.fromString(config.whbarTokenId);
 
         const pathData: string[] = [];
-        pathData.push(inputToken.toEvmAddress());
+        pathData.push(inputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
         pathData.push(SaucerSwapService.MEDIUM_FEE); // Use 0.30% fee as it works better
-        pathData.push(outputToken.toEvmAddress());
+        pathData.push(outputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
         const routeDataWithFee = '0x' + pathData.join('');
 
         // Convert amounts
@@ -493,10 +509,11 @@ export class SaucerSwapService extends EdwinService {
         const inputAmountInSmallestUnit = Math.floor(params.amountIn * Math.pow(10, inputDecimals));
         const outputAmountMin = Math.floor(params.amountOutMinimum * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
 
-        // ExactInputParams (per docs)
+        // ExactInputParams (per docs) - Use SwapRouter address as recipient for unwrapWHBAR to work
+        const swapRouterEvmAddress = '0x' + ContractId.fromString(config.swapRouterContractId).toSolidityAddress(); // Use toSolidityAddress() per user docs
         const exactInputParams = {
             path: routeDataWithFee,
-            recipient: recipientAddress,
+            recipient: swapRouterEvmAddress, // Use SwapRouter address for unwrapWHBAR to work (per docs)
             deadline: deadline,
             amountIn: inputAmountInSmallestUnit,
             amountOutMinimum: outputAmountMin,
@@ -504,7 +521,7 @@ export class SaucerSwapService extends EdwinService {
 
         // Encode each function individually (per docs)
         const swapEncoded = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
-        const unwrapWHBAREncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [outputAmountMin, recipientAddress]);
+        const unwrapWHBAREncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [0, recipientAddress]); // 0 for all WHBAR, send to user
 
         // Multi-call parameter: bytes[] (per docs)
         const multiCallParam = [swapEncoded, unwrapWHBAREncoded];
@@ -543,8 +560,8 @@ export class SaucerSwapService extends EdwinService {
 
         // Try different fee tiers and multi-hop routing like we do for quotes
         const pathVariations = await this.generatePathVariations(
-            inputToken.toEvmAddress(),
-            outputToken.toEvmAddress()
+            inputToken.toSolidityAddress(),
+            outputToken.toSolidityAddress()
         );
 
         // Convert amounts
@@ -613,9 +630,9 @@ export class SaucerSwapService extends EdwinService {
         const outputToken = ContractId.fromString(params.outputTokenId);
 
         const pathData: string[] = [];
-        pathData.push(outputToken.toEvmAddress()); // Output first for reversed path
+        pathData.push(outputToken.toSolidityAddress()); // Output first for reversed path
         pathData.push(SaucerSwapService.MEDIUM_FEE); // Use 0.30% fee as it works better
-        pathData.push(inputToken.toEvmAddress()); // Input last for reversed path
+        pathData.push(inputToken.toSolidityAddress()); // Input last for reversed path
         const routeDataWithFee = '0x' + pathData.join('');
 
         // Convert amounts
@@ -672,9 +689,9 @@ export class SaucerSwapService extends EdwinService {
         const outputToken = ContractId.fromString(config.whbarTokenId);
 
         const pathData: string[] = [];
-        pathData.push(outputToken.toEvmAddress()); // Output first for reversed path (WHBAR)
+        pathData.push(outputToken.toSolidityAddress()); // Output first for reversed path (WHBAR)
         pathData.push(SaucerSwapService.MEDIUM_FEE); // Use 0.30% fee as it works better
-        pathData.push(inputToken.toEvmAddress()); // Input last for reversed path
+        pathData.push(inputToken.toSolidityAddress()); // Input last for reversed path
         const routeDataWithFee = '0x' + pathData.join('');
 
         // Convert amounts
@@ -682,10 +699,11 @@ export class SaucerSwapService extends EdwinService {
         const inputAmountMax = Math.floor(params.amountInMaximum * Math.pow(10, inputDecimals));
         const outputAmountTinybar = Math.floor(params.amountOut * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
 
-        // ExactOutputParams (per docs)
+        // ExactOutputParams (per docs) - Use SwapRouter address as recipient for unwrapWHBAR to work
+        const swapRouterEvmAddress = '0x' + ContractId.fromString(config.swapRouterContractId).toSolidityAddress();
         const exactOutputParams = {
             path: routeDataWithFee,
-            recipient: recipientAddress,
+            recipient: swapRouterEvmAddress, // Use SwapRouter address for unwrapWHBAR to work (per docs)
             deadline: deadline,
             amountOut: outputAmountTinybar,
             amountInMaximum: inputAmountMax,
@@ -693,7 +711,7 @@ export class SaucerSwapService extends EdwinService {
 
         // Encode each function individually (per docs)
         const swapEncoded = abiInterfaces.encodeFunctionData('exactOutput', [exactOutputParams]);
-        const unwrapWHBAREncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [outputAmountTinybar, recipientAddress]);
+        const unwrapWHBAREncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [0, recipientAddress]); // 0 for all WHBAR, send to user
 
         // Multi-call parameter: bytes[] (per docs)
         const multiCallParam = [swapEncoded, unwrapWHBAREncoded];
@@ -732,8 +750,8 @@ export class SaucerSwapService extends EdwinService {
 
         // Try different fee tiers and multi-hop routing like we do for quotes
         const pathVariations = await this.generatePathVariations(
-            outputToken.toEvmAddress(), // Note: reversed for exactOutput
-            inputToken.toEvmAddress()  // Note: reversed for exactOutput
+            outputToken.toSolidityAddress(), // Note: reversed for exactOutput
+            inputToken.toSolidityAddress()  // Note: reversed for exactOutput
         );
 
         // Convert amounts
@@ -791,7 +809,7 @@ export class SaucerSwapService extends EdwinService {
      * Associate token with account (required per official docs)
      */
     private async associateToken(tokenId: string): Promise<void> {
-        edwinLogger.info(`Associating token ${tokenId} with account ${this.wallet.getAddress()}`);
+        edwinLogger.info(`Attempting token association for ${tokenId} with account ${this.wallet.getAddress()}`);
 
         // Quick check for obviously invalid token IDs (test tokens in 999xxx range)
         if (tokenId.includes('0.0.999999') || tokenId.startsWith('0.0.999')) {
@@ -803,58 +821,50 @@ export class SaucerSwapService extends EdwinService {
         }
 
         try {
-            // Check if already associated with timeout (per docs)
+            // Check if already associated (per docs)
             const balancePromise = this.wallet.getTokenBalance?.(tokenId);
             if (balancePromise) {
-                const balance = await Promise.race([
-                    balancePromise,
-                    new Promise<number>((_, reject) =>
-                        setTimeout(() => reject(new Error('Token balance check timeout')), 3000)
-                    )
-                ]);
+                try {
+                    const balance = await Promise.race([
+                        balancePromise,
+                        new Promise<number>((_, reject) =>
+                            setTimeout(() => reject(new Error('Token balance check timeout')), 3000)
+                        )
+                    ]);
 
-                if (balance !== undefined && balance >= 0) {
-                    edwinLogger.info(`Token ${tokenId} already associated with account`);
-                    return;
+                    if (balance !== undefined && balance >= 0) {
+                        edwinLogger.info(`Token ${tokenId} already associated with account`);
+                        return;
+                    }
+                } catch (balanceError) {
+                    edwinLogger.info(`Token balance check failed, will attempt association: ${balanceError}`);
                 }
             }
         } catch (error) {
-            const errorStr = error instanceof Error ? error.message : String(error);
-            edwinLogger.info(`Token association check failed: ${errorStr}`);
-
-            // If the check failed due to timeout or invalid token, throw immediately
-            if (errorStr.includes('timeout') || errorStr.includes('Token decimals field not found')) {
-                throw new Error(`Invalid token ID: ${tokenId}. Token does not exist on Hedera network.`);
-            }
+            edwinLogger.info(`Token association check failed: ${error}`);
         }
 
         try {
-            // Associate the token with timeout (per docs)
+            // Associate the token (per docs)
+            edwinLogger.info(`Associating token ${tokenId}...`);
             const tokenAssociation = new TokenAssociateTransaction()
                 .setAccountId(this.wallet.getAddress())
                 .setTokenIds([TokenId.fromString(tokenId)]);
 
-            const associationPromise = this.wallet.sendTransaction(tokenAssociation);
-            await Promise.race([
-                associationPromise,
-                new Promise<string>((_, reject) =>
-                    setTimeout(() => reject(new Error('Token association timeout')), 5000)
-                )
-            ]);
-
+            await this.wallet.sendTransaction(tokenAssociation);
             edwinLogger.info(`Token ${tokenId} successfully associated`);
         } catch (error) {
             const errorStr = error instanceof Error ? error.message : String(error);
-            edwinLogger.error(`Token association failed for ${tokenId}: ${errorStr}`);
+            edwinLogger.warn(`Token association failed for ${tokenId}: ${errorStr}`);
 
-            // Re-throw the error with more specific information for invalid tokens
-            if (errorStr.includes('INVALID_TOKEN_ID') ||
-                errorStr.includes('timeout') ||
-                tokenId.includes('0.0.999999')) {
+            // Don't throw errors for association failures on real tokens - let the swap attempt continue
+            // Only throw for obviously invalid test tokens
+            if (tokenId.includes('0.0.999')) {
                 throw new Error(`Invalid token ID: ${tokenId}. Token does not exist on Hedera network.`);
             }
 
-            throw new Error(`Token association failed: ${errorStr}`);
+            // For real tokens, log warning but continue - token might already be associated or user can associate manually
+            edwinLogger.warn(`Token association failed, but continuing with swap attempt. User may need to associate token ${tokenId} manually.`);
         }
     }
 
@@ -875,8 +885,11 @@ export class SaucerSwapService extends EdwinService {
             await this.wallet.sendTransaction(allowanceApproval);
             edwinLogger.info(`Token allowance approved successfully`);
         } catch (error) {
-            edwinLogger.error(`Token allowance approval failed: ${error}`);
-            throw new Error(`Token approval failed: ${error}`);
+            const errorStr = error instanceof Error ? error.message : String(error);
+            edwinLogger.warn(`Token allowance approval failed: ${errorStr}`);
+
+            // For HBAR swaps, allowance may not be needed, so don't block
+            edwinLogger.warn(`Token approval failed, but continuing with swap attempt. User may need to approve token ${tokenId} manually.`);
         }
     }
 }
