@@ -415,14 +415,15 @@ export class SaucerSwapService extends EdwinService {
         deadline: number,
         recipientAddress: string
     ): Promise<string> {
+        edwinLogger.info(`Starting HBAR->Token swap with deadline=${deadline}`);
         // Critical: Ensure token association for output token (required per docs)
         await this.associateToken(params.outputTokenId);
 
         // Load ABI data containing SwapRouter, PeripheryPayments and Multicall functions (per docs)
         const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
 
-        // Create path with WHBAR token for HBAR swaps (use same as quotes) (per docs)
-        const inputToken = ContractId.fromString(config.whbarTokenContractId); // Use WHBAR Token ID (0.0.1456986) same as quotes
+        // Create path with WHBAR contract for HBAR swaps (different from quotes) (per docs)
+        const inputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Contract ID (0.0.1456985) for swaps
         const outputToken = ContractId.fromString(params.outputTokenId);
 
         const pathData: string[] = [];
@@ -431,43 +432,47 @@ export class SaucerSwapService extends EdwinService {
         pathData.push(outputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
         const routeDataWithFee = '0x' + pathData.join('');
 
+        edwinLogger.info(`Path components: input=${inputToken.toSolidityAddress()}, fee=${SaucerSwapService.MEDIUM_FEE}, output=${outputToken.toSolidityAddress()}`);
+
         // Convert amounts
         const inputTinybar = Math.floor(params.amountIn * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
         const outputDecimals = await this.wallet.getTokenDecimals(params.outputTokenId);
-        const outputAmountMin = Math.floor(params.amountOutMinimum * Math.pow(10, outputDecimals));
+
+        // For debugging: try with very minimal slippage instead of 0
+        let outputAmountMin = Math.floor(params.amountOutMinimum * Math.pow(10, outputDecimals));
+        if (outputAmountMin === 0) {
+            // Get expected output from quote and apply 5% slippage
+            try {
+                const expectedOutput = await this.getQuote({
+                    inputTokenId: config.whbarTokenContractId, // Use token ID for quotes
+                    outputTokenId: params.outputTokenId,
+                    amount: params.amountIn,
+                    network: 'mainnet'
+                });
+                outputAmountMin = Math.floor(expectedOutput * 0.95 * Math.pow(10, outputDecimals)); // 5% slippage
+                edwinLogger.info(`Applied 5% slippage: expected=${expectedOutput}, min=${outputAmountMin / Math.pow(10, outputDecimals)}`);
+            } catch (quoteError) {
+                edwinLogger.warn('Failed to get quote for slippage calculation, using 0 minimum');
+                outputAmountMin = 0;
+            }
+        }
 
         // ExactInputParams (per docs)
         const exactInputParams = {
             path: routeDataWithFee,
-            recipient: recipientAddress,
+            recipient: recipientAddress, // User's address for direct token receipt
             deadline: deadline,
             amountIn: inputTinybar,
             amountOutMinimum: outputAmountMin,
         };
 
-        // Encode each function individually (per docs)
-        const swapEncoded = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
-        const refundHBAREncoded = abiInterfaces.encodeFunctionData('refundETH');
+        // Try direct exactInput without multicall - some DEXs work better this way
+        const encodedData = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
 
-        // Multi-call parameter: bytes[] (per docs)
-        const multiCallParam = [swapEncoded, refundHBAREncoded];
-
-        // Get encoded data for the multicall involving both functions (per docs)
-        const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
+        edwinLogger.info('Using direct exactInput without multicall (skipping refundETH)');
 
         // Debug logging to examine exact parameters
-        edwinLogger.info('HBAR->Token Swap Debug Info:', {
-            inputTokenAddress: inputToken.toSolidityAddress(),
-            outputTokenAddress: outputToken.toSolidityAddress(),
-            path: routeDataWithFee,
-            inputTinybar,
-            outputAmountMin,
-            recipientAddress,
-            deadline,
-            swapRouterContract: config.swapRouterContractId,
-            exactInputParams,
-            encodedDataLength: encodedData.length
-        });
+        edwinLogger.info(`HBAR->Token Swap Debug: Input=${inputToken.toSolidityAddress()}, Output=${outputToken.toSolidityAddress()}, Path=${routeDataWithFee}, Amount=${inputTinybar}, MinOut=${outputAmountMin}, Recipient=${recipientAddress}`);
 
         // Get encoded data as Uint8Array (per docs)
         const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
@@ -496,7 +501,7 @@ export class SaucerSwapService extends EdwinService {
 
         // Create path from input token to WHBAR for HBAR swaps (per docs)
         const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(config.whbarTokenId);
+        const outputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Contract ID (0.0.1456985) for swaps
 
         const pathData: string[] = [];
         pathData.push(inputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
