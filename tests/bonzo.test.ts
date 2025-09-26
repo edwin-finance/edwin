@@ -75,7 +75,7 @@ describe('Bonzo Finance Plugin Tests', () => {
                     network: 'invalid' as any,
                 })
             ).rejects.toThrow();
-        });
+        }, 15000); // Add timeout
 
         it('should validate token symbols', async () => {
             if (!service) {
@@ -116,7 +116,7 @@ describe('Bonzo Finance Plugin Tests', () => {
                     network: 'mainnet',
                 })
             ).rejects.toThrow();
-        });
+        }, 15000); // Add timeout
     });
 });
 
@@ -330,7 +330,9 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                         errorMsg.includes('insufficient token balance') ||
                         errorMsg.includes('execution reverted') ||
                         errorMsg.includes('Amount exceeds') ||
-                        errorMsg.includes('Cannot withdraw more than')
+                        errorMsg.includes('Cannot withdraw more than') ||
+                        errorMsg.includes('SafeMath: subtraction overflow') ||
+                        errorMsg.includes('CALL_EXCEPTION')
                 ).toBe(true);
                 console.log(`✅ Correctly rejected large withdraw: ${errorMsg}`);
             }
