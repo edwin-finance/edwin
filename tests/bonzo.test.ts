@@ -222,8 +222,8 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 // With ethers.js, we get different error messages
                 expect(
                     errorMsg.includes('insufficient token balance') ||
-                    errorMsg.includes('insufficient funds') ||
-                    errorMsg.includes('INSUFFICIENT_FUNDS')
+                        errorMsg.includes('insufficient funds') ||
+                        errorMsg.includes('INSUFFICIENT_FUNDS')
                 ).toBe(true);
                 console.log(`✅ Correctly rejected large supply: ${errorMsg}`);
             }
@@ -264,7 +264,10 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 console.log(`⚠️ Withdraw failed: ${errorMsg}`);
 
                 // Common expected errors with ethers.js implementation:
-                if (errorMsg.includes('Insufficient supplied balance') || errorMsg.includes('insufficient token balance')) {
+                if (
+                    errorMsg.includes('Insufficient supplied balance') ||
+                    errorMsg.includes('insufficient token balance')
+                ) {
                     console.log('   💡 Insufficient supplied balance for withdrawal');
                 } else if (errorMsg.includes('execution reverted') || errorMsg.includes('CALL_EXCEPTION')) {
                     console.log('   💡 Contract execution reverted');
@@ -292,11 +295,11 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 // With ethers.js, we get different error messages - check for any reasonable withdrawal error
                 expect(
                     errorMsg.includes('Insufficient supplied balance') ||
-                    errorMsg.includes('Insufficient aToken balance') ||
-                    errorMsg.includes('insufficient token balance') ||
-                    errorMsg.includes('execution reverted') ||
-                    errorMsg.includes('Amount exceeds') ||
-                    errorMsg.includes('Cannot withdraw more than')
+                        errorMsg.includes('Insufficient aToken balance') ||
+                        errorMsg.includes('insufficient token balance') ||
+                        errorMsg.includes('execution reverted') ||
+                        errorMsg.includes('Amount exceeds') ||
+                        errorMsg.includes('Cannot withdraw more than')
                 ).toBe(true);
                 console.log(`✅ Correctly rejected large withdraw: ${errorMsg}`);
             }
