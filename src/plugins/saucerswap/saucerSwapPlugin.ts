@@ -4,9 +4,11 @@ import { SaucerSwapService } from './saucerSwapService';
 import { HederaWalletClient, canSign } from '../../core/wallets/hedera_wallet';
 import {
     SaucerSwapQuoteParametersSchema,
+    SaucerSwapQuoteExactOutputParametersSchema,
     SaucerSwapExactInputParametersSchema,
     SaucerSwapExactOutputParametersSchema,
     SaucerSwapQuoteParameters,
+    SaucerSwapQuoteExactOutputParameters,
     SaucerSwapExactInputParameters,
     SaucerSwapExactOutputParameters,
 } from './parameters';
@@ -31,10 +33,18 @@ export class SaucerSwapPlugin extends EdwinPlugin {
         return {
             saucerSwapQuote: {
                 name: 'saucerswap_get_quote',
-                description: 'Get a quote for swapping tokens on SaucerSwap DEX',
+                description: 'Get a quote for exact input swap on SaucerSwap DEX',
                 schema: SaucerSwapQuoteParametersSchema.schema,
                 execute: async (params: SaucerSwapQuoteParameters) => {
                     return await saucerSwapService.getQuote(params);
+                },
+            },
+            saucerSwapQuoteExactOutput: {
+                name: 'saucerswap_get_quote_exact_output',
+                description: 'Get a quote for exact output swap on SaucerSwap DEX',
+                schema: SaucerSwapQuoteExactOutputParametersSchema.schema,
+                execute: async (params: SaucerSwapQuoteExactOutputParameters) => {
+                    return await saucerSwapService.getQuoteExactOutput(params);
                 },
             },
         };
