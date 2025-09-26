@@ -39,9 +39,11 @@ export class SaucerSwapService extends EdwinService {
     };
 
     private static readonly DEFAULT_FEE = '0001F4'; // 0.05% fee (500 basis points = 0x01F4) - most common pool tier
+    private static readonly MEDIUM_FEE = '000BB8'; // 0.30% fee (3000 basis points = 0x0BB8) - medium pool tier
+    private static readonly HIGH_FEE = '002710'; // 1.00% fee (10000 basis points = 0x2710) - high pool tier
+    private static readonly USDC_TOKEN_ID = '0.0.456858'; // USDC token ID for multi-hop routing
     private static readonly GAS_LIMIT = 3000000;
     private static readonly HBAR_DECIMALS = 8;
-
 
     // Official SaucerSwap V2 ABIs from docs
     private static readonly QUOTER_ABI = [
@@ -62,23 +64,28 @@ export class SaucerSwapService extends EdwinService {
     }
 
     /**
-     * Get a quote for swapping tokens using official SaucerSwap V2 quoter (following docs exactly)
+     * Get a quote for swapping tokens using official SaucerSwap V2 quoter with multi-hop routing
      */
     async getQuote(params: SaucerSwapQuoteParameters): Promise<number> {
         edwinLogger.info(
             `Getting SaucerSwap quote for ${params.amount} ${params.inputTokenId} -> ${params.outputTokenId} on ${params.network}`
         );
 
+        // Early parameter validation
+        if (params.amount <= 0) {
+            throw new Error('Quote amount must be greater than zero');
+        }
+
         try {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
-            // Set up ethers provider (Ethers v5 syntax, docs show v6)
+            // Set up ethers provider (Ethers v5 syntax)
             const provider = new ethers.providers.JsonRpcProvider(config.hederaJsonRpcUrl);
 
             // Load ABI data containing QuoterV2 functions (per docs)
             const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.QUOTER_ABI);
 
-            // QuoterV2.sol contract (per docs) - use toSolidityAddress() in docs but toEvmAddress() works in SDK
+            // QuoterV2.sol contract (per docs)
             const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toEvmAddress()}`;
 
             // Handle HBAR -> WHBAR conversion for path encoding (per docs)
@@ -88,16 +95,6 @@ export class SaucerSwapService extends EdwinService {
             const inputToken = ContractId.fromString(inputTokenForPath);
             const outputToken = ContractId.fromString(params.outputTokenId);
 
-            // Create swap path as per docs - path format: [token, fee, token, fee, token, ...]
-            // Each token is 20 bytes, each fee is 3 bytes
-            const pathData: string[] = [];
-            pathData.push(inputToken.toEvmAddress()); // 20 bytes
-            pathData.push(SaucerSwapService.DEFAULT_FEE); // 3 bytes
-            pathData.push(outputToken.toEvmAddress()); // 20 bytes
-
-            // Use hexToUint8Array as per docs for bytes parameter
-            const encodedPathData = this.hexToUint8Array(pathData.join(''));
-
             // Get proper decimals for calculations
             const inputDecimals =
                 params.inputTokenId === 'HBAR'
@@ -106,43 +103,130 @@ export class SaucerSwapService extends EdwinService {
 
             const inputAmountInSmallestUnit = Math.floor(params.amount * Math.pow(10, inputDecimals));
 
-            // Encode function call (per docs) - path should be bytes, amount should be uint256
-            const data = abiInterfaces.encodeFunctionData('quoteExactInput', [
-                encodedPathData,
-                inputAmountInSmallestUnit.toString(), // Convert to string as per docs
-            ]);
+            // Try different fee tiers and multi-hop routing
+            const pathVariations = await this.generatePathVariations(
+                inputToken.toEvmAddress(),
+                outputToken.toEvmAddress()
+            );
 
-            edwinLogger.info(`Calling quoter at ${quoterEvmAddress} with encoded data`);
+            // Try each path variation until one works
+            let lastError: Error | null = null;
+            for (const { path, description } of pathVariations) {
+                try {
+                    edwinLogger.info(`Trying ${description}`);
+                    const encodedPathData = this.hexToUint8Array(path);
 
-            // Send a call to the JSON-RPC provider directly (per docs)
-            const result = await provider.call({
-                to: quoterEvmAddress,
-                data: data,
-            });
+                    // Continue with quote attempt using this path
+                    return await this.attemptQuote(
+                        provider,
+                        abiInterfaces,
+                        quoterEvmAddress,
+                        encodedPathData,
+                        inputAmountInSmallestUnit,
+                        params.outputTokenId
+                    );
+                } catch (error) {
+                    lastError = error as Error;
+                    edwinLogger.warn(`${description} failed: ${lastError.message}`);
+                    continue;
+                }
+            }
 
-            // Decode result (per docs)
-            const decoded = abiInterfaces.decodeFunctionResult('quoteExactInput', result);
-            const finalOutputAmount = decoded.amountOut; // in token's smallest unit
+            // If all variations failed, throw the last error
+            if (lastError) {
+                throw lastError;
+            }
 
-            // Convert back to human readable
-            const outputDecimals = await this.wallet.getTokenDecimals(params.outputTokenId);
-            const quotedAmount = Number(finalOutputAmount) / Math.pow(10, outputDecimals);
-
-            edwinLogger.info(`Quote result: ${quotedAmount} ${params.outputTokenId}`);
-            return quotedAmount;
+            throw new Error('No valid liquidity pools found for this token pair');
         } catch (error) {
             edwinLogger.error('Failed to get quote:', error);
 
             if (error instanceof Error) {
                 if (error.message.includes('revert')) {
                     throw new Error(
-                        `Quote failed: No liquidity pool exists for ${params.inputTokenId}->${params.outputTokenId} on mainnet`
+                        `Quote failed: No liquidity pool exists for ${params.inputTokenId}->${params.outputTokenId} on mainnet. Tried multiple fee tiers and routing paths.`
                     );
                 }
             }
 
             throw error;
         }
+    }
+
+    /**
+     * Attempt quote with specific path
+     */
+    private async attemptQuote(
+        provider: ethers.providers.JsonRpcProvider,
+        abiInterfaces: ethers.utils.Interface,
+        quoterEvmAddress: string,
+        encodedPathData: Uint8Array,
+        inputAmountInSmallestUnit: number,
+        outputTokenId: string
+    ): Promise<number> {
+        // Encode function call (per docs) - path should be bytes, amount should be uint256
+        const data = abiInterfaces.encodeFunctionData('quoteExactInput', [
+            encodedPathData,
+            inputAmountInSmallestUnit.toString(),
+        ]);
+
+        // Send a call to the JSON-RPC provider directly (per docs)
+        const result = await provider.call({
+            to: quoterEvmAddress,
+            data: data,
+        });
+
+        // Decode result (per docs)
+        const decoded = abiInterfaces.decodeFunctionResult('quoteExactInput', result);
+        const finalOutputAmount = decoded.amountOut; // in token's smallest unit
+
+        // Convert back to human readable
+        const outputDecimals = await this.wallet.getTokenDecimals(outputTokenId);
+        const quotedAmount = Number(finalOutputAmount) / Math.pow(10, outputDecimals);
+
+        edwinLogger.info(`Quote result: ${quotedAmount} ${outputTokenId}`);
+        return quotedAmount;
+    }
+
+    /**
+     * Generate different path variations to try (direct paths with different fees + multi-hop)
+     */
+    private async generatePathVariations(inputTokenAddress: string, outputTokenAddress: string): Promise<Array<{path: string, description: string}>> {
+        const variations: Array<{path: string, description: string}> = [];
+
+        // Direct paths with different fee tiers
+        const fees = [
+            { fee: SaucerSwapService.DEFAULT_FEE, name: '0.05%' },
+            { fee: SaucerSwapService.MEDIUM_FEE, name: '0.30%' },
+            { fee: SaucerSwapService.HIGH_FEE, name: '1.00%' }
+        ];
+
+        for (const { fee, name } of fees) {
+            const directPath = `${inputTokenAddress}${fee}${outputTokenAddress}`;
+            variations.push({
+                path: directPath,
+                description: `Direct path with ${name} fee`
+            });
+        }
+
+        // Multi-hop through USDC (if not already USDC)
+        const usdcToken = ContractId.fromString(SaucerSwapService.USDC_TOKEN_ID);
+        const usdcAddress = usdcToken.toEvmAddress();
+
+        if (inputTokenAddress !== usdcAddress && outputTokenAddress !== usdcAddress) {
+            // Try input -> USDC -> output with various fee combinations
+            for (const { fee: fee1, name: name1 } of fees) {
+                for (const { fee: fee2, name: name2 } of fees) {
+                    const multiHopPath = `${inputTokenAddress}${fee1}${usdcAddress}${fee2}${outputTokenAddress}`;
+                    variations.push({
+                        path: multiHopPath,
+                        description: `Multi-hop via USDC (${name1} -> ${name2})`
+                    });
+                }
+            }
+        }
+
+        return variations;
     }
 
     /**
@@ -243,21 +327,6 @@ export class SaucerSwapService extends EdwinService {
         try {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
-            // Check balance (temporarily disabled due to network issues)
-            // let balance: number;
-            // if (params.inputTokenId === config.hbarTokenId) {
-            //     balance = await this.wallet.getBalance();
-            // } else {
-            //     if (!this.wallet.getTokenBalance) {
-            //         throw new Error('Token balance not supported by this wallet client');
-            //     }
-            //     balance = await this.wallet.getTokenBalance(params.inputTokenId);
-            // }
-
-            // if (balance < params.amountIn) {
-            //     throw new Error(`Insufficient balance: ${balance} < ${params.amountIn}`);
-            // }
-
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
             const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toEvmAddress();
 
@@ -280,6 +349,59 @@ export class SaucerSwapService extends EdwinService {
             }
             throw error;
         }
+    }
+
+    /**
+     * Swap input tokens for exact output tokens (following official docs exactly)
+     */
+    async swapExactOutput(params: SaucerSwapExactOutputParameters): Promise<string> {
+        edwinLogger.info(
+            `Swapping ${params.inputTokenId} for exactly ${params.amountOut} ${params.outputTokenId} on ${params.network}`
+        );
+
+        if (params.amountOut <= 0) {
+            throw new Error('Output amount must be greater than zero');
+        }
+
+        try {
+            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
+
+            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
+            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toEvmAddress();
+
+            // Handle different swap scenarios per official docs
+            if (params.inputTokenId === config.hbarTokenId) {
+                // HBAR -> Token: Use multicall with exactOutput + refundETH
+                return await this.swapHBARForTokensExactOutput(params, config, deadline, recipientAddress);
+            } else if (params.outputTokenId === config.hbarTokenId) {
+                // Token -> HBAR: Use multicall with exactOutput + unwrapWHBAR
+                return await this.swapTokensForHBARExactOutput(params, config, deadline, recipientAddress);
+            } else {
+                // Token -> Token: Use direct exactOutput (no multicall per docs)
+                return await this.swapTokensForTokensExactOutput(params, config, deadline, recipientAddress);
+            }
+        } catch (error) {
+            edwinLogger.error('Failed to swap exact output:', error);
+            const errorStr = error instanceof Error ? error.message : String(error);
+            if (errorStr.includes('CONTRACT_REVERT_EXECUTED')) {
+                throw new Error(`Swap contract execution failed: ${errorStr}. This could be due to insufficient liquidity, slippage tolerance, or token approval issues.`);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Convert hex string to Uint8Array for contract calls (per official docs)
+     */
+    private hexToUint8Array(hex: string): Uint8Array {
+        if (hex.startsWith('0x')) {
+            hex = hex.slice(2);
+        }
+        const bytes = [];
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes.push(parseInt(hex.substr(i, 2), 16));
+        }
+        return new Uint8Array(bytes);
     }
 
     /**
@@ -345,388 +467,70 @@ export class SaucerSwapService extends EdwinService {
         return await this.wallet.sendTransaction(transaction);
     }
 
-    /**
-     * Token -> Token swap using direct exactInput (per official docs)
-     */
-    private async swapTokensForTokens(
-        params: SaucerSwapExactInputParameters,
-        config: NetworkConfig,
-        deadline: number,
-        recipientAddress: string
-    ): Promise<string> {
-        // Critical: Ensure token association for output token (required per docs)
-        await this.associateToken(params.outputTokenId);
+    // Placeholder methods for other swap types
+    private async swapTokensForHBAR(params: SaucerSwapExactInputParameters, config: NetworkConfig, deadline: number, recipientAddress: string): Promise<string> {
+        throw new Error('Token -> HBAR swap not implemented yet');
+    }
 
-        // Critical: Approve router to spend input tokens (required per docs)
-        const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
-        const inputDecimals = await this.wallet.getTokenDecimals(params.inputTokenId);
-        const inputAmount = Math.floor(params.amountIn * Math.pow(10, inputDecimals));
+    private async swapTokensForTokens(params: SaucerSwapExactInputParameters, config: NetworkConfig, deadline: number, recipientAddress: string): Promise<string> {
+        throw new Error('Token -> Token swap not implemented yet');
+    }
 
-        const swapRouterAccountId = AccountId.fromString(config.swapRouterContractId);
-        await this.approveTokenAllowance(params.inputTokenId, swapRouterAccountId.toString(), inputAmount);
+    private async swapHBARForTokensExactOutput(params: SaucerSwapExactOutputParameters, config: NetworkConfig, deadline: number, recipientAddress: string): Promise<string> {
+        throw new Error('HBAR -> Token exact output swap not implemented yet');
+    }
 
-        // Load ABI data containing SwapRouter functions (per docs)
-        const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
+    private async swapTokensForHBARExactOutput(params: SaucerSwapExactOutputParameters, config: NetworkConfig, deadline: number, recipientAddress: string): Promise<string> {
+        throw new Error('Token -> HBAR exact output swap not implemented yet');
+    }
 
-        // Create path
-        const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(params.outputTokenId);
-
-        const pathData: string[] = [];
-        pathData.push(inputToken.toEvmAddress());
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(outputToken.toEvmAddress());
-        const routeDataWithFee = '0x' + pathData.join('');
-
-        // Convert amounts
-        const outputDecimals = await this.wallet.getTokenDecimals(params.outputTokenId);
-        const outputAmountMin = Math.floor(params.amountOutMinimum * Math.pow(10, outputDecimals));
-
-        // ExactInputParams (per docs)
-        const exactInputParams = {
-            path: routeDataWithFee,
-            recipient: recipientAddress,
-            deadline: deadline,
-            amountIn: inputAmount,
-            amountOutMinimum: outputAmountMin,
-        };
-
-        // Get encoded hexadecimal string data (per docs)
-        const encodedData = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
-
-        // Debug logging
-        edwinLogger.info(`Token swap params:`, {
-            path: routeDataWithFee,
-            inputAmount,
-            outputAmountMin,
-            recipient: recipientAddress,
-            deadline,
-            swapRouter: config.swapRouterContractId,
-            inputToken: params.inputTokenId,
-            outputToken: params.outputTokenId
-        });
-
-        // Get encoded data as Uint8Array (per docs)
-        const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
-
-        // Execute transaction (per docs)
-        const transaction = new ContractExecuteTransaction()
-            .setContractId(swapRouterContractId)
-            .setGas(SaucerSwapService.GAS_LIMIT)
-            .setFunctionParameters(encodedDataAsUint8Array);
-
-        return await this.wallet.sendTransaction(transaction);
+    private async swapTokensForTokensExactOutput(params: SaucerSwapExactOutputParameters, config: NetworkConfig, deadline: number, recipientAddress: string): Promise<string> {
+        throw new Error('Token -> Token exact output swap not implemented yet');
     }
 
     /**
-     * Token -> HBAR swap using multicall with unwrapWHBAR (per official docs)
-     */
-    private async swapTokensForHBAR(
-        params: SaucerSwapExactInputParameters,
-        config: NetworkConfig,
-        deadline: number,
-        recipientAddress: string
-    ): Promise<string> {
-        // Critical: Approve router to spend input tokens (required per docs)
-        const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
-        const inputDecimals = await this.wallet.getTokenDecimals(params.inputTokenId);
-        const inputAmount = Math.floor(params.amountIn * Math.pow(10, inputDecimals));
-
-        const swapRouterAccountId = AccountId.fromString(config.swapRouterContractId);
-        await this.approveTokenAllowance(params.inputTokenId, swapRouterAccountId.toString(), inputAmount);
-
-        // Load ABI data containing SwapRouter, PeripheryPayments and Multicall functions (per docs)
-        const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
-
-        // Create path with WHBAR for HBAR output (per docs)
-        const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR for HBAR
-
-        const pathData: string[] = [];
-        pathData.push(inputToken.toEvmAddress());
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(outputToken.toEvmAddress());
-        const routeDataWithFee = '0x' + pathData.join('');
-
-        // Convert amounts
-        const outputTinybarMin = Math.floor(params.amountOutMinimum * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
-
-        // Use SwapRouter contract address as recipient for unwrapWHBAR to work (per docs)
-        const swapRouterAddress = `0x${ContractId.fromString(config.swapRouterContractId).toEvmAddress()}`;
-
-        // ExactInputParams (per docs)
-        const exactInputParams = {
-            path: routeDataWithFee,
-            recipient: swapRouterAddress, // Use SwapRouter address for unwrapWHBAR
-            deadline: deadline,
-            amountIn: inputAmount,
-            amountOutMinimum: outputTinybarMin,
-        };
-
-        // Encode each function individually (per docs)
-        const swapEncoded = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
-        // Provide the user's address to receive the unwrapped HBAR (per docs)
-        const unwrapEncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [0, recipientAddress]);
-
-        // Multi-call parameter: bytes[] (per docs)
-        const multiCallParam = [swapEncoded, unwrapEncoded];
-
-        // Get encoded data for the multicall involving both functions (per docs)
-        const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
-
-        // Get encoded data as Uint8Array (per docs)
-        const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
-
-        // Execute transaction (per docs)
-        const transaction = new ContractExecuteTransaction()
-            .setContractId(swapRouterContractId)
-            .setGas(SaucerSwapService.GAS_LIMIT)
-            .setFunctionParameters(encodedDataAsUint8Array);
-
-        return await this.wallet.sendTransaction(transaction);
-    }
-
-    /**
-     * Swap input tokens for exact output tokens (following official docs exactly)
-     */
-    async swapExactOutput(params: SaucerSwapExactOutputParameters): Promise<string> {
-        edwinLogger.info(
-            `Swapping for exact ${params.amountOut} ${params.outputTokenId} from ${params.inputTokenId} on ${params.network}`
-        );
-
-        try {
-            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
-
-            // Similar implementation to exactInput but with reversed path and exactOutput function
-            // Following same patterns as exactInput but with appropriate reversals per docs
-
-            // Check balance (temporarily disabled due to network issues)
-            // let balance: number;
-            // if (params.inputTokenId === config.hbarTokenId) {
-            //     balance = await this.wallet.getBalance();
-            // } else {
-            //     if (!this.wallet.getTokenBalance) {
-            //         throw new Error('Token balance not supported by this wallet client');
-            //     }
-            //     balance = await this.wallet.getTokenBalance(params.inputTokenId);
-            // }
-
-            // if (balance < params.amountInMaximum) {
-            //     throw new Error(`Insufficient balance: ${balance} < ${params.amountInMaximum}`);
-            // }
-
-            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
-            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toEvmAddress();
-
-            // For exactOutput, paths need to be reversed per docs
-            if (params.inputTokenId === config.hbarTokenId) {
-                return await this.swapExactOutputHBARForTokens(params, config, deadline, recipientAddress);
-            } else if (params.outputTokenId === config.hbarTokenId) {
-                return await this.swapExactOutputTokensForHBAR(params, config, deadline, recipientAddress);
-            } else {
-                return await this.swapExactOutputTokensForTokens(params, config, deadline, recipientAddress);
-            }
-        } catch (error) {
-            edwinLogger.error('Failed to swap exact output:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * ExactOutput: HBAR -> Token with reversed path (per docs)
-     */
-    private async swapExactOutputHBARForTokens(
-        params: SaucerSwapExactOutputParameters,
-        config: NetworkConfig,
-        deadline: number,
-        recipientAddress: string
-    ): Promise<string> {
-        const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
-
-        // Reversed path for exactOutput (per docs)
-        const inputToken = ContractId.fromString(config.whbarTokenId);
-        const outputToken = ContractId.fromString(params.outputTokenId);
-
-        const pathData: string[] = [];
-        pathData.push(outputToken.toEvmAddress()); // Output first for reversed path
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(inputToken.toEvmAddress());
-        const routeDataWithFee = '0x' + pathData.join('');
-
-        // Convert amounts
-        const inputTinybarMax = Math.floor(params.amountInMaximum * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
-        const outputDecimals = await this.wallet.getTokenDecimals(params.outputTokenId);
-        const outputAmount = Math.floor(params.amountOut * Math.pow(10, outputDecimals));
-
-        const exactOutputParams = {
-            path: routeDataWithFee,
-            recipient: recipientAddress,
-            deadline: deadline,
-            amountOut: outputAmount,
-            amountInMaximum: inputTinybarMax,
-        };
-
-        const swapEncoded = abiInterfaces.encodeFunctionData('exactOutput', [exactOutputParams]);
-        const refundHBAREncoded = abiInterfaces.encodeFunctionData('refundETH');
-
-        const multiCallParam = [swapEncoded, refundHBAREncoded];
-        const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
-        const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
-
-        const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
-        const transaction = new ContractExecuteTransaction()
-            .setPayableAmount(Hbar.from(inputTinybarMax, HbarUnit.Tinybar))
-            .setContractId(swapRouterContractId)
-            .setGas(SaucerSwapService.GAS_LIMIT)
-            .setFunctionParameters(encodedDataAsUint8Array);
-
-        return await this.wallet.sendTransaction(transaction);
-    }
-
-    /**
-     * ExactOutput: Token -> Token with reversed path (per docs)
-     */
-    private async swapExactOutputTokensForTokens(
-        params: SaucerSwapExactOutputParameters,
-        config: NetworkConfig,
-        deadline: number,
-        recipientAddress: string
-    ): Promise<string> {
-        const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
-
-        // Reversed path for exactOutput (per docs)
-        const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(params.outputTokenId);
-
-        const pathData: string[] = [];
-        pathData.push(outputToken.toEvmAddress()); // Output first for reversed path
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(inputToken.toEvmAddress());
-        const routeDataWithFee = '0x' + pathData.join('');
-
-        const inputDecimals = await this.wallet.getTokenDecimals(params.inputTokenId);
-        const outputDecimals = await this.wallet.getTokenDecimals(params.outputTokenId);
-        const inputAmountMax = Math.floor(params.amountInMaximum * Math.pow(10, inputDecimals));
-        const outputAmount = Math.floor(params.amountOut * Math.pow(10, outputDecimals));
-
-        const exactOutputParams = {
-            path: routeDataWithFee,
-            recipient: recipientAddress,
-            deadline: deadline,
-            amountOut: outputAmount,
-            amountInMaximum: inputAmountMax,
-        };
-
-        const encodedData = abiInterfaces.encodeFunctionData('exactOutput', [exactOutputParams]);
-        const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
-
-        const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
-        const transaction = new ContractExecuteTransaction()
-            .setContractId(swapRouterContractId)
-            .setGas(SaucerSwapService.GAS_LIMIT)
-            .setFunctionParameters(encodedDataAsUint8Array);
-
-        return await this.wallet.sendTransaction(transaction);
-    }
-
-    /**
-     * ExactOutput: Token -> HBAR with reversed path and unwrapWHBAR (per docs)
-     */
-    private async swapExactOutputTokensForHBAR(
-        params: SaucerSwapExactOutputParameters,
-        config: NetworkConfig,
-        deadline: number,
-        recipientAddress: string
-    ): Promise<string> {
-        const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
-
-        // Reversed path for exactOutput with WHBAR (per docs)
-        const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(config.whbarTokenId);
-
-        const pathData: string[] = [];
-        pathData.push(outputToken.toEvmAddress()); // WHBAR first for reversed path
-        pathData.push(SaucerSwapService.DEFAULT_FEE);
-        pathData.push(inputToken.toEvmAddress());
-        const routeDataWithFee = '0x' + pathData.join('');
-
-        const inputDecimals = await this.wallet.getTokenDecimals(params.inputTokenId);
-        const inputAmountMax = Math.floor(params.amountInMaximum * Math.pow(10, inputDecimals));
-        const outputTinybar = Math.floor(params.amountOut * Math.pow(10, SaucerSwapService.HBAR_DECIMALS));
-
-        const swapRouterAddress = `0x${ContractId.fromString(config.swapRouterContractId).toEvmAddress()}`;
-
-        const exactOutputParams = {
-            path: routeDataWithFee,
-            recipient: swapRouterAddress, // Use SwapRouter address for unwrapWHBAR
-            deadline: deadline,
-            amountOut: outputTinybar,
-            amountInMaximum: inputAmountMax,
-        };
-
-        const swapEncoded = abiInterfaces.encodeFunctionData('exactOutput', [exactOutputParams]);
-        const unwrapEncoded = abiInterfaces.encodeFunctionData('unwrapWHBAR', [0, recipientAddress]);
-
-        const multiCallParam = [swapEncoded, unwrapEncoded];
-        const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
-        const encodedDataAsUint8Array = this.hexToUint8Array(encodedData);
-
-        const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
-        const transaction = new ContractExecuteTransaction()
-            .setContractId(swapRouterContractId)
-            .setGas(SaucerSwapService.GAS_LIMIT)
-            .setFunctionParameters(encodedDataAsUint8Array);
-
-        return await this.wallet.sendTransaction(transaction);
-    }
-
-    /**
-     * Convert hex string to Uint8Array for contract function parameters (per docs)
-     */
-    private hexToUint8Array(hex: string): Uint8Array {
-        const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
-        const paddedHex = cleanHex.length % 2 === 0 ? cleanHex : '0' + cleanHex;
-
-        const uint8Array = new Uint8Array(paddedHex.length / 2);
-        for (let i = 0; i < paddedHex.length; i += 2) {
-            uint8Array[i / 2] = parseInt(paddedHex.substring(i, i + 2), 16);
-        }
-        return uint8Array;
-    }
-
-
-    /**
-     * Associate a token with the current account (required per SaucerSwap docs)
+     * Associate token with account (required per official docs)
      */
     private async associateToken(tokenId: string): Promise<void> {
         try {
-            const transaction = new TokenAssociateTransaction()
-                .setAccountId(this.wallet.accountId)
-                .setTokenIds([TokenId.fromString(tokenId)]);
+            edwinLogger.info(`Associating token ${tokenId} with account ${this.wallet.getAddress()}`);
 
-            await this.wallet.sendTransaction(transaction);
-            edwinLogger.info(`Associated token ${tokenId} with account ${this.wallet.getAddress()}`);
+            // Check if already associated (per docs)
+            const balance = await this.wallet.getTokenBalance?.(tokenId);
+            if (balance !== undefined && balance >= 0) {
+                edwinLogger.info(`Token ${tokenId} already associated with account`);
+                return;
+            }
         } catch (error) {
             const errorStr = error instanceof Error ? error.message : String(error);
-            if (errorStr.includes('TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT')) {
-                edwinLogger.info(`Token ${tokenId} already associated with account`);
-            } else {
-                edwinLogger.warn(`Token association failed: ${errorStr}`);
-                // Don't throw - token may already be associated
-            }
+            edwinLogger.info(`Token association needed: ${errorStr}`);
         }
+
+        // Associate the token (per docs)
+        const tokenAssociation = new TokenAssociateTransaction()
+            .setAccountId(this.wallet.getAddress())
+            .setTokenIds([TokenId.fromString(tokenId)]);
+
+        await this.wallet.sendTransaction(tokenAssociation);
+        edwinLogger.info(`Token ${tokenId} successfully associated`);
     }
 
     /**
-     * Approve token allowance for the swap router (required per SaucerSwap docs)
+     * Approve token allowance (required per official docs)
      */
-    private async approveTokenAllowance(tokenId: string, spenderId: string, amount: number): Promise<void> {
+    private async approveTokenAllowance(tokenId: string, amount: number, spenderId: string): Promise<void> {
         try {
-            const transaction = new AccountAllowanceApproveTransaction()
-                .approveTokenAllowance(TokenId.fromString(tokenId), this.wallet.accountId, AccountId.fromString(spenderId), amount);
+            edwinLogger.info(`Approving ${amount} of token ${tokenId} for spender ${spenderId}`);
 
-            await this.wallet.sendTransaction(transaction);
-            edwinLogger.info(`Approved ${amount} of token ${tokenId} for spender ${spenderId}`);
+            const tokenDecimals = await this.wallet.getTokenDecimals(tokenId);
+            const amountInSmallestUnit = Math.floor(amount * Math.pow(10, tokenDecimals));
+
+            // Approve allowance (per docs)
+            const allowanceApproval = new AccountAllowanceApproveTransaction()
+                .approveTokenAllowance(TokenId.fromString(tokenId), this.wallet.getAddress(), spenderId, amountInSmallestUnit);
+
+            await this.wallet.sendTransaction(allowanceApproval);
+            edwinLogger.info(`Token allowance approved successfully`);
         } catch (error) {
             edwinLogger.error(`Token allowance approval failed: ${error}`);
             throw new Error(`Token approval failed: ${error}`);
