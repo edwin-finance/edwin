@@ -161,10 +161,9 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
 
         it('should handle exact input swap WHBAR->SAUCE (if liquidity exists)', async () => {
             try {
-                // Skip balance check to avoid token association costs
-                console.log('   Attempting WHBAR to SAUCE swap...');
+                console.log('   Attempting HBAR to SAUCE swap...');
 
-                const swapAmount = 0.01; // 0.01 HBAR (smaller amount to reduce costs)
+                const swapAmount = 1; // 1 HBAR - larger amount for better liquidity
                 const minOutputAmount = 0; // No minimum to avoid slippage issues
 
                 const txId = await saucerSwapService.swapExactInput({

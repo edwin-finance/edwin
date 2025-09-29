@@ -103,4 +103,34 @@ export class KeypairClient extends BaseHederaWalletClient {
             throw new Error(`Failed to send transaction: ${error}`);
         }
     }
+
+    /**
+     * Send a transaction and return full response with record
+     */
+    async sendTransactionWithResponse(transaction: Transaction): Promise<{ transactionId: string; record: any }> {
+        try {
+            const client = this.getClient();
+
+            // Set the operator for the client (this handles signing and fee payment)
+            client.setOperator(this.accountId, this.privateKey);
+
+            // Execute the transaction directly - the SDK will handle freezing and signing
+            const response = await transaction.execute(client);
+
+            // Get the transaction record for detailed results
+            const record = await response.getRecord(client);
+
+            if (record.receipt.status.toString() !== 'SUCCESS') {
+                throw new Error(`Transaction failed with status: ${record.receipt.status.toString()}`);
+            }
+
+            return {
+                transactionId: response.transactionId.toString(),
+                record: record
+            };
+        } catch (error) {
+            edwinLogger.error('Failed to send transaction with response:', error);
+            throw new Error(`Failed to send transaction: ${error}`);
+        }
+    }
 }

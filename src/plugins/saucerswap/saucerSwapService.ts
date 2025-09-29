@@ -24,7 +24,6 @@ interface NetworkConfig {
     quoterContractId: string;
     hbarTokenId: string;
     whbarTokenId: string;
-    whbarTokenContractId: string;
     hederaJsonRpcUrl: string;
 }
 
@@ -34,15 +33,14 @@ export class SaucerSwapService extends EdwinService {
             swapRouterContractId: '0.0.3949434', // SaucerSwapV2SwapRouter
             quoterContractId: '0.0.3949424', // SaucerSwapV2QuoterV2
             hbarTokenId: 'HBAR', // Native HBAR
-            whbarTokenId: '0.0.1456985', // WHBAR contract ID (from official docs)
-            whbarTokenContractId: '0.0.1456986', // WHBAR Token ID (from official docs)
+            whbarTokenId: '0.0.1456986', // WHBAR token ID for mainnet
             hederaJsonRpcUrl: 'https://mainnet.hashio.io/api', // Hedera JSON RPC
         },
     };
 
-    private static readonly DEFAULT_FEE = '0001F4'; // 0.05% fee (500 basis points = 0x01F4) - most common pool tier
-    private static readonly MEDIUM_FEE = '000BB8'; // 0.30% fee (3000 basis points = 0x0BB8) - medium pool tier
-    private static readonly HIGH_FEE = '002710'; // 1.00% fee (10000 basis points = 0x2710) - high pool tier
+    private static readonly DEFAULT_FEE = '0001f4'; // 0.05% fee (500 = 0x0001f4) - exactly 6 hex chars (3 bytes)
+    private static readonly MEDIUM_FEE = '000bb8'; // 0.30% fee (3000 = 0x000bb8) - exactly 6 hex chars (3 bytes)
+    private static readonly HIGH_FEE = '002710'; // 1.00% fee (10000 = 0x002710) - exactly 6 hex chars (3 bytes)
     private static readonly USDC_TOKEN_ID = '0.0.456858'; // USDC token ID for multi-hop routing
     private static readonly GAS_LIMIT = 3000000;
     private static readonly HBAR_DECIMALS = 8;
@@ -91,7 +89,7 @@ export class SaucerSwapService extends EdwinService {
             const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toSolidityAddress()}`;
 
             // Handle HBAR -> WHBAR conversion for path encoding (per docs)
-            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenContractId : params.inputTokenId;
+            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenId : params.inputTokenId;
 
             // Convert token IDs to solidity addresses (per docs)
             const inputToken = ContractId.fromString(inputTokenForPath);
@@ -252,7 +250,7 @@ export class SaucerSwapService extends EdwinService {
             const quoterEvmAddress = `0x${ContractId.fromString(config.quoterContractId).toSolidityAddress()}`;
 
             // Handle HBAR -> WHBAR conversion for path encoding (per docs)
-            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenContractId : params.inputTokenId;
+            const inputTokenForPath = params.inputTokenId === 'HBAR' ? config.whbarTokenId : params.inputTokenId;
 
             // Convert token IDs to solidity addresses (per docs)
             const inputToken = ContractId.fromString(inputTokenForPath);
@@ -423,7 +421,7 @@ export class SaucerSwapService extends EdwinService {
         const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
 
         // Create path with WHBAR contract for HBAR swaps (different from quotes) (per docs)
-        const inputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Contract ID (0.0.1456985) for swaps
+        const inputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Token ID (0.0.1456986) for swaps
         const outputToken = ContractId.fromString(params.outputTokenId);
 
         const pathData: string[] = [];
@@ -444,15 +442,15 @@ export class SaucerSwapService extends EdwinService {
             // Get expected output from quote and apply 5% slippage
             try {
                 const expectedOutput = await this.getQuote({
-                    inputTokenId: config.whbarTokenContractId, // Use token ID for quotes
+                    inputTokenId: config.whbarTokenId, // Use WHBAR token ID for quotes
                     outputTokenId: params.outputTokenId,
                     amount: params.amountIn,
                     network: 'mainnet'
                 });
                 outputAmountMin = Math.floor(expectedOutput * 0.95 * Math.pow(10, outputDecimals)); // 5% slippage
                 edwinLogger.info(`Applied 5% slippage: expected=${expectedOutput}, min=${outputAmountMin / Math.pow(10, outputDecimals)}`);
-            } catch (quoteError) {
-                edwinLogger.warn('Failed to get quote for slippage calculation, using 0 minimum');
+            } catch (error) {
+                edwinLogger.warn('Failed to get quote for slippage calculation, using 0 minimum:', error);
                 outputAmountMin = 0;
             }
         }
@@ -466,10 +464,10 @@ export class SaucerSwapService extends EdwinService {
             amountOutMinimum: outputAmountMin,
         };
 
-        // Try direct exactInput without multicall - some DEXs work better this way
+        // Try direct exactInput first instead of multicall for debugging
         const encodedData = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
 
-        edwinLogger.info('Using direct exactInput without multicall (skipping refundETH)');
+        edwinLogger.info('Using direct exactInput for HBAR->Token swap (debugging - no multicall)');
 
         // Debug logging to examine exact parameters
         edwinLogger.info(`HBAR->Token Swap Debug: Input=${inputToken.toSolidityAddress()}, Output=${outputToken.toSolidityAddress()}, Path=${routeDataWithFee}, Amount=${inputTinybar}, MinOut=${outputAmountMin}, Recipient=${recipientAddress}`);
@@ -479,13 +477,37 @@ export class SaucerSwapService extends EdwinService {
 
         // Execute transaction (per docs)
         const swapRouterContractId = ContractId.fromString(config.swapRouterContractId);
+        edwinLogger.info(`Preparing swap transaction to router: ${config.swapRouterContractId}`);
+        edwinLogger.info(`Swap details - HBAR amount: ${inputTinybar} tinybars, Gas: ${SaucerSwapService.GAS_LIMIT}`);
+
         const transaction = new ContractExecuteTransaction()
             .setPayableAmount(Hbar.from(inputTinybar, HbarUnit.Tinybar))
             .setContractId(swapRouterContractId)
             .setGas(SaucerSwapService.GAS_LIMIT)
             .setFunctionParameters(encodedDataAsUint8Array);
 
-        return await this.wallet.sendTransaction(transaction);
+        // Use new method to get full response if available, otherwise fall back to regular sendTransaction
+        edwinLogger.info('Sending swap transaction to Hedera network...');
+        if (this.wallet.sendTransactionWithResponse) {
+            edwinLogger.info('Using sendTransactionWithResponse for detailed results');
+            const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+            // Parse direct exactInput result for HBAR->Token swap
+            if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                try {
+                    // Decode the direct exactInput result
+                    const decodedExactInput = abiInterfaces.decodeFunctionResult('exactInput', record.contractFunctionResult.bytes);
+                    const amountOut = decodedExactInput.amountOut.toString();
+                    edwinLogger.info(`HBAR->Token Swap successful - Amount out: ${amountOut / Math.pow(10, outputDecimals)} ${params.outputTokenId}`);
+                } catch (decodeError) {
+                    edwinLogger.warn('Could not decode direct exactInput swap result:', decodeError);
+                }
+            }
+
+            return transactionId;
+        } else {
+            return await this.wallet.sendTransaction(transaction);
+        }
     }
 
     /**
@@ -501,7 +523,7 @@ export class SaucerSwapService extends EdwinService {
 
         // Create path from input token to WHBAR for HBAR swaps (per docs)
         const inputToken = ContractId.fromString(params.inputTokenId);
-        const outputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Contract ID (0.0.1456985) for swaps
+        const outputToken = ContractId.fromString(config.whbarTokenId); // Use WHBAR Token ID (0.0.1456986) for swaps
 
         const pathData: string[] = [];
         pathData.push(inputToken.toSolidityAddress()); // Use toSolidityAddress() per user docs
@@ -544,7 +566,29 @@ export class SaucerSwapService extends EdwinService {
             .setGas(SaucerSwapService.GAS_LIMIT)
             .setFunctionParameters(encodedDataAsUint8Array);
 
-        return await this.wallet.sendTransaction(transaction);
+        // Use new method to get full response if available
+        if (this.wallet.sendTransactionWithResponse) {
+            const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+            // Parse multicall results for Token->HBAR swap
+            if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                try {
+                    // First decode the multicall result
+                    const multicallResults = abiInterfaces.decodeFunctionResult('multicall', record.contractFunctionResult.bytes);
+                    // The first result is from exactInput
+                    const exactInputResultBytes = multicallResults.results[0];
+                    const decodedExactInput = abiInterfaces.decodeFunctionResult('exactInput', exactInputResultBytes);
+                    const amountOut = decodedExactInput.amountOut.toString();
+                    edwinLogger.info(`Token->HBAR Swap successful - HBAR out: ${amountOut / Math.pow(10, SaucerSwapService.HBAR_DECIMALS)} HBAR`);
+                } catch (decodeError) {
+                    edwinLogger.warn('Could not decode multicall swap result:', decodeError);
+                }
+            }
+
+            return transactionId;
+        } else {
+            return await this.wallet.sendTransaction(transaction);
+        }
     }
 
     /**
@@ -604,7 +648,25 @@ export class SaucerSwapService extends EdwinService {
                     .setGas(SaucerSwapService.GAS_LIMIT)
                     .setFunctionParameters(encodedDataAsUint8Array);
 
-                return await this.wallet.sendTransaction(transaction);
+                // Use new method to get full response if available
+                if (this.wallet.sendTransactionWithResponse) {
+                    const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+                    // Parse result for Token->Token swap (single exactInput, no multicall)
+                    if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                        try {
+                            const decoded = abiInterfaces.decodeFunctionResult('exactInput', record.contractFunctionResult.bytes);
+                            const amountOut = decoded.amountOut.toString();
+                            edwinLogger.info(`Token->Token Swap successful - Amount out: ${amountOut / Math.pow(10, outputDecimals)} ${params.outputTokenId}`);
+                        } catch (decodeError) {
+                            edwinLogger.warn('Could not decode swap result:', decodeError);
+                        }
+                    }
+
+                    return transactionId;
+                } else {
+                    return await this.wallet.sendTransaction(transaction);
+                }
             } catch (error) {
                 lastError = error as Error;
                 edwinLogger.warn(`Swap with ${description} failed: ${lastError.message}`);
@@ -675,7 +737,29 @@ export class SaucerSwapService extends EdwinService {
             .setGas(SaucerSwapService.GAS_LIMIT)
             .setFunctionParameters(encodedDataAsUint8Array);
 
-        return await this.wallet.sendTransaction(transaction);
+        // Use new method to get full response if available
+        if (this.wallet.sendTransactionWithResponse) {
+            const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+            // Parse multicall results for HBAR->Token exact output swap
+            if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                try {
+                    // First decode the multicall result
+                    const multicallResults = abiInterfaces.decodeFunctionResult('multicall', record.contractFunctionResult.bytes);
+                    // The first result is from exactOutput
+                    const exactOutputResultBytes = multicallResults.results[0];
+                    const decodedExactOutput = abiInterfaces.decodeFunctionResult('exactOutput', exactOutputResultBytes);
+                    const amountIn = decodedExactOutput.amountIn.toString();
+                    edwinLogger.info(`HBAR->Token Exact Output Swap successful - HBAR in: ${amountIn / Math.pow(10, SaucerSwapService.HBAR_DECIMALS)} HBAR`);
+                } catch (decodeError) {
+                    edwinLogger.warn('Could not decode multicall exact output swap result:', decodeError);
+                }
+            }
+
+            return transactionId;
+        } else {
+            return await this.wallet.sendTransaction(transaction);
+        }
     }
 
     /**
@@ -734,7 +818,29 @@ export class SaucerSwapService extends EdwinService {
             .setGas(SaucerSwapService.GAS_LIMIT)
             .setFunctionParameters(encodedDataAsUint8Array);
 
-        return await this.wallet.sendTransaction(transaction);
+        // Use new method to get full response if available
+        if (this.wallet.sendTransactionWithResponse) {
+            const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+            // Parse multicall results for Token->HBAR exact output swap
+            if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                try {
+                    // First decode the multicall result
+                    const multicallResults = abiInterfaces.decodeFunctionResult('multicall', record.contractFunctionResult.bytes);
+                    // The first result is from exactOutput
+                    const exactOutputResultBytes = multicallResults.results[0];
+                    const decodedExactOutput = abiInterfaces.decodeFunctionResult('exactOutput', exactOutputResultBytes);
+                    const amountIn = decodedExactOutput.amountIn.toString();
+                    edwinLogger.info(`Token->HBAR Exact Output Swap successful - Token in: ${amountIn / Math.pow(10, inputDecimals)} ${params.inputTokenId}`);
+                } catch (decodeError) {
+                    edwinLogger.warn('Could not decode multicall exact output swap result:', decodeError);
+                }
+            }
+
+            return transactionId;
+        } else {
+            return await this.wallet.sendTransaction(transaction);
+        }
     }
 
     /**
@@ -794,7 +900,25 @@ export class SaucerSwapService extends EdwinService {
                     .setGas(SaucerSwapService.GAS_LIMIT)
                     .setFunctionParameters(encodedDataAsUint8Array);
 
-                return await this.wallet.sendTransaction(transaction);
+                // Use new method to get full response if available
+                if (this.wallet.sendTransactionWithResponse) {
+                    const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
+
+                    // Parse result for Token->Token exact output swap (single exactOutput, no multicall)
+                    if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
+                        try {
+                            const decoded = abiInterfaces.decodeFunctionResult('exactOutput', record.contractFunctionResult.bytes);
+                            const amountIn = decoded.amountIn.toString();
+                            edwinLogger.info(`Token->Token Exact Output Swap successful - Amount in: ${amountIn / Math.pow(10, inputDecimals)} ${params.inputTokenId}`);
+                        } catch (decodeError) {
+                            edwinLogger.warn('Could not decode exact output swap result:', decodeError);
+                        }
+                    }
+
+                    return transactionId;
+                } else {
+                    return await this.wallet.sendTransaction(transaction);
+                }
             } catch (error) {
                 lastError = error as Error;
                 edwinLogger.warn(`Exact output swap with ${description} failed: ${lastError.message}`);
@@ -856,8 +980,8 @@ export class SaucerSwapService extends EdwinService {
                 .setAccountId(this.wallet.getAddress())
                 .setTokenIds([TokenId.fromString(tokenId)]);
 
-            await this.wallet.sendTransaction(tokenAssociation);
-            edwinLogger.info(`Token ${tokenId} successfully associated`);
+            const txId = await this.wallet.sendTransaction(tokenAssociation);
+            edwinLogger.info(`Token ${tokenId} successfully associated. Transaction: ${txId}`);
         } catch (error) {
             const errorStr = error instanceof Error ? error.message : String(error);
             edwinLogger.warn(`Token association failed for ${tokenId}: ${errorStr}`);

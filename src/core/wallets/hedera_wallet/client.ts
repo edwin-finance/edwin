@@ -83,4 +83,11 @@ export interface HederaWalletClient {
      * @returns Transaction ID
      */
     sendTransaction(transaction: Transaction): Promise<string>;
+
+    /**
+     * Send a transaction and return full response with record
+     * @param transaction Transaction to send
+     * @returns Transaction ID and record
+     */
+    sendTransactionWithResponse?(transaction: Transaction): Promise<{ transactionId: string; record: any }>;
 }
