@@ -6,7 +6,7 @@ export const SaucerSwapQuoteParametersSchema = createParameterSchema(
         inputTokenId: z.string().min(1).describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         outputTokenId: z.string().min(1).describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         amount: z.number().positive().describe('The amount of input tokens to quote'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
@@ -15,7 +15,7 @@ export const SaucerSwapQuoteExactOutputParametersSchema = createParameterSchema(
         inputTokenId: z.string().min(1).describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         outputTokenId: z.string().min(1).describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         amountOut: z.number().positive().describe('The exact amount of output tokens to quote'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
@@ -29,7 +29,7 @@ export const SaucerSwapExactInputParametersSchema = createParameterSchema(
             .number()
             .optional()
             .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 
@@ -43,7 +43,7 @@ export const SaucerSwapExactOutputParametersSchema = createParameterSchema(
             .number()
             .optional()
             .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
 

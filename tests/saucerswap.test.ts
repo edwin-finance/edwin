@@ -9,7 +9,7 @@ import { KeypairClient } from '../src/core/wallets/hedera_wallet/clients/keypair
 // Check if Hedera credentials are available
 const hasPrivateKey = Boolean(process.env.HEDERA_PRIVATE_KEY);
 const hasAccountId = Boolean(process.env.HEDERA_ACCOUNT_ID);
-const hederaNetwork = 'mainnet'; // Always use mainnet
+const hederaNetwork = 'testnet'; // Use testnet for testing
 
 // Test account details
 const TEST_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID as string;
@@ -54,10 +54,10 @@ describe('SaucerSwap Plugin Tests', () => {
             // Test with zero amount using correct WHBAR token ID
             await expect(
                 service.getQuote({
-                    inputTokenId: '0.0.1456986', // Correct WHBAR token ID
-                    outputTokenId: '0.0.731861', // SAUCE token ID
+                    inputTokenId: '0.0.15058', // WHBAR token ID for testnet
+                    outputTokenId: '0.0.1183558', // SAUCE token ID for testnet
                     amount: 0,
-                    network: 'mainnet',
+                    network: 'testnet',
                 })
             ).rejects.toThrow();
         });
@@ -67,10 +67,10 @@ describe('SaucerSwap Plugin Tests', () => {
             await expect(
                 service.swapExactInput({
                     inputTokenId: 'HBAR', // Use HBAR for swaps (negative amount test)
-                    outputTokenId: '0.0.731861', // SAUCE token ID
+                    outputTokenId: '0.0.1183558', // SAUCE token ID for testnet
                     amountIn: -1,
                     amountOutMinimum: 0,
-                    network: 'mainnet',
+                    network: 'testnet',
                 })
             ).rejects.toThrow();
         });
@@ -81,9 +81,9 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
     let wallet: KeypairClient;
     let saucerSwapService: SaucerSwapService;
 
-    // Token IDs for mainnet testing - using correct token IDs from SaucerSwap docs
-    const WHBAR_TOKEN_ID = '0.0.1456986'; // WHBAR Token ID on mainnet (from official SaucerSwap docs)
-    const SAUCE_TOKEN_ID = '0.0.731861'; // SAUCE token on mainnet (from SaucerSwap deployments)
+    // Token IDs for testnet testing - using testnet token IDs from SaucerSwap
+    const WHBAR_TOKEN_ID = '0.0.15058'; // WHBAR Token ID on testnet
+    const SAUCE_TOKEN_ID = '0.0.1183558'; // SAUCE token on testnet
     const TEST_AMOUNT = 0.1; // 0.1 token for testing to reduce costs
 
     beforeAll(() => {
@@ -277,7 +277,7 @@ describe('SaucerSwap Test Setup Validation', () => {
             expect(TEST_ACCOUNT_ID).toMatch(/^\d+\.\d+\.\d+$/);
         }
 
-        expect(hederaNetwork).toBe('mainnet');
+        expect(hederaNetwork).toBe('testnet');
     });
 
     it('should provide clear instructions for missing credentials', () => {
@@ -286,7 +286,7 @@ describe('SaucerSwap Test Setup Validation', () => {
             console.log('Set environment variables:');
             console.log('- HEDERA_PRIVATE_KEY: Your Hedera private key');
             console.log('- HEDERA_ACCOUNT_ID: Your Hedera account ID (e.g., 0.0.123456)');
-            console.log('\n💡 Note: Tests now use mainnet by default');
+            console.log('\n💡 Note: Tests now use testnet by default');
             console.log('💡 Tests use WHBAR→SAUCE swaps to minimize costs');
         }
     });

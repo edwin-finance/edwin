@@ -36,6 +36,13 @@ export class SaucerSwapService extends EdwinService {
             whbarTokenId: '0.0.1456986', // WHBAR token ID for mainnet
             hederaJsonRpcUrl: 'https://mainnet.hashio.io/api', // Hedera JSON RPC
         },
+        testnet: {
+            swapRouterContractId: '0.0.1414040', // SaucerSwapV2SwapRouter on testnet
+            quoterContractId: '0.0.1390002', // SaucerSwapV2QuoterV2 on testnet
+            hbarTokenId: 'HBAR', // Native HBAR
+            whbarTokenId: '0.0.15058', // WHBAR token ID for testnet
+            hederaJsonRpcUrl: 'https://testnet.hashio.io/api', // Hedera JSON RPC for testnet
+        },
     };
 
     private static readonly DEFAULT_FEE = '0001f4'; // 0.05% fee (500 = 0x0001f4) - exactly 6 hex chars (3 bytes)
@@ -77,7 +84,9 @@ export class SaucerSwapService extends EdwinService {
         }
 
         try {
-            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
+            const config = params.network === 'testnet'
+                ? SaucerSwapService.NETWORK_CONFIG.testnet
+                : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             // Set up ethers provider (Ethers v5 syntax)
             const provider = new ethers.providers.JsonRpcProvider(config.hederaJsonRpcUrl);
@@ -238,7 +247,9 @@ export class SaucerSwapService extends EdwinService {
         );
 
         try {
-            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
+            const config = params.network === 'testnet'
+                ? SaucerSwapService.NETWORK_CONFIG.testnet
+                : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             // Set up ethers provider (Ethers v5 syntax, docs show v6)
             const provider = new ethers.providers.JsonRpcProvider(config.hederaJsonRpcUrl);
@@ -325,10 +336,37 @@ export class SaucerSwapService extends EdwinService {
         }
 
         try {
-            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
+            const config = params.network === 'testnet'
+                ? SaucerSwapService.NETWORK_CONFIG.testnet
+                : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200; // 1 hour instead of 20 minutes
-            const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
+
+            // Get recipient address - use the account's EVM alias address
+            let recipientAddress: string;
+
+            // Check if wallet has getPrivateKey method (KeypairClient)
+            const walletWithKey = this.wallet as any;
+            if (walletWithKey.getPrivateKey) {
+                // For KeypairClient, derive the EVM alias from the private key
+                // This matches the actual EVM alias used on the Hedera network
+                const privateKey = walletWithKey.getPrivateKey();
+                const publicKey = privateKey.publicKey;
+
+                // The EVM alias is derived from the public key
+                recipientAddress = '0x' + publicKey.toEvmAddress();
+                edwinLogger.info(`Using account's EVM alias address: ${recipientAddress}`);
+
+                // Also log the account ID based address for debugging
+                const accountId = AccountId.fromString(this.wallet.getAddress());
+                const accountIdAddress = '0x' + accountId.toSolidityAddress();
+                edwinLogger.info(`Account ID based address: ${accountIdAddress} (not used)`);
+            } else {
+                // Fallback for other wallet types
+                const accountId = AccountId.fromString(this.wallet.getAddress());
+                recipientAddress = '0x' + accountId.toSolidityAddress();
+                edwinLogger.info(`Using account ID based address: ${recipientAddress}`);
+            }
 
             // Handle different swap scenarios per official docs
             if (params.inputTokenId === config.hbarTokenId) {
@@ -364,7 +402,9 @@ export class SaucerSwapService extends EdwinService {
         }
 
         try {
-            const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
+            const config = params.network === 'testnet'
+                ? SaucerSwapService.NETWORK_CONFIG.testnet
+                : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 3600; // 1 hour instead of 20 minutes
             const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
@@ -446,7 +486,7 @@ export class SaucerSwapService extends EdwinService {
                     inputTokenId: config.whbarTokenId, // Use WHBAR token ID for quotes
                     outputTokenId: params.outputTokenId,
                     amount: params.amountIn,
-                    network: 'mainnet'
+                    network: params.network // Use the same network as the swap call
                 });
                 outputAmountMin = Math.floor(expectedOutput * 0.95 * Math.pow(10, outputDecimals)); // 5% slippage
                 edwinLogger.info(`Applied 5% slippage: expected=${expectedOutput}, min=${outputAmountMin / Math.pow(10, outputDecimals)}`);
