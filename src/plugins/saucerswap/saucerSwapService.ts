@@ -42,7 +42,7 @@ export class SaucerSwapService extends EdwinService {
     private static readonly MEDIUM_FEE = '000bb8'; // 0.30% fee (3000 = 0x000bb8) - exactly 6 hex chars (3 bytes)
     private static readonly HIGH_FEE = '002710'; // 1.00% fee (10000 = 0x002710) - exactly 6 hex chars (3 bytes)
     private static readonly USDC_TOKEN_ID = '0.0.456858'; // USDC token ID for multi-hop routing
-    private static readonly GAS_LIMIT = 3000000;
+    private static readonly GAS_LIMIT = 3000000; // Increase gas limit for complex multicalls
     private static readonly HBAR_DECIMALS = 8;
 
     // Official SaucerSwap V2 ABIs from docs
@@ -327,7 +327,7 @@ export class SaucerSwapService extends EdwinService {
         try {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
-            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
+            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200; // 1 hour instead of 20 minutes
             const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
 
             // Handle different swap scenarios per official docs
@@ -366,7 +366,7 @@ export class SaucerSwapService extends EdwinService {
         try {
             const config = SaucerSwapService.NETWORK_CONFIG.mainnet;
 
-            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200;
+            const deadline = params.deadline || Math.floor(Date.now() / 1000) + 3600; // 1 hour instead of 20 minutes
             const recipientAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
 
             // Handle different swap scenarios per official docs
@@ -414,8 +414,9 @@ export class SaucerSwapService extends EdwinService {
         recipientAddress: string
     ): Promise<string> {
         edwinLogger.info(`Starting HBAR->Token swap with deadline=${deadline}`);
-        // Critical: Ensure token association for output token (required per docs)
+        // Critical: Ensure token association for output token AND WHBAR (required per docs)
         await this.associateToken(params.outputTokenId);
+        await this.associateToken(config.whbarTokenId); // Associate WHBAR token too
 
         // Load ABI data containing SwapRouter, PeripheryPayments and Multicall functions (per docs)
         const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.SWAP_ROUTER_ABI);
