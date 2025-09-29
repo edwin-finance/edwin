@@ -464,10 +464,17 @@ export class SaucerSwapService extends EdwinService {
             amountOutMinimum: outputAmountMin,
         };
 
-        // Try direct exactInput first instead of multicall for debugging
-        const encodedData = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
+        // Encode each function individually for multicall (per docs)
+        const swapEncoded = abiInterfaces.encodeFunctionData('exactInput', [exactInputParams]);
+        const refundHBAREncoded = abiInterfaces.encodeFunctionData('refundETH', []);
 
-        edwinLogger.info('Using direct exactInput for HBAR->Token swap (debugging - no multicall)');
+        // Multi-call parameter: bytes[] (per docs)
+        const multiCallParam = [swapEncoded, refundHBAREncoded];
+
+        // Get encoded data for the multicall involving both functions (per docs)
+        const encodedData = abiInterfaces.encodeFunctionData('multicall', [multiCallParam]);
+
+        edwinLogger.info('Using multicall for HBAR->Token swap (exactInput + refundETH)');
 
         // Debug logging to examine exact parameters
         edwinLogger.info(`HBAR->Token Swap Debug: Input=${inputToken.toSolidityAddress()}, Output=${outputToken.toSolidityAddress()}, Path=${routeDataWithFee}, Amount=${inputTinybar}, MinOut=${outputAmountMin}, Recipient=${recipientAddress}`);
@@ -492,15 +499,18 @@ export class SaucerSwapService extends EdwinService {
             edwinLogger.info('Using sendTransactionWithResponse for detailed results');
             const { transactionId, record } = await this.wallet.sendTransactionWithResponse(transaction);
 
-            // Parse direct exactInput result for HBAR->Token swap
+            // Parse multicall results for HBAR->Token swap
             if (record.contractFunctionResult && record.contractFunctionResult.bytes) {
                 try {
-                    // Decode the direct exactInput result
-                    const decodedExactInput = abiInterfaces.decodeFunctionResult('exactInput', record.contractFunctionResult.bytes);
+                    // First decode the multicall result
+                    const multicallResults = abiInterfaces.decodeFunctionResult('multicall', record.contractFunctionResult.bytes);
+                    // The first result is from exactInput
+                    const exactInputResultBytes = multicallResults.results[0];
+                    const decodedExactInput = abiInterfaces.decodeFunctionResult('exactInput', exactInputResultBytes);
                     const amountOut = decodedExactInput.amountOut.toString();
                     edwinLogger.info(`HBAR->Token Swap successful - Amount out: ${amountOut / Math.pow(10, outputDecimals)} ${params.outputTokenId}`);
                 } catch (decodeError) {
-                    edwinLogger.warn('Could not decode direct exactInput swap result:', decodeError);
+                    edwinLogger.warn('Could not decode multicall swap result:', decodeError);
                 }
             }
 
