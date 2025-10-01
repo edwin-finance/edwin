@@ -342,31 +342,10 @@ export class SaucerSwapService extends EdwinService {
 
             const deadline = params.deadline || Math.floor(Date.now() / 1000) + 1200; // 1 hour instead of 20 minutes
 
-            // Get recipient address - use the account's EVM alias address
-            let recipientAddress: string;
-
-            // Check if wallet has getPrivateKey method (KeypairClient)
-            const walletWithKey = this.wallet as any;
-            if (walletWithKey.getPrivateKey) {
-                // For KeypairClient, derive the EVM alias from the private key
-                // This matches the actual EVM alias used on the Hedera network
-                const privateKey = walletWithKey.getPrivateKey();
-                const publicKey = privateKey.publicKey;
-
-                // The EVM alias is derived from the public key
-                recipientAddress = '0x' + publicKey.toEvmAddress();
-                edwinLogger.info(`Using account's EVM alias address: ${recipientAddress}`);
-
-                // Also log the account ID based address for debugging
-                const accountId = AccountId.fromString(this.wallet.getAddress());
-                const accountIdAddress = '0x' + accountId.toSolidityAddress();
-                edwinLogger.info(`Account ID based address: ${accountIdAddress} (not used)`);
-            } else {
-                // Fallback for other wallet types
-                const accountId = AccountId.fromString(this.wallet.getAddress());
-                recipientAddress = '0x' + accountId.toSolidityAddress();
-                edwinLogger.info(`Using account ID based address: ${recipientAddress}`);
-            }
+            // Get recipient address - use account ID-based EVM address (works for both ED25519 and ECDSA)
+            const accountId = AccountId.fromString(this.wallet.getAddress());
+            const recipientAddress = '0x' + accountId.toSolidityAddress();
+            edwinLogger.info(`Using account ID based EVM address: ${recipientAddress}`);
 
             // Handle different swap scenarios per official docs
             if (params.inputTokenId === config.hbarTokenId) {
