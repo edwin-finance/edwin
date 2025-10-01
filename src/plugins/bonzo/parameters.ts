@@ -5,7 +5,7 @@ export const BonzoSupplyParametersSchema = createParameterSchema(
     z.object({
         tokenSymbol: z.string().min(1).describe('The token symbol to supply (e.g., WHBAR, USDC, SAUCE)'),
         amount: z.number().positive().describe('The amount of tokens to supply to Bonzo Finance'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use (mainnet or testnet)'),
     })
 );
 
@@ -13,7 +13,7 @@ export const BonzoWithdrawParametersSchema = createParameterSchema(
     z.object({
         tokenSymbol: z.string().min(1).describe('The token symbol to withdraw (e.g., WHBAR, USDC, SAUCE)'),
         amount: z.number().positive().describe('The amount of tokens to withdraw from Bonzo Finance'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use (mainnet or testnet)'),
     })
 );
 
@@ -21,14 +21,14 @@ export const BonzoBorrowParametersSchema = createParameterSchema(
     z.object({
         tokenSymbol: z.string().min(1).describe('The token symbol to borrow (e.g., WHBAR, USDC, SAUCE)'),
         amount: z.number().positive().describe('The amount of tokens to borrow from Bonzo Finance'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use (mainnet or testnet)'),
     })
 );
 
 export const BonzoGetSuppliedBalanceParametersSchema = createParameterSchema(
     z.object({
         tokenSymbol: z.string().min(1).describe('The token symbol to check supplied balance for'),
-        network: z.literal('mainnet').optional().default('mainnet').describe('The Hedera network to use'),
+        network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use (mainnet or testnet)'),
     })
 );
 

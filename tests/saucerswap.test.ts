@@ -9,7 +9,7 @@ import { KeypairClient } from '../src/core/wallets/hedera_wallet/clients/keypair
 // Check if Hedera credentials are available
 const hasPrivateKey = Boolean(process.env.HEDERA_PRIVATE_KEY);
 const hasAccountId = Boolean(process.env.HEDERA_ACCOUNT_ID);
-const hederaNetwork = 'testnet'; // Use testnet for testing
+const hederaNetwork = process.env.HEDERA_NETWORK || 'testnet';
 
 // Test account details
 const TEST_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID as string;
@@ -276,8 +276,6 @@ describe('SaucerSwap Test Setup Validation', () => {
             expect(TEST_ACCOUNT_ID).toBeDefined();
             expect(TEST_ACCOUNT_ID).toMatch(/^\d+\.\d+\.\d+$/);
         }
-
-        expect(hederaNetwork).toBe('testnet');
     });
 
     it('should provide clear instructions for missing credentials', () => {

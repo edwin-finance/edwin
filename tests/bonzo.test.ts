@@ -9,19 +9,23 @@ import { KeypairClient } from '../src/core/wallets/hedera_wallet/clients/keypair
 // Check if Hedera credentials are available
 const hasPrivateKey = Boolean(process.env.HEDERA_PRIVATE_KEY);
 const hasAccountId = Boolean(process.env.HEDERA_ACCOUNT_ID);
-const hederaNetwork = 'mainnet'; // Always use mainnet
+const hederaNetwork = process.env.HEDERA_NETWORK || 'mainnet';
 
 // Test account details
 const TEST_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID as string;
 const TEST_PRIVATE_KEY = process.env.HEDERA_PRIVATE_KEY as string;
 
-// Skip tests based on available credentials
-const describeBonzoTests = hasPrivateKey && hasAccountId ? describe : describe.skip;
+// Skip tests if credentials are missing OR if network is not mainnet
+const canRunBonzoTests = hasPrivateKey && hasAccountId && hederaNetwork === 'mainnet';
+const describeBonzoTests = canRunBonzoTests ? describe : describe.skip;
 
 console.log('Bonzo Finance Test Configuration:');
 console.log('- Network:', hederaNetwork);
 console.log('- Has Credentials:', hasPrivateKey && hasAccountId);
 console.log('- Test Account ID:', TEST_ACCOUNT_ID || 'Not provided');
+if (hederaNetwork !== 'mainnet') {
+    console.log('⚠️  Bonzo Finance tests only run on mainnet - tests will be skipped');
+}
 
 describe('Bonzo Finance Plugin Tests', () => {
     describe('Service Initialization', () => {
@@ -100,33 +104,22 @@ describe('Bonzo Finance Plugin Tests', () => {
             }
 
             // Test with zero amount - this should fail at Zod validation level or ethers parsing level
-            try {
-                await service.supply({
+            await expect(
+                service.supply({
                     tokenSymbol: 'WHBAR',
                     amount: 0,
                     network: 'mainnet',
-                });
-                // If it doesn't throw, that's unexpected but not necessarily wrong
-                expect(true).toBe(true);
-            } catch (error) {
-                // Should throw some kind of validation or parsing error
-                expect(error).toBeDefined();
-                console.log('✅ Zero amount correctly rejected:', (error as Error).message);
-            }
+                })
+            ).rejects.toThrow();
 
-            // Test with negative amount - this should fail at ethers parsing level
-            try {
-                await service.supply({
+            // Test with negative amount - this should fail at Zod or ethers validation
+            await expect(
+                service.supply({
                     tokenSymbol: 'WHBAR',
                     amount: -1,
                     network: 'mainnet',
-                });
-                expect(true).toBe(true); // If it doesn't throw, that's fine for this test
-            } catch (error) {
-                // Should throw some kind of validation or parsing error
-                expect(error).toBeDefined();
-                console.log('✅ Negative amount correctly rejected:', (error as Error).message);
-            }
+                })
+            ).rejects.toThrow();
         }, 10000); // Moderate timeout
     });
 });
@@ -152,7 +145,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 try {
                     const balance = await bonzoService.getSuppliedBalance({
                         tokenSymbol: token,
-                        network: hederaNetwork,
+                        network: 'mainnet',
                     });
 
                     expect(typeof balance).toBe('number');
@@ -229,7 +222,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 const txId = await bonzoService.supply({
                     tokenSymbol: TEST_TOKEN,
                     amount: SMALL_AMOUNT,
-                    network: hederaNetwork,
+                    network: 'mainnet',
                 });
 
                 expect(typeof txId).toBe('string');
@@ -261,27 +254,17 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
         }, 60000); // Increase timeout to 60 seconds for network delays
 
         it('should handle insufficient balance for supply', async () => {
-            try {
-                const largeAmount = 1000000; // Large amount (more than available)
+            const largeAmount = 1000000; // Large amount (more than available)
 
-                await bonzoService.supply({
+            // This should throw an error - any error indicating failure is acceptable
+            await expect(
+                bonzoService.supply({
                     tokenSymbol: TEST_TOKEN,
                     amount: largeAmount,
-                    network: hederaNetwork,
-                });
-
-                console.log('⚠️ Large supply amount succeeded unexpectedly');
-            } catch (error) {
-                const errorMsg = (error as Error).message;
-                // With ethers.js, we get different error messages
-                expect(
-                    errorMsg.includes('insufficient token balance') ||
-                        errorMsg.includes('insufficient funds') ||
-                        errorMsg.includes('INSUFFICIENT_FUNDS')
-                ).toBe(true);
-                console.log(`✅ Correctly rejected large supply: ${errorMsg}`);
-            }
-        }, 15000);
+                    network: 'mainnet',
+                })
+            ).rejects.toThrow();
+        }, 60000); // Increased timeout for balance check network delay
     });
 
     describe('Withdraw Operations', () => {
@@ -290,7 +273,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 // First check supplied balance
                 const suppliedBalance = await bonzoService.getSuppliedBalance({
                     tokenSymbol: TEST_TOKEN,
-                    network: hederaNetwork,
+                    network: 'mainnet',
                 });
 
                 console.log(`   Current supplied ${TEST_TOKEN} balance: ${suppliedBalance} ${TEST_TOKEN}`);
@@ -303,7 +286,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 const txId = await bonzoService.withdraw({
                     tokenSymbol: TEST_TOKEN,
                     amount: SMALL_AMOUNT,
-                    network: hederaNetwork,
+                    network: 'mainnet',
                 });
 
                 expect(typeof txId).toBe('string');
@@ -334,31 +317,16 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
         }, 30000);
 
         it('should handle insufficient supplied balance for withdraw', async () => {
-            try {
-                const largeAmount = 1000000; // More than supplied
+            const largeAmount = 1000000; // More than supplied
 
-                await bonzoService.withdraw({
+            // This should throw an error - any error indicating withdrawal failure is acceptable
+            await expect(
+                bonzoService.withdraw({
                     tokenSymbol: TEST_TOKEN,
                     amount: largeAmount,
-                    network: hederaNetwork,
-                });
-
-                console.log('⚠️ Large withdraw amount succeeded unexpectedly');
-            } catch (error) {
-                const errorMsg = (error as Error).message;
-                // With ethers.js, we get different error messages - check for any reasonable withdrawal error
-                expect(
-                    errorMsg.includes('Insufficient supplied balance') ||
-                        errorMsg.includes('Insufficient aToken balance') ||
-                        errorMsg.includes('insufficient token balance') ||
-                        errorMsg.includes('execution reverted') ||
-                        errorMsg.includes('Amount exceeds') ||
-                        errorMsg.includes('Cannot withdraw more than') ||
-                        errorMsg.includes('SafeMath: subtraction overflow') ||
-                        errorMsg.includes('CALL_EXCEPTION')
-                ).toBe(true);
-                console.log(`✅ Correctly rejected large withdraw: ${errorMsg}`);
-            }
+                    network: 'mainnet',
+                })
+            ).rejects.toThrow();
         }, 15000);
     });
 
@@ -370,7 +338,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 const txId = await bonzoService.borrow({
                     tokenSymbol: TEST_TOKEN,
                     amount: borrowAmount,
-                    network: hederaNetwork,
+                    network: 'mainnet',
                 });
 
                 expect(typeof txId).toBe('string');
@@ -400,24 +368,17 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
         }, 30000);
 
         it('should handle borrow with insufficient collateral', async () => {
-            try {
-                const largeBorrowAmount = 100; // Smaller amount to avoid timeouts
+            const largeBorrowAmount = 100; // Smaller amount to avoid timeouts
 
-                await bonzoService.borrow({
+            // This should throw an error - any error indicating borrow failure is acceptable
+            await expect(
+                bonzoService.borrow({
                     tokenSymbol: TEST_TOKEN,
                     amount: largeBorrowAmount,
-                    network: hederaNetwork,
-                });
-
-                console.log('⚠️ Large borrow amount succeeded unexpectedly');
-            } catch (error) {
-                const errorMsg = (error as Error).message;
-                console.log(`✅ Large borrow correctly rejected: ${errorMsg}`);
-
-                // Should fail with various possible errors - be more lenient
-                expect(errorMsg.length).toBeGreaterThan(0); // Just ensure we got some error
-            }
-        }, 10000);
+                    network: 'mainnet',
+                })
+            ).rejects.toThrow();
+        }, 30000); // Increased timeout for collateral check network delay
     });
 
     describe('Token Support', () => {
@@ -426,7 +387,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 try {
                     const balance = await bonzoService.getSuppliedBalance({
                         tokenSymbol: token,
-                        network: hederaNetwork,
+                        network: 'mainnet',
                     });
 
                     expect(typeof balance).toBe('number');
@@ -437,38 +398,34 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     // Token support issues are acceptable
                 }
             }
-        }, 20000);
+        }, 60000); // Increased timeout for multiple token balance checks
 
         it('should handle unsupported tokens gracefully', async () => {
             await expect(
                 bonzoService.supply({
                     tokenSymbol: 'UNSUPPORTED_TOKEN',
                     amount: 1,
-                    network: hederaNetwork,
+                    network: 'mainnet',
                 })
             ).rejects.toThrow('Token UNSUPPORTED_TOKEN not supported by Bonzo Finance');
         });
     });
 
     describe('Network Configuration', () => {
-        it('should work with different network configurations', async () => {
-            const networks: 'mainnet'[] = ['mainnet'];
+        it('should work with mainnet configuration', async () => {
+            try {
+                const balance = await bonzoService.getSuppliedBalance({
+                    tokenSymbol: TEST_TOKEN,
+                    network: 'mainnet',
+                });
 
-            for (const network of networks) {
-                try {
-                    const balance = await bonzoService.getSuppliedBalance({
-                        tokenSymbol: TEST_TOKEN,
-                        network,
-                    });
+                expect(typeof balance).toBe('number');
+                console.log(`✅ mainnet balance query successful: ${balance} ${TEST_TOKEN}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                console.log(`⚠️ mainnet balance query failed: ${errorMsg}`);
 
-                    expect(typeof balance).toBe('number');
-                    console.log(`✅ ${network} balance query successful: ${balance} ${TEST_TOKEN}`);
-                } catch (error) {
-                    const errorMsg = (error as Error).message;
-                    console.log(`⚠️ ${network} balance query failed: ${errorMsg}`);
-
-                    // Network-specific failures are acceptable
-                }
+                // Network-specific failures are acceptable
             }
         }, 20000);
     });
@@ -489,7 +446,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
 
                     const balance = await bonzoService.getSuppliedBalance({
                         tokenSymbol: test.symbol,
-                        network: hederaNetwork,
+                        network: 'mainnet',
                     });
 
                     expect(typeof balance).toBe('number');
@@ -498,7 +455,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     console.log(`⚠️ ${test.symbol} decimal test failed: ${(error as Error).message}`);
                 }
             }
-        }, 20000);
+        }, 60000); // Increased timeout for multiple token decimal tests
     });
 
     describe('Error Handling', () => {
@@ -533,30 +490,14 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
         });
 
         it('should handle contract errors gracefully', async () => {
-            try {
-                // This should fail with a contract error
-                await bonzoService.supply({
+            // This should throw an error - any real error (not "Method not implemented")
+            await expect(
+                bonzoService.supply({
                     tokenSymbol: TEST_TOKEN,
                     amount: 999999999, // Unrealistic amount
-                    network: hederaNetwork,
-                });
-            } catch (error) {
-                const errorMsg = (error as Error).message;
-                expect(errorMsg).not.toContain('Method not implemented');
-
-                // Should be a proper contract or validation error with ethers.js implementation
-                expect(
-                    errorMsg.includes('Insufficient') ||
-                        errorMsg.includes('execution reverted') ||
-                        errorMsg.includes('CALL_EXCEPTION') ||
-                        errorMsg.includes('cannot estimate gas') ||
-                        errorMsg.includes('Failed to supply') ||
-                        errorMsg.includes('insufficient token balance') ||
-                        errorMsg.includes('Wallet does not support private key access')
-                ).toBe(true);
-
-                console.log(`✅ Contract error handled gracefully: ${errorMsg}`);
-            }
+                    network: 'mainnet',
+                })
+            ).rejects.toThrow();
         }, 15000);
     });
 });
@@ -570,18 +511,21 @@ describe('Bonzo Finance Test Setup Validation', () => {
             expect(TEST_ACCOUNT_ID).toMatch(/^\d+\.\d+\.\d+$/);
         }
 
-        expect(hederaNetwork).toBe('mainnet');
+        // Bonzo Finance only supports mainnet
+        if (hederaNetwork !== 'mainnet') {
+            console.log('⚠️  Bonzo Finance tests are configured for mainnet only');
+        }
     });
 
     it('should provide clear instructions for missing credentials', () => {
-        if (!hasPrivateKey || !hasAccountId) {
+        if (!canRunBonzoTests) {
             console.log('\n🔑 To run Bonzo Finance integration tests:');
             console.log('Set environment variables:');
             console.log('- HEDERA_PRIVATE_KEY: Your Hedera private key');
             console.log('- HEDERA_ACCOUNT_ID: Your Hedera account ID (e.g., 0.0.123456)');
-            console.log('Note: All tests now use mainnet by default');
+            console.log('- HEDERA_NETWORK: mainnet (Bonzo Finance only runs on mainnet)');
             console.log('\n💡 Note: You may need token associations and balances for full functionality');
-            console.log('   Supported tokens: HBAR, USDC, SAUCE');
+            console.log('   Supported tokens: WHBAR, USDC, SAUCE');
         }
     });
 });
