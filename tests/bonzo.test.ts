@@ -164,7 +164,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     }
                 }
             }
-        }, 30000);
+        }, 120000); // Increased timeout for multiple token balance checks (3 tokens x potential 30s network delays)
 
         it('should get current supplied balance', async () => {
             try {
@@ -182,7 +182,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     console.log('   💡 Account not associated with aToken');
                 }
             }
-        }, 15000);
+        }, 60000); // Increased timeout for network delays
     });
 
     describe('Supply Operations', () => {
@@ -314,7 +314,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     console.log('   💡 Wallet needs KeypairClient for ethers.js integration');
                 }
             }
-        }, 30000);
+        }, 90000); // Increased timeout for withdraw operation with network delays
 
         it('should handle insufficient supplied balance for withdraw', async () => {
             const largeAmount = 1000000; // More than supplied
@@ -327,7 +327,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     network: 'mainnet',
                 })
             ).rejects.toThrow();
-        }, 15000);
+        }, 60000); // Increased timeout for balance check network delay
     });
 
     describe('Borrow Operations (Optional)', () => {
@@ -398,7 +398,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     // Token support issues are acceptable
                 }
             }
-        }, 60000); // Increased timeout for multiple token balance checks
+        }, 120000); // Increased timeout for multiple token balance checks (3 tokens x potential 30s network delays)
 
         it('should handle unsupported tokens gracefully', async () => {
             await expect(
@@ -427,7 +427,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
 
                 // Network-specific failures are acceptable
             }
-        }, 20000);
+        }, 60000); // Increased timeout for network delays
     });
 
     describe('Decimal Handling', () => {
@@ -455,7 +455,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     console.log(`⚠️ ${test.symbol} decimal test failed: ${(error as Error).message}`);
                 }
             }
-        }, 60000); // Increased timeout for multiple token decimal tests
+        }, 120000); // Increased timeout for multiple token decimal tests (3 tokens x potential 30s network delays)
     });
 
     describe('Error Handling', () => {
@@ -498,7 +498,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                     network: 'mainnet',
                 })
             ).rejects.toThrow();
-        }, 15000);
+        }, 60000); // Increased timeout for balance check network delay
     });
 });
 
