@@ -29,7 +29,13 @@ export class StaderService extends EdwinService {
      * Stake HBAR to receive HBARX
      */
     async stake(params: StaderStakeParameters): Promise<string> {
-        edwinLogger.info(`Staking ${params.amount} HBAR for HBARX on mainnet`);
+        const network = params.network || 'mainnet';
+        edwinLogger.info(`Staking ${params.amount} HBAR for HBARX on ${network}`);
+
+        // Stader is only deployed on mainnet
+        if (network === 'testnet') {
+            throw new Error('Stader HBARX is only available on mainnet. Please use network: "mainnet"');
+        }
 
         try {
             const config = StaderService.NETWORK_CONFIG.mainnet;
@@ -64,7 +70,13 @@ export class StaderService extends EdwinService {
      * Unstake HBARX to initiate withdrawal process
      */
     async unstake(params: StaderUnstakeParameters): Promise<string> {
-        edwinLogger.info(`Unstaking ${params.amount} HBARX on mainnet`);
+        const network = params.network || 'mainnet';
+        edwinLogger.info(`Unstaking ${params.amount} HBARX on ${network}`);
+
+        // Stader is only deployed on mainnet
+        if (network === 'testnet') {
+            throw new Error('Stader HBARX is only available on mainnet. Please use network: "mainnet"');
+        }
 
         try {
             const config = StaderService.NETWORK_CONFIG.mainnet;
