@@ -34,6 +34,9 @@ export * from './plugins/hyperliquid';
 export * from './plugins/hedera_wallet';
 export * from './plugins/solana_wallet';
 export * from './plugins/evm_wallet';
+export * from './plugins/stader';
+export * from './plugins/bonzo';
+export * from './plugins/saucerswap';
 
 // Export client
 export { Edwin } from './client/edwin';

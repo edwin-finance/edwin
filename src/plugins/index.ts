@@ -14,3 +14,6 @@ export * from './evm_wallet';
 export * from './solana_wallet';
 export * from './hedera_wallet';
 export * from './silo';
+export * from './stader';
+export * from './saucerswap';
+export * from './bonzo';

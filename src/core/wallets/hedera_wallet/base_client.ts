@@ -1,4 +1,13 @@
-import { Client, AccountId, AccountBalanceQuery, AccountInfoQuery, Transaction, TokenId, Hbar } from '@hashgraph/sdk';
+import {
+    Client,
+    AccountId,
+    AccountBalanceQuery,
+    AccountInfoQuery,
+    Transaction,
+    TokenId,
+    Hbar,
+    TransactionRecord,
+} from '@hashgraph/sdk';
 import edwinLogger from '../../../utils/logger';
 import { HederaWalletClient } from './client';
 
@@ -25,7 +34,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     /**
      * Get Hedera client
      */
-    getClient(network: string = process.env.HEDERA_NETWORK || 'testnet'): Client {
+    getClient(network: string = process.env.HEDERA_NETWORK || 'mainnet'): Client {
         try {
             let client: Client;
 
@@ -84,7 +93,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
      * Get token decimals for a specific token using Mirror Node REST API
      */
     async getTokenDecimals(tokenId: string): Promise<number> {
-        const network = process.env.HEDERA_NETWORK || 'testnet';
+        const network = process.env.HEDERA_NETWORK || 'mainnet';
         const mirrorNodeUrl =
             network === 'mainnet'
                 ? 'https://mainnet-public.mirrornode.hedera.com'
@@ -178,4 +187,7 @@ export abstract class BaseHederaWalletClient implements HederaWalletClient {
     // Abstract methods that must be implemented by derived classes
     abstract signTransaction(transaction: Transaction): Promise<Transaction>;
     abstract sendTransaction(transaction: Transaction): Promise<string>;
+    abstract sendTransactionWithResponse?(
+        transaction: Transaction
+    ): Promise<{ transactionId: string; record: TransactionRecord }>;
 }

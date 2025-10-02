@@ -1,4 +1,4 @@
-import { PrivateKey, AccountId, Transaction } from '@hashgraph/sdk';
+import { PrivateKey, AccountId, Transaction, TransactionRecord } from '@hashgraph/sdk';
 import edwinLogger from '../../../../../utils/logger';
 import { BaseHederaWalletClient } from '../../base_client';
 
@@ -100,6 +100,38 @@ export class KeypairClient extends BaseHederaWalletClient {
             return response.transactionId.toString();
         } catch (error) {
             edwinLogger.error('Failed to send transaction:', error);
+            throw new Error(`Failed to send transaction: ${error}`);
+        }
+    }
+
+    /**
+     * Send a transaction and return full response with record
+     */
+    async sendTransactionWithResponse(
+        transaction: Transaction
+    ): Promise<{ transactionId: string; record: TransactionRecord }> {
+        try {
+            const client = this.getClient();
+
+            // Set the operator for the client (this handles signing and fee payment)
+            client.setOperator(this.accountId, this.privateKey);
+
+            // Execute the transaction directly - the SDK will handle freezing and signing
+            const response = await transaction.execute(client);
+
+            // Get the transaction record for detailed results
+            const record = await response.getRecord(client);
+
+            if (record.receipt.status.toString() !== 'SUCCESS') {
+                throw new Error(`Transaction failed with status: ${record.receipt.status.toString()}`);
+            }
+
+            return {
+                transactionId: response.transactionId.toString(),
+                record: record,
+            };
+        } catch (error) {
+            edwinLogger.error('Failed to send transaction with response:', error);
             throw new Error(`Failed to send transaction: ${error}`);
         }
     }

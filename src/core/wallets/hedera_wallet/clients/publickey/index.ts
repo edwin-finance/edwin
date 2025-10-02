@@ -1,4 +1,4 @@
-import { AccountId, Transaction } from '@hashgraph/sdk';
+import { AccountId, Transaction, TransactionRecord } from '@hashgraph/sdk';
 import { BaseHederaWalletClient } from '../../base_client';
 
 /**
@@ -20,6 +20,15 @@ export class PublicKeyClient extends BaseHederaWalletClient {
      * Not supported in public key client - throws error
      */
     async sendTransaction(_transaction: Transaction): Promise<string> {
+        throw new Error('Cannot send transactions with a read-only PublicKeyClient');
+    }
+
+    /**
+     * Not supported in public key client - throws error
+     */
+    async sendTransactionWithResponse(
+        _transaction: Transaction
+    ): Promise<{ transactionId: string; record: TransactionRecord }> {
         throw new Error('Cannot send transactions with a read-only PublicKeyClient');
     }
 }

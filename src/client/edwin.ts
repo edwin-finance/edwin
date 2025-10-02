@@ -18,6 +18,9 @@ import {
     silo,
     HederaWalletPlugin,
     hederaWallet,
+    stader,
+    saucerSwap,
+    bonzo,
 } from '../plugins';
 import { AavePlugin } from '../plugins/aave/aavePlugin';
 import { LidoPlugin } from '../plugins/lido/lidoPlugin';
@@ -32,6 +35,9 @@ import { DexScreenerPlugin } from '../plugins/dexscreener/dexscreenerPlugin';
 import { EVMWalletPlugin } from '../plugins/evm_wallet/evmWalletPlugin';
 import { SolanaWalletPlugin } from '../plugins/solana_wallet/solanaWalletPlugin';
 import { SiloPlugin } from '../plugins/silo/siloPlugin';
+import { StaderPlugin } from '../plugins/stader/staderPlugin';
+import { SaucerSwapPlugin } from '../plugins/saucerswap/saucerSwapPlugin';
+import { BonzoPlugin } from '../plugins/bonzo/bonzoPlugin';
 
 export interface EdwinConfig {
     // EVM wallet options
@@ -66,6 +72,9 @@ interface EdwinPlugins {
     solanaWallet?: SolanaWalletPlugin;
     silo?: SiloPlugin;
     hedera?: HederaWalletPlugin;
+    stader?: StaderPlugin;
+    saucerswap?: SaucerSwapPlugin;
+    bonzo?: BonzoPlugin;
 }
 
 export class Edwin {
@@ -119,6 +128,9 @@ export class Edwin {
         // Initialize Hedera plugins if we have a Hedera wallet
         if (this.wallets.hedera) {
             this.plugins.hedera = hederaWallet(this.wallets.hedera);
+            this.plugins.stader = stader(this.wallets.hedera);
+            this.plugins.saucerswap = saucerSwap(this.wallets.hedera);
+            this.plugins.bonzo = bonzo(this.wallets.hedera);
         }
 
         // Initialize non-wallet-dependent plugins
@@ -159,7 +171,12 @@ export class Edwin {
      */
     private hasSigningCapabilitiesForPlugin(plugin: EdwinPlugin): boolean {
         // Check if the plugin is a Hedera plugin
-        if (plugin instanceof HederaWalletPlugin) {
+        if (
+            plugin instanceof HederaWalletPlugin ||
+            plugin instanceof StaderPlugin ||
+            plugin instanceof SaucerSwapPlugin ||
+            plugin instanceof BonzoPlugin
+        ) {
             return !!this.wallets.hedera && HederaCanSign(this.wallets.hedera);
         }
 
