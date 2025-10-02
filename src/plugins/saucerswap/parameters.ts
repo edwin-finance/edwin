@@ -3,8 +3,14 @@ import { createParameterSchema } from '../../core/utils/createParameterSchema';
 
 export const SaucerSwapQuoteParametersSchema = createParameterSchema(
     z.object({
-        inputTokenId: z.string().min(1).describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
-        outputTokenId: z.string().min(1).describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
+        inputTokenId: z
+            .string()
+            .min(1)
+            .describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
+        outputTokenId: z
+            .string()
+            .min(1)
+            .describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         amount: z.number().positive().describe('The amount of input tokens to quote'),
         network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
@@ -12,8 +18,14 @@ export const SaucerSwapQuoteParametersSchema = createParameterSchema(
 
 export const SaucerSwapQuoteExactOutputParametersSchema = createParameterSchema(
     z.object({
-        inputTokenId: z.string().min(1).describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
-        outputTokenId: z.string().min(1).describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
+        inputTokenId: z
+            .string()
+            .min(1)
+            .describe('The input token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
+        outputTokenId: z
+            .string()
+            .min(1)
+            .describe('The output token ID (use 0.0.1456986 for WHBAR, 0.0.731861 for SAUCE)'),
         amountOut: z.number().positive().describe('The exact amount of output tokens to quote'),
         network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
@@ -21,8 +33,14 @@ export const SaucerSwapQuoteExactOutputParametersSchema = createParameterSchema(
 
 export const SaucerSwapExactInputParametersSchema = createParameterSchema(
     z.object({
-        inputTokenId: z.string().min(1).describe('The input token ID (use "HBAR" for HBAR swaps, or token IDs like 0.0.731861 for SAUCE)'),
-        outputTokenId: z.string().min(1).describe('The output token ID (use token IDs like 0.0.731861 for SAUCE, 0.0.1456986 for WHBAR)'),
+        inputTokenId: z
+            .string()
+            .min(1)
+            .describe('The input token ID (use "HBAR" for HBAR swaps, or token IDs like 0.0.731861 for SAUCE)'),
+        outputTokenId: z
+            .string()
+            .min(1)
+            .describe('The output token ID (use token IDs like 0.0.731861 for SAUCE, 0.0.1456986 for WHBAR)'),
         amountIn: z.number().positive().describe('The exact amount of input tokens to swap'),
         amountOutMinimum: z.number().min(0).describe('The minimum amount of output tokens to receive'),
         deadline: z
@@ -35,8 +53,14 @@ export const SaucerSwapExactInputParametersSchema = createParameterSchema(
 
 export const SaucerSwapExactOutputParametersSchema = createParameterSchema(
     z.object({
-        inputTokenId: z.string().min(1).describe('The input token ID (use "HBAR" for HBAR swaps, or token IDs like 0.0.731861 for SAUCE)'),
-        outputTokenId: z.string().min(1).describe('The output token ID (use token IDs like 0.0.731861 for SAUCE, 0.0.1456986 for WHBAR)'),
+        inputTokenId: z
+            .string()
+            .min(1)
+            .describe('The input token ID (use "HBAR" for HBAR swaps, or token IDs like 0.0.731861 for SAUCE)'),
+        outputTokenId: z
+            .string()
+            .min(1)
+            .describe('The output token ID (use token IDs like 0.0.731861 for SAUCE, 0.0.1456986 for WHBAR)'),
         amountOut: z.number().positive().describe('The exact amount of output tokens to receive'),
         amountInMaximum: z.number().positive().describe('The maximum amount of input tokens to spend'),
         deadline: z

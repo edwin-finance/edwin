@@ -85,11 +85,11 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
     const TOKEN_IDS = {
         mainnet: {
             WHBAR: '0.0.1456986', // WHBAR Token ID on mainnet
-            SAUCE: '0.0.731861',  // SAUCE token on mainnet
+            SAUCE: '0.0.731861', // SAUCE token on mainnet
         },
         testnet: {
-            WHBAR: '0.0.15058',    // WHBAR Token ID on testnet
-            SAUCE: '0.0.1183558',  // SAUCE token on testnet
+            WHBAR: '0.0.15058', // WHBAR Token ID on testnet
+            SAUCE: '0.0.1183558', // SAUCE token on testnet
         },
     };
 
@@ -171,7 +171,6 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
     });
 
     describe('Exact Input Swap Operations', () => {
-
         it('should handle exact input swap WHBAR->SAUCE (if liquidity exists)', async () => {
             try {
                 console.log('   Attempting HBAR to SAUCE swap...');
@@ -227,12 +226,12 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
                 const errorMsg = (error as Error).message;
                 expect(
                     errorMsg.includes('Insufficient balance') ||
-                    errorMsg.includes('INSUFFICIENT_PAYER_BALANCE') ||
-                    errorMsg.includes('Failed to send transaction') ||
-                    errorMsg.includes('Invalid token ID') || // Token association may fail for non-associated tokens
-                    errorMsg.includes('Token association') ||
-                    errorMsg.includes('timeout') ||
-                    errorMsg.includes('unsupported operation') // ED25519 key issues
+                        errorMsg.includes('INSUFFICIENT_PAYER_BALANCE') ||
+                        errorMsg.includes('Failed to send transaction') ||
+                        errorMsg.includes('Invalid token ID') || // Token association may fail for non-associated tokens
+                        errorMsg.includes('Token association') ||
+                        errorMsg.includes('timeout') ||
+                        errorMsg.includes('unsupported operation') // ED25519 key issues
                 ).toBe(true);
                 console.log(`✅ Correctly rejected large swap: ${errorMsg}`);
             }

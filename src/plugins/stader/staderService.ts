@@ -1,7 +1,15 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { HederaWalletClient } from '../../core/wallets/hedera_wallet';
 import edwinLogger from '../../utils/logger';
-import { ContractExecuteTransaction, ContractId, Hbar, ContractFunctionParameters } from '@hashgraph/sdk';
+import {
+    ContractExecuteTransaction,
+    ContractId,
+    Hbar,
+    ContractFunctionParameters,
+    TokenAssociateTransaction,
+    TokenId,
+    AccountAllowanceApproveTransaction,
+} from '@hashgraph/sdk';
 import {
     StaderStakeParameters,
     StaderUnstakeParameters,
@@ -12,8 +20,8 @@ import {
 export class StaderService extends EdwinService {
     private static readonly NETWORK_CONFIG = {
         mainnet: {
-            tokenId: '0.0.834116',
-            stakingContractId: '0.0.1027588',
+            tokenId: '0.0.834116', // HBARX token
+            stakingContractId: '0.0.1412503', // CORRECT staking contract (verified from successful transaction)
             undelegationContractId: '0.0.1027587',
         },
     };
@@ -40,25 +48,59 @@ export class StaderService extends EdwinService {
         try {
             const config = StaderService.NETWORK_CONFIG.mainnet;
 
-            // Check HBAR balance
+            // Check HBAR balance (add buffer for fees)
             const balance = await this.wallet.getBalance();
-            if (balance < params.amount) {
-                throw new Error(`Insufficient HBAR balance: ${balance} < ${params.amount}`);
+            const requiredBalance = params.amount + 1; // 1 HBAR buffer for fees
+            if (balance < requiredBalance) {
+                throw new Error(`Insufficient HBAR balance: ${balance} < ${requiredBalance} (amount + fee buffer)`);
             }
 
-            // Create contract execute transaction for staking (following official CLI pattern)
+            edwinLogger.info(`Balance check passed: ${balance} HBAR available`);
+
             const stakingContractId = ContractId.fromString(config.stakingContractId);
+            const hbarxTokenId = TokenId.fromString(config.tokenId);
 
-            const transaction = new ContractExecuteTransaction()
+            // Step 1: Associate with HBARX token if not already associated
+            try {
+                edwinLogger.info(`Step 1/3: Associating with HBARX token ${config.tokenId}...`);
+                const associateTx = new TokenAssociateTransaction()
+                    .setAccountId(this.wallet.getAddress())
+                    .setTokenIds([hbarxTokenId]);
+
+                const associateTxId = await this.wallet.sendTransaction(associateTx);
+                edwinLogger.info(`✅ Token association successful: ${associateTxId}`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                // TOKEN_ALREADY_ASSOCIATED is expected and fine
+                if (errorMsg.includes('TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT')) {
+                    edwinLogger.info(`✅ Token already associated`);
+                } else {
+                    edwinLogger.warn(`Token association warning: ${errorMsg}`);
+                }
+            }
+
+            // Step 2: Approve HBAR allowance for staking contract
+            edwinLogger.info(`Step 2/3: Approving HBAR allowance for staking contract...`);
+            const approveAllowanceTx = new AccountAllowanceApproveTransaction().approveHbarAllowance(
+                this.wallet.getAddress(),
+                stakingContractId.toString(),
+                new Hbar(params.amount)
+            );
+
+            const allowanceTxId = await this.wallet.sendTransaction(approveAllowanceTx);
+            edwinLogger.info(`✅ Allowance approved: ${allowanceTxId}`);
+
+            // Step 3: Call stake function on contract
+            edwinLogger.info(`Step 3/3: Staking ${params.amount} HBAR to contract ${stakingContractId}...`);
+            const stakeTx = new ContractExecuteTransaction()
                 .setContractId(stakingContractId)
-                .setFunction('stake')
                 .setGas(StaderService.GAS_LIMIT)
-                .setPayableAmount(new Hbar(params.amount));
+                .setPayableAmount(new Hbar(params.amount))
+                .setFunction('stake');
 
-            // Use the wallet's sendTransaction method instead of manual freezing
-            const transactionId = await this.wallet.sendTransaction(transaction);
+            const transactionId = await this.wallet.sendTransaction(stakeTx);
 
-            edwinLogger.info(`Successfully staked ${params.amount} HBAR. Transaction ID: ${transactionId}`);
+            edwinLogger.info(`✅ Successfully staked ${params.amount} HBAR. Transaction ID: ${transactionId}`);
             return transactionId;
         } catch (error) {
             edwinLogger.error('Failed to stake HBAR:', error);

@@ -1,4 +1,4 @@
-import { Client, Transaction, AccountId } from '@hashgraph/sdk';
+import { Client, Transaction, AccountId, TransactionRecord } from '@hashgraph/sdk';
 
 /**
  * Interface for a Hedera wallet client in Edwin
@@ -89,5 +89,7 @@ export interface HederaWalletClient {
      * @param transaction Transaction to send
      * @returns Transaction ID and record
      */
-    sendTransactionWithResponse?(transaction: Transaction): Promise<{ transactionId: string; record: any }>;
+    sendTransactionWithResponse?(
+        transaction: Transaction
+    ): Promise<{ transactionId: string; record: TransactionRecord }>;
 }

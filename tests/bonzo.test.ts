@@ -197,7 +197,7 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                             wallet.getBalance(),
                             new Promise<number>((_, reject) =>
                                 setTimeout(() => reject(new Error('Balance check timeout')), 10000)
-                            )
+                            ),
                         ]);
                         console.log(`   Current HBAR balance: ${hbarBalance} HBAR`);
                     } catch (balanceError) {
@@ -213,7 +213,9 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 // Only skip if we're sure balance is insufficient
                 const requiredHbarForTest = TEST_TOKEN === 'WHBAR' ? SMALL_AMOUNT + 0.1 : 0.1;
                 if (hbarBalance > 0 && hbarBalance < requiredHbarForTest) {
-                    console.log(`   ⚠️ Insufficient HBAR balance for supply test. Need: ${requiredHbarForTest}, Have: ${hbarBalance}`);
+                    console.log(
+                        `   ⚠️ Insufficient HBAR balance for supply test. Need: ${requiredHbarForTest}, Have: ${hbarBalance}`
+                    );
                     console.log('   💡 Skipping supply test due to insufficient balance');
                     return; // Skip test instead of failing
                 }
@@ -237,7 +239,11 @@ describeBonzoTests('Bonzo Finance Integration Tests (Full Functionality)', () =>
                 console.log(`⚠️ Supply failed: ${errorMsg}`);
 
                 // Common expected errors with new ethers.js implementation:
-                if (errorMsg.includes('insufficient token balance') || errorMsg.includes('Insufficient') || errorMsg.includes('insufficient funds')) {
+                if (
+                    errorMsg.includes('insufficient token balance') ||
+                    errorMsg.includes('Insufficient') ||
+                    errorMsg.includes('insufficient funds')
+                ) {
                     console.log('   💡 Insufficient balance for supply - this is expected when balance is low');
                     expect(errorMsg).toContain('insufficient'); // Make sure it's a balance error, not a timeout
                 } else if (errorMsg.includes('execution reverted') || errorMsg.includes('CALL_EXCEPTION')) {

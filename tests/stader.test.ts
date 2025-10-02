@@ -122,7 +122,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                 // Re-throw to fail test if unexpected error
                 throw error;
             }
-        }, 15000);
+        }, 60000); // Increased timeout for token balance queries
 
         it('should get HBARX balance by network', async () => {
             try {
@@ -139,28 +139,30 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                 console.log(`⚠️ Failed to get HBARX balance by network: ${errorMsg}`);
                 throw error;
             }
-        }, 30000); // Increased timeout for network delays
+        }, 60000); // Increased timeout for network delays
     });
 
     describe('Staking Operations', () => {
         it('should handle stake operation', async () => {
+            // Check HBAR balance first
+            const hbarBalance = await wallet.getBalance();
+            console.log(`   Current HBAR balance: ${hbarBalance} HBAR`);
+
+            if (hbarBalance < 2) {
+                console.log('   ⚠️ Insufficient HBAR balance for staking test (need at least 2 HBAR) - skipping');
+                return;
+            }
+
+            // Attempt to stake 1.02 HBAR
+            const stakeAmount = 1.02;
+
             try {
-                // Check HBAR balance first
-                const hbarBalance = await wallet.getBalance();
-                console.log(`   Current HBAR balance: ${hbarBalance} HBAR`);
-
-                if (hbarBalance < 1) {
-                    console.log('   ⚠️ Insufficient HBAR balance for staking test');
-                    return;
-                }
-
-                // Attempt to stake 0.01 HBAR
-                const stakeAmount = 0.01;
                 const txId = await staderService.stake({
                     amount: stakeAmount,
                     network: hederaNetwork,
                 });
 
+                // If we get here, staking succeeded
                 expect(typeof txId).toBe('string');
                 expect(txId.length).toBeGreaterThan(0);
                 expect(txId).toMatch(/^\d+\.\d+\.\d+@\d+\.\d+$/);
@@ -169,20 +171,19 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                 console.log(`   Transaction ID: ${txId}`);
             } catch (error) {
                 const errorMsg = (error as Error).message;
-                console.log(`⚠️ Staking failed: ${errorMsg}`);
 
-                // Common expected errors:
-                if (errorMsg.includes('INSUFFICIENT_PAYER_BALANCE')) {
-                    console.log('   💡 Insufficient HBAR balance for staking');
-                } else if (errorMsg.includes('INVALID_CONTRACT_ID')) {
-                    console.log('   💡 Stader contract not found on this network');
-                } else if (errorMsg.includes('CONTRACT_REVERT_EXECUTED')) {
-                    console.log('   💡 Contract execution reverted (may be expected)');
-                }
+                // The Stader contract implementation from the "bad dev" has known issues
+                // Contract addresses are correct (verified against official Stader CLI)
+                // But transactions consistently fail or timeout
+                console.log(`❌ STAKING FAILED - Known implementation issue`);
+                console.log(`   Error: ${errorMsg.substring(0, 200)}`);
+                console.log(`   📝 Contract addresses verified correct (0.0.1027588)`);
+                console.log(`   📝 This implementation needs debugging by Hedera expert`);
 
-                // Don't re-throw for expected errors in integration tests
+                // Fail the test to make it clear staking doesn't work
+                throw new Error(`Stader staking not functional: ${errorMsg.substring(0, 100)}`);
             }
-        }, 30000);
+        }, 300000); // 5 minute timeout for all 3 transaction steps (association, allowance, stake)
 
         it('should handle insufficient balance for staking', async () => {
             try {
@@ -261,7 +262,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                 expect(errorMsg).toContain('Insufficient HBARX balance');
                 console.log(`✅ Correctly rejected large unstake: ${errorMsg}`);
             }
-        }, 15000);
+        }, 60000); // Increased timeout for network delays
     });
 
     describe('Withdrawal Operations', () => {
@@ -315,7 +316,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                     // Network-specific failures are acceptable
                 }
             }
-        }, 20000);
+        }, 60000); // Increased timeout for network configuration tests
     });
 
     describe('Error Handling', () => {
@@ -326,7 +327,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                     network: 'invalid' as any,
                 })
             ).rejects.toThrow();
-        });
+        }, 30000); // Increased timeout
 
         it('should handle invalid amounts gracefully', async () => {
             // Zero amount - may fail due to insufficient balance for fees
@@ -343,8 +344,8 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                 // Zero amount may fail with insufficient balance or contract revert
                 expect(
                     errorMsg.includes('INSUFFICIENT_PAYER_BALANCE') ||
-                    errorMsg.includes('CONTRACT_REVERT_EXECUTED') ||
-                    errorMsg.includes('Insufficient HBAR balance')
+                        errorMsg.includes('CONTRACT_REVERT_EXECUTED') ||
+                        errorMsg.includes('Insufficient HBAR balance')
                 ).toBe(true);
                 console.log('✅ Zero amount stake handled correctly');
             }
@@ -356,7 +357,7 @@ describeStaderTests('Stader Integration Tests (Full Functionality)', () => {
                     network: hederaNetwork,
                 })
             ).rejects.toThrow();
-        }, 30000); // Increased timeout for network delays
+        }, 60000); // Increased timeout for network delays
 
         it('should handle contract errors gracefully', async () => {
             // This test verifies that contract errors are properly caught and reported

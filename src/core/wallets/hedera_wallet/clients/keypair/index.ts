@@ -1,4 +1,4 @@
-import { PrivateKey, AccountId, Transaction } from '@hashgraph/sdk';
+import { PrivateKey, AccountId, Transaction, TransactionRecord } from '@hashgraph/sdk';
 import edwinLogger from '../../../../../utils/logger';
 import { BaseHederaWalletClient } from '../../base_client';
 
@@ -107,7 +107,9 @@ export class KeypairClient extends BaseHederaWalletClient {
     /**
      * Send a transaction and return full response with record
      */
-    async sendTransactionWithResponse(transaction: Transaction): Promise<{ transactionId: string; record: any }> {
+    async sendTransactionWithResponse(
+        transaction: Transaction
+    ): Promise<{ transactionId: string; record: TransactionRecord }> {
         try {
             const client = this.getClient();
 
@@ -126,7 +128,7 @@ export class KeypairClient extends BaseHederaWalletClient {
 
             return {
                 transactionId: response.transactionId.toString(),
-                record: record
+                record: record,
             };
         } catch (error) {
             edwinLogger.error('Failed to send transaction with response:', error);

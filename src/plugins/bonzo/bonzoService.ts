@@ -150,7 +150,8 @@ export class BonzoService extends EdwinService {
             // Check balance first
             if (isWHBAR) {
                 const balance = await this.wallet.getBalance();
-                if (balance < params.amount + 0.1) { // Add buffer for fees
+                if (balance < params.amount + 0.1) {
+                    // Add buffer for fees
                     throw new Error(`Insufficient HBAR balance: ${balance} < ${params.amount + 0.1}`);
                 }
             } else {
@@ -193,10 +194,10 @@ export class BonzoService extends EdwinService {
             // Step 3: Deposit to lending pool
             edwinLogger.info('💸 Depositing to lending pool...');
             const depositFunctionParams = new ContractFunctionParameters()
-                .addAddress(tokenContractId.toSolidityAddress())  // asset
-                .addUint256(normalizedAmount)                     // amount
-                .addAddress(this.wallet.getAddress())            // onBehalfOf
-                .addUint16(0);                                   // referralCode
+                .addAddress(tokenContractId.toSolidityAddress()) // asset
+                .addUint256(normalizedAmount) // amount
+                .addAddress(this.wallet.getAddress()) // onBehalfOf
+                .addUint16(0); // referralCode
 
             const depositTx = new ContractExecuteTransaction()
                 .setContractId(lendingPoolId)
@@ -247,9 +248,9 @@ export class BonzoService extends EdwinService {
             edwinLogger.info('💵 WITHDRAW OPERATION');
 
             const withdrawFunctionParams = new ContractFunctionParameters()
-                .addAddress(tokenContractId.toSolidityAddress())  // asset
-                .addUint256(normalizedAmount)                     // amount
-                .addAddress(this.wallet.getAddress());           // to
+                .addAddress(tokenContractId.toSolidityAddress()) // asset
+                .addUint256(normalizedAmount) // amount
+                .addAddress(this.wallet.getAddress()); // to
 
             const withdrawTx = new ContractExecuteTransaction()
                 .setContractId(lendingPoolId)
@@ -301,11 +302,11 @@ export class BonzoService extends EdwinService {
             edwinLogger.info('💳 BORROW OPERATION');
 
             const borrowFunctionParams = new ContractFunctionParameters()
-                .addAddress(tokenContractId.toSolidityAddress())  // asset
-                .addUint256(normalizedAmount)                     // amount
-                .addUint256(2)                                    // interestRateMode (2 = variable)
-                .addUint16(0)                                     // referralCode
-                .addAddress(this.wallet.getAddress());           // onBehalfOf
+                .addAddress(tokenContractId.toSolidityAddress()) // asset
+                .addUint256(normalizedAmount) // amount
+                .addUint256(2) // interestRateMode (2 = variable)
+                .addUint16(0) // referralCode
+                .addAddress(this.wallet.getAddress()); // onBehalfOf
 
             const borrowTx = new ContractExecuteTransaction()
                 .setContractId(lendingPoolId)
