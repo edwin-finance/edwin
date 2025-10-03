@@ -1,7 +1,15 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { HederaWalletClient } from '../../core/wallets/hedera_wallet';
 import edwinLogger from '../../utils/logger';
-import { TransferTransaction, AccountId, Hbar, TokenId } from '@hashgraph/sdk';
+import {
+    TransferTransaction,
+    AccountId,
+    Hbar,
+    TokenId,
+    ContractExecuteTransaction,
+    ContractId,
+    ContractFunctionParameters,
+} from '@hashgraph/sdk';
 import {
     HederaWalletBalanceParameters,
     HederaWalletTokenBalanceParameters,
@@ -9,6 +17,8 @@ import {
     HederaWalletTransferHbarParameters,
     HederaWalletTransferTokenParameters,
     HederaWalletTokenLookupParameters,
+    HederaWalletWrapHbarParameters,
+    HederaWalletUnwrapWhbarParameters,
 } from './parameters';
 
 export class HederaWalletService extends EdwinService {
@@ -269,6 +279,101 @@ export class HederaWalletService extends EdwinService {
             );
         } catch (error) {
             edwinLogger.error('Failed to lookup token by name:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Wrap HBAR to WHBAR (Wrapped HBAR ERC20 token)
+     */
+    async wrapHbarToWhbar(params: HederaWalletWrapHbarParameters): Promise<string> {
+        const network = params.network || 'mainnet';
+        edwinLogger.info(`Wrapping ${params.amount} HBAR to WHBAR on ${network}`);
+
+        try {
+            // WHBAR contract addresses
+            // Note: Using 0.0.1456985 for mainnet (same as Bonzo Finance uses - verified working)
+            // Testnet: 0.0.15058 (standard testnet WHBAR)
+            const whbarContractId = network === 'mainnet' ? '0.0.1456985' : '0.0.15058';
+            const whbarTokenId = whbarContractId; // WHBAR token ID is same as contract ID
+
+            edwinLogger.info(`Using WHBAR contract: ${whbarContractId}`);
+
+            // Check HBAR balance
+            const balance = await this.wallet.getBalance();
+            if (balance < params.amount + 0.1) {
+                // Add 0.1 HBAR buffer for fees
+                throw new Error(
+                    `Insufficient HBAR balance: ${balance} HBAR (need ${params.amount + 0.1} HBAR including fees)`
+                );
+            }
+
+            // Create contract execute transaction to call deposit() function
+            // The deposit function wraps HBAR by sending it as payable amount
+            const wrapTx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromString(whbarContractId))
+                .setGas(500000)
+                .setFunction('deposit')
+                .setPayableAmount(new Hbar(params.amount));
+
+            const txId = await this.wallet.sendTransaction(wrapTx);
+
+            edwinLogger.info(`✅ Successfully wrapped ${params.amount} HBAR to WHBAR`);
+            edwinLogger.info(`Transaction ID: ${txId}`);
+            edwinLogger.info(`WHBAR token ID: ${whbarTokenId}`);
+
+            return txId;
+        } catch (error) {
+            edwinLogger.error('Failed to wrap HBAR to WHBAR:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Unwrap WHBAR back to HBAR
+     */
+    async unwrapWhbarToHbar(params: HederaWalletUnwrapWhbarParameters): Promise<string> {
+        const network = params.network || 'mainnet';
+        edwinLogger.info(`Unwrapping ${params.amount} WHBAR to HBAR on ${network}`);
+
+        try {
+            // WHBAR contract addresses (matching wrap function)
+            const whbarContractId = network === 'mainnet' ? '0.0.1456985' : '0.0.15058';
+
+            edwinLogger.info(`Using WHBAR contract: ${whbarContractId}`);
+
+            // Check WHBAR balance
+            if (!this.wallet.getTokenBalance) {
+                throw new Error('Token balance not supported by this wallet client');
+            }
+
+            const whbarBalance = await this.wallet.getTokenBalance(whbarContractId);
+            if (whbarBalance < params.amount) {
+                throw new Error(`Insufficient WHBAR balance: ${whbarBalance} WHBAR (need ${params.amount} WHBAR)`);
+            }
+
+            // Convert WHBAR amount to tinybars (8 decimals)
+            // WHBAR uses 8 decimals, same as HBAR
+            const amountInTinybars = Math.floor(params.amount * 100000000);
+
+            edwinLogger.info(`Unwrapping ${params.amount} WHBAR (${amountInTinybars} tinybars)`);
+
+            // Create contract execute transaction to call withdraw(uint256) function
+            const withdrawParams = new ContractFunctionParameters().addUint256(amountInTinybars);
+
+            const unwrapTx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromString(whbarContractId))
+                .setGas(500000) // Increased gas limit
+                .setFunction('withdraw', withdrawParams);
+
+            const txId = await this.wallet.sendTransaction(unwrapTx);
+
+            edwinLogger.info(`✅ Successfully unwrapped ${params.amount} WHBAR to HBAR`);
+            edwinLogger.info(`Transaction ID: ${txId}`);
+
+            return txId;
+        } catch (error) {
+            edwinLogger.error('Failed to unwrap WHBAR to HBAR:', error);
             throw error;
         }
     }

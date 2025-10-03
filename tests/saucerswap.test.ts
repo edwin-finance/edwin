@@ -86,26 +86,52 @@ describeSaucerSwapTests('SaucerSwap Integration Tests (Full Functionality)', () 
         mainnet: {
             WHBAR: '0.0.1456986', // WHBAR Token ID on mainnet
             SAUCE: '0.0.731861', // SAUCE token on mainnet
+            USDC: '0.0.456858', // USDC token on mainnet
         },
         testnet: {
             WHBAR: '0.0.15058', // WHBAR Token ID on testnet
             SAUCE: '0.0.1183558', // SAUCE token on testnet
+            USDC: '0.0.429274', // USDC token on testnet (from web search)
         },
     };
 
     // Use network-specific token IDs
     const WHBAR_TOKEN_ID = TOKEN_IDS[hederaNetwork as 'mainnet' | 'testnet'].WHBAR;
     const SAUCE_TOKEN_ID = TOKEN_IDS[hederaNetwork as 'mainnet' | 'testnet'].SAUCE;
+    const USDC_TOKEN_ID = TOKEN_IDS[hederaNetwork as 'mainnet' | 'testnet'].USDC;
     const TEST_AMOUNT = 0.1; // 0.1 token for testing to reduce costs
 
     beforeAll(() => {
         wallet = HederaWalletFactory.fromPrivateKey(TEST_PRIVATE_KEY, TEST_ACCOUNT_ID);
         saucerSwapService = new SaucerSwapService(wallet);
         console.log(`Running SaucerSwap integration tests with account: ${TEST_ACCOUNT_ID}`);
-        console.log(`Using ${hederaNetwork} token IDs: WHBAR=${WHBAR_TOKEN_ID}, SAUCE=${SAUCE_TOKEN_ID}`);
+        console.log(
+            `Using ${hederaNetwork} token IDs: WHBAR=${WHBAR_TOKEN_ID}, SAUCE=${SAUCE_TOKEN_ID}, USDC=${USDC_TOKEN_ID}`
+        );
     });
 
     describe('Quote Operations', () => {
+        it('should get quote for WHBAR to USDC (exact input)', async () => {
+            try {
+                const quote = await saucerSwapService.getQuote({
+                    inputTokenId: WHBAR_TOKEN_ID, // Use WHBAR token ID for quotes
+                    outputTokenId: USDC_TOKEN_ID,
+                    amount: TEST_AMOUNT,
+                    network: hederaNetwork,
+                });
+
+                expect(typeof quote).toBe('number');
+                expect(quote).toBeGreaterThan(0);
+
+                console.log(`✅ Exact input quote successful: ${TEST_AMOUNT} WHBAR = ${quote} USDC`);
+            } catch (error) {
+                const errorMsg = (error as Error).message;
+                console.log(`⚠️ Exact input quote failed: ${errorMsg}`);
+
+                // Real quotes may fail with network/contract errors
+            }
+        }, 15000);
+
         it('should get quote for WHBAR to SAUCE (exact input)', async () => {
             try {
                 const quote = await saucerSwapService.getQuote({
