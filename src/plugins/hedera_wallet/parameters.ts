@@ -71,6 +71,30 @@ export const HederaWalletTokenLookupParametersSchema = createParameterSchema(
     })
 );
 
+// Schema for wrapping HBAR to WHBAR
+export const HederaWalletWrapHbarParametersSchema = createParameterSchema(
+    z.object({
+        amount: z.number().positive().describe('Amount of HBAR to wrap into WHBAR (wrapped HBAR ERC20 token)'),
+        network: z
+            .enum(['mainnet', 'testnet'])
+            .optional()
+            .default('mainnet')
+            .describe('The Hedera network to use (mainnet or testnet - defaults to mainnet)'),
+    })
+);
+
+// Schema for unwrapping WHBAR to HBAR
+export const HederaWalletUnwrapWhbarParametersSchema = createParameterSchema(
+    z.object({
+        amount: z.number().positive().describe('Amount of WHBAR to unwrap back into native HBAR'),
+        network: z
+            .enum(['mainnet', 'testnet'])
+            .optional()
+            .default('mainnet')
+            .describe('The Hedera network to use (mainnet or testnet - defaults to mainnet)'),
+    })
+);
+
 // Export clean parameter types
 export type HederaWalletBalanceParameters = typeof HederaWalletBalanceParametersSchema.type;
 export type CurrentHederaWalletBalanceParameters = typeof CurrentHederaWalletBalanceParametersSchema.type;
@@ -81,3 +105,5 @@ export type CurrentHederaWalletAccountInfoParameters = typeof CurrentHederaWalle
 export type HederaWalletTransferHbarParameters = typeof HederaWalletTransferHbarParametersSchema.type;
 export type HederaWalletTransferTokenParameters = typeof HederaWalletTransferTokenParametersSchema.type;
 export type HederaWalletTokenLookupParameters = typeof HederaWalletTokenLookupParametersSchema.type;
+export type HederaWalletWrapHbarParameters = typeof HederaWalletWrapHbarParametersSchema.type;
+export type HederaWalletUnwrapWhbarParameters = typeof HederaWalletUnwrapWhbarParametersSchema.type;

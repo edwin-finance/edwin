@@ -46,6 +46,7 @@ export class SaucerSwapService extends EdwinService {
     };
 
     private static readonly DEFAULT_FEE = '0001f4'; // 0.05% fee (500 = 0x0001f4) - exactly 6 hex chars (3 bytes)
+    private static readonly LOW_MEDIUM_FEE = '0005dc'; // 0.15% fee (1500 = 0x0005dc) - WHBAR/USDC pool fee
     private static readonly MEDIUM_FEE = '000bb8'; // 0.30% fee (3000 = 0x000bb8) - exactly 6 hex chars (3 bytes)
     private static readonly HIGH_FEE = '002710'; // 1.00% fee (10000 = 0x002710) - exactly 6 hex chars (3 bytes)
     private static readonly USDC_TOKEN_ID = '0.0.456858'; // USDC token ID for multi-hop routing
@@ -210,6 +211,7 @@ export class SaucerSwapService extends EdwinService {
         // Direct paths with different fee tiers
         const fees = [
             { fee: SaucerSwapService.DEFAULT_FEE, name: '0.05%' },
+            { fee: SaucerSwapService.LOW_MEDIUM_FEE, name: '0.15%' },
             { fee: SaucerSwapService.MEDIUM_FEE, name: '0.30%' },
             { fee: SaucerSwapService.HIGH_FEE, name: '1.00%' },
         ];

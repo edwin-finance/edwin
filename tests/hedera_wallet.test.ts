@@ -768,6 +768,313 @@ describeKeypairTests('Hedera Wallet Service Tests (Full Functionality)', () => {
         });
     });
 
+    describe('WHBAR Wrap/Unwrap Tests', () => {
+        describe('Wrap HBAR to WHBAR', () => {
+            it('should wrap HBAR to WHBAR on testnet', async () => {
+                console.log('\n📦 Starting WHBAR wrap test on testnet...');
+
+                try {
+                    // Get initial HBAR balance
+                    const initialHbarBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Initial HBAR balance: ${initialHbarBalance} HBAR`);
+
+                    // Wrap 1 HBAR to WHBAR
+                    const wrapAmount = 1;
+                    console.log(`   Wrapping ${wrapAmount} HBAR to WHBAR on testnet...`);
+
+                    const txId = await hederaWalletService.wrapHbarToWhbar({
+                        amount: wrapAmount,
+                        network: 'testnet',
+                    });
+
+                    console.log(`   ✅ Wrap successful! Transaction ID: ${txId}`);
+
+                    // Verify transaction ID format
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    expect(txId).toMatch(/^\d+\.\d+\.\d+@\d+\.\d+$/);
+
+                    // Wait for transaction confirmation
+                    console.log('   Waiting for transaction confirmation...');
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    // Get WHBAR balance (testnet WHBAR: 0.0.15058)
+                    const whbarBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.15058');
+                    console.log(`   WHBAR balance after wrap: ${whbarBalance} WHBAR`);
+
+                    // Should have at least the amount we wrapped
+                    expect(whbarBalance).toBeGreaterThanOrEqual(wrapAmount);
+
+                    console.log('   ✅ WHBAR wrap test completed successfully!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ WHBAR wrap test failed: ${errorMsg}`);
+
+                    if (errorMsg.includes('INSUFFICIENT_PAYER_BALANCE')) {
+                        console.log('   💡 The account does not have enough HBAR for this test');
+                    }
+
+                    throw error;
+                }
+            }, 30000);
+
+            it('should wrap HBAR to WHBAR on mainnet', async () => {
+                // Skip mainnet tests in CI or if not explicitly testing mainnet
+                if (hederaNetwork !== 'mainnet') {
+                    console.log('⏭️  Skipping mainnet wrap test (not on mainnet)');
+                    return;
+                }
+
+                console.log('\n📦 Starting WHBAR wrap test on mainnet...');
+
+                try {
+                    const wrapAmount = 0.5;
+                    console.log(`   Wrapping ${wrapAmount} HBAR to WHBAR on mainnet...`);
+
+                    const txId = await hederaWalletService.wrapHbarToWhbar({
+                        amount: wrapAmount,
+                        network: 'mainnet',
+                    });
+
+                    console.log(`   ✅ Wrap successful! Transaction ID: ${txId}`);
+                    expect(typeof txId).toBe('string');
+
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    // Get WHBAR balance (mainnet WHBAR: 0.0.1456985)
+                    const whbarBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.1456985');
+                    console.log(`   WHBAR balance after wrap: ${whbarBalance} WHBAR`);
+
+                    expect(whbarBalance).toBeGreaterThanOrEqual(wrapAmount);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ WHBAR wrap test failed: ${errorMsg}`);
+                    throw error;
+                }
+            }, 30000);
+
+            it('should handle small wrap amounts', async () => {
+                try {
+                    const wrapAmount = 0.1;
+                    console.log(`   Wrapping ${wrapAmount} HBAR to WHBAR...`);
+
+                    const txId = await hederaWalletService.wrapHbarToWhbar({
+                        amount: wrapAmount,
+                        network: 'testnet',
+                    });
+
+                    expect(typeof txId).toBe('string');
+                    console.log(`   ✅ Small wrap successful! Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ⚠️ Small wrap failed: ${errorMsg}`);
+                }
+            }, 20000);
+
+            it('should fail with insufficient HBAR balance', async () => {
+                try {
+                    // Try to wrap more HBAR than exists
+                    await hederaWalletService.wrapHbarToWhbar({
+                        amount: 999999999,
+                        network: 'testnet',
+                    });
+
+                    // Should not reach here
+                    throw new Error('Expected wrap to fail with insufficient balance');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).toContain('Insufficient HBAR balance');
+                    console.log('   ✅ Correctly rejected wrap with insufficient balance');
+                }
+            }, 15000);
+        });
+
+        describe('Unwrap WHBAR to HBAR', () => {
+            it('should unwrap WHBAR to HBAR on testnet', async () => {
+                console.log('\n📤 Starting WHBAR unwrap test on testnet...');
+
+                try {
+                    // First, check WHBAR balance
+                    const whbarBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.15058');
+                    console.log(`   Initial WHBAR balance: ${whbarBalance} WHBAR`);
+
+                    // If no WHBAR, wrap some first
+                    if (whbarBalance < 0.5) {
+                        console.log('   Wrapping 1 HBAR first to get WHBAR for test...');
+                        await hederaWalletService.wrapHbarToWhbar({
+                            amount: 1,
+                            network: 'testnet',
+                        });
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                    }
+
+                    // Get initial HBAR balance
+                    const initialHbarBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Initial HBAR balance: ${initialHbarBalance} HBAR`);
+
+                    // Unwrap 0.5 WHBAR to HBAR
+                    const unwrapAmount = 0.5;
+                    console.log(`   Unwrapping ${unwrapAmount} WHBAR to HBAR on testnet...`);
+
+                    const txId = await hederaWalletService.unwrapWhbarToHbar({
+                        amount: unwrapAmount,
+                        network: 'testnet',
+                    });
+
+                    console.log(`   ✅ Unwrap successful! Transaction ID: ${txId}`);
+
+                    // Verify transaction ID format
+                    expect(typeof txId).toBe('string');
+                    expect(txId.length).toBeGreaterThan(0);
+                    expect(txId).toMatch(/^\d+\.\d+\.\d+@\d+\.\d+$/);
+
+                    // Wait for transaction confirmation
+                    console.log('   Waiting for transaction confirmation...');
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    // Get HBAR balance after unwrap
+                    const finalHbarBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Final HBAR balance: ${finalHbarBalance} HBAR`);
+
+                    // Should have more HBAR (minus fees)
+                    const hbarIncrease = finalHbarBalance - initialHbarBalance;
+                    console.log(`   HBAR increased by: ${hbarIncrease} HBAR`);
+                    expect(hbarIncrease).toBeGreaterThan(0);
+
+                    console.log('   ✅ WHBAR unwrap test completed successfully!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ WHBAR unwrap test failed: ${errorMsg}`);
+
+                    if (errorMsg.includes('INSUFFICIENT_TOKEN_BALANCE')) {
+                        console.log('   💡 The account does not have enough WHBAR for this test');
+                    }
+
+                    throw error;
+                }
+            }, 60000);
+
+            it('should unwrap WHBAR to HBAR on mainnet', async () => {
+                // Skip mainnet tests in CI or if not explicitly testing mainnet
+                if (hederaNetwork !== 'mainnet') {
+                    console.log('⏭️  Skipping mainnet unwrap test (not on mainnet)');
+                    return;
+                }
+
+                console.log('\n📤 Starting WHBAR unwrap test on mainnet...');
+
+                try {
+                    const unwrapAmount = 0.25;
+                    console.log(`   Unwrapping ${unwrapAmount} WHBAR to HBAR on mainnet...`);
+
+                    const txId = await hederaWalletService.unwrapWhbarToHbar({
+                        amount: unwrapAmount,
+                        network: 'mainnet',
+                    });
+
+                    console.log(`   ✅ Unwrap successful! Transaction ID: ${txId}`);
+                    expect(typeof txId).toBe('string');
+
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ WHBAR unwrap test failed: ${errorMsg}`);
+                    throw error;
+                }
+            }, 30000);
+
+            it('should handle small unwrap amounts', async () => {
+                try {
+                    const unwrapAmount = 0.01;
+                    console.log(`   Unwrapping ${unwrapAmount} WHBAR to HBAR...`);
+
+                    const txId = await hederaWalletService.unwrapWhbarToHbar({
+                        amount: unwrapAmount,
+                        network: 'testnet',
+                    });
+
+                    expect(typeof txId).toBe('string');
+                    console.log(`   ✅ Small unwrap successful! Transaction ID: ${txId}`);
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ⚠️ Small unwrap failed: ${errorMsg}`);
+                }
+            }, 20000);
+
+            it('should fail with insufficient WHBAR balance', async () => {
+                try {
+                    // Try to unwrap more WHBAR than exists
+                    await hederaWalletService.unwrapWhbarToHbar({
+                        amount: 999999999,
+                        network: 'testnet',
+                    });
+
+                    // Should not reach here
+                    throw new Error('Expected unwrap to fail with insufficient balance');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    expect(errorMsg).toContain('Insufficient WHBAR balance');
+                    console.log('   ✅ Correctly rejected unwrap with insufficient balance');
+                }
+            }, 15000);
+        });
+
+        describe('Wrap/Unwrap Round Trip Test', () => {
+            it('should successfully wrap and unwrap HBAR (full cycle)', async () => {
+                console.log('\n🔄 Starting full wrap/unwrap cycle test on testnet...');
+
+                try {
+                    // Get initial balances
+                    const initialHbarBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Initial HBAR balance: ${initialHbarBalance} HBAR`);
+
+                    const cycleAmount = 0.5;
+
+                    // Step 1: Wrap HBAR to WHBAR
+                    console.log(`   Step 1: Wrapping ${cycleAmount} HBAR to WHBAR...`);
+                    const wrapTxId = await hederaWalletService.wrapHbarToWhbar({
+                        amount: cycleAmount,
+                        network: 'testnet',
+                    });
+                    console.log(`   ✅ Wrap TX: ${wrapTxId}`);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    // Check WHBAR balance
+                    const whbarBalance = await hederaWalletService.getCurrentHederaWalletTokenBalance('0.0.15058');
+                    console.log(`   WHBAR balance after wrap: ${whbarBalance} WHBAR`);
+                    expect(whbarBalance).toBeGreaterThanOrEqual(cycleAmount);
+
+                    // Step 2: Unwrap WHBAR back to HBAR
+                    console.log(`   Step 2: Unwrapping ${cycleAmount} WHBAR back to HBAR...`);
+                    const unwrapTxId = await hederaWalletService.unwrapWhbarToHbar({
+                        amount: cycleAmount,
+                        network: 'testnet',
+                    });
+                    console.log(`   ✅ Unwrap TX: ${unwrapTxId}`);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    // Get final HBAR balance
+                    const finalHbarBalance = await hederaWalletService.getCurrentHederaWalletBalance();
+                    console.log(`   Final HBAR balance: ${finalHbarBalance} HBAR`);
+
+                    // Balance should be approximately the same (minus transaction fees)
+                    const balanceDifference = initialHbarBalance - finalHbarBalance;
+                    console.log(`   Total fees paid: ~${balanceDifference} HBAR`);
+
+                    // Expect fees to be reasonable (less than 0.2 HBAR for both transactions)
+                    expect(balanceDifference).toBeGreaterThanOrEqual(0);
+                    expect(balanceDifference).toBeLessThan(0.2);
+
+                    console.log('   ✅ Full wrap/unwrap cycle completed successfully!');
+                } catch (error) {
+                    const errorMsg = (error as Error).message;
+                    console.log(`   ❌ Wrap/unwrap cycle test failed: ${errorMsg}`);
+                    throw error;
+                }
+            }, 90000);
+        });
+    });
+
     describe('Parameter Validation', () => {
         it('should validate transfer parameters', async () => {
             // Test with negative amounts (should fail validation at parameter level)

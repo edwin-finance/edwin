@@ -21,6 +21,10 @@ import {
     HederaWalletTransferTokenParametersSchema,
     HederaWalletTokenLookupParameters,
     HederaWalletTokenLookupParametersSchema,
+    HederaWalletWrapHbarParameters,
+    HederaWalletWrapHbarParametersSchema,
+    HederaWalletUnwrapWhbarParameters,
+    HederaWalletUnwrapWhbarParametersSchema,
 } from './parameters';
 
 export class HederaWalletPlugin extends EdwinPlugin {
@@ -132,6 +136,24 @@ export class HederaWalletPlugin extends EdwinPlugin {
                 schema: HederaWalletTransferTokenParametersSchema.schema,
                 execute: async (params: HederaWalletTransferTokenParameters) => {
                     return await hederaWalletService.transferToken(params);
+                },
+            },
+            wrapHbarToWhbar: {
+                name: 'wrap_hbar_to_whbar',
+                description:
+                    'Wrap HBAR into WHBAR (Wrapped HBAR ERC20 token). WHBAR is an ERC20-compatible version of HBAR that can be used in DeFi protocols. The WHBAR token will be sent to your wallet.',
+                schema: HederaWalletWrapHbarParametersSchema.schema,
+                execute: async (params: HederaWalletWrapHbarParameters) => {
+                    return await hederaWalletService.wrapHbarToWhbar(params);
+                },
+            },
+            unwrapWhbarToHbar: {
+                name: 'unwrap_whbar_to_hbar',
+                description:
+                    'Unwrap WHBAR back into native HBAR. This converts your WHBAR tokens back into regular HBAR that can be used for transaction fees and native transfers.',
+                schema: HederaWalletUnwrapWhbarParametersSchema.schema,
+                execute: async (params: HederaWalletUnwrapWhbarParameters) => {
+                    return await hederaWalletService.unwrapWhbarToHbar(params);
                 },
             },
         };
