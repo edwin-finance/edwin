@@ -1,7 +1,15 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { HederaWalletClient } from '../../core/wallets/hedera_wallet';
 import edwinLogger from '../../utils/logger';
-import { ContractExecuteTransaction, ContractId, ContractFunctionParameters, Hbar } from '@hashgraph/sdk';
+import {
+    ContractExecuteTransaction,
+    ContractId,
+    ContractFunctionParameters,
+    Hbar,
+    TokenId,
+    AccountAllowanceApproveTransaction,
+    AccountId,
+} from '@hashgraph/sdk';
 import {
     BonzoSupplyParameters,
     BonzoWithdrawParameters,
@@ -122,8 +130,8 @@ export class BonzoService extends EdwinService {
      * Performance optimizations:
      * - Early balance validation (fail fast before any txs)
      * - Uses wallet.sendTransaction() which has getReceipt() for fast finality (~3-5s per tx)
-     * - Sequential operations required (wrap → approve → deposit)
-     * - Total time: ~9-15s for full supply flow
+     * - Sequential operations required (wrap → deposit)
+     * - Total time: ~6-10s for full supply flow
      */
     async supply(params: BonzoSupplyParameters): Promise<string> {
         const network = params.network || 'mainnet';
@@ -183,26 +191,18 @@ export class BonzoService extends EdwinService {
                 edwinLogger.info(`✅ Wrapped HBAR: ${wrapTxId}`);
             }
 
-            // Step 2: Approve token for lending pool (~3-5s)
-            edwinLogger.info('🔐 Approving token for lending pool...');
-            const approveFunctionParams = new ContractFunctionParameters()
-                .addAddress(lendingPoolId.toSolidityAddress())
-                .addUint256(normalizedAmount);
-
-            const approveTx = new ContractExecuteTransaction()
-                .setContractId(tokenContractId)
-                .setFunction('approve', approveFunctionParams)
-                .setGas(200000);
-
-            const approveTxId = await this.wallet.sendTransaction(approveTx);
-            edwinLogger.info(`✅ Approved: ${approveTxId}`);
-
-            // Step 3: Deposit to lending pool (~3-5s)
+            // Step 2: Deposit to lending pool (~3-5s)
+            // Note: HTS tokens on Hedera don't require separate approval - the contract
+            // can move tokens during ContractExecuteTransaction
             edwinLogger.info('💸 Depositing to lending pool...');
+
+            // Convert Hedera account ID to EVM address format (0x...)
+            const userEvmAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
+
             const depositFunctionParams = new ContractFunctionParameters()
                 .addAddress(tokenContractId.toSolidityAddress()) // asset
                 .addUint256(normalizedAmount) // amount
-                .addAddress(this.wallet.getAddress()) // onBehalfOf
+                .addAddress(userEvmAddress) // onBehalfOf (EVM address format)
                 .addUint16(0); // referralCode
 
             const depositTx = new ContractExecuteTransaction()
@@ -257,10 +257,13 @@ export class BonzoService extends EdwinService {
 
             edwinLogger.info('💵 WITHDRAW OPERATION');
 
+            // Convert Hedera account ID to EVM address format (0x...)
+            const userEvmAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
+
             const withdrawFunctionParams = new ContractFunctionParameters()
                 .addAddress(tokenContractId.toSolidityAddress()) // asset
                 .addUint256(normalizedAmount) // amount
-                .addAddress(this.wallet.getAddress()); // to
+                .addAddress(userEvmAddress); // to (EVM address format)
 
             const withdrawTx = new ContractExecuteTransaction()
                 .setContractId(lendingPoolId)
@@ -315,12 +318,15 @@ export class BonzoService extends EdwinService {
 
             edwinLogger.info('💳 BORROW OPERATION');
 
+            // Convert Hedera account ID to EVM address format (0x...)
+            const userEvmAddress = '0x' + AccountId.fromString(this.wallet.getAddress()).toSolidityAddress();
+
             const borrowFunctionParams = new ContractFunctionParameters()
                 .addAddress(tokenContractId.toSolidityAddress()) // asset
                 .addUint256(normalizedAmount) // amount
                 .addUint256(2) // interestRateMode (2 = variable)
                 .addUint16(0) // referralCode
-                .addAddress(this.wallet.getAddress()); // onBehalfOf
+                .addAddress(userEvmAddress); // onBehalfOf (EVM address format)
 
             const borrowTx = new ContractExecuteTransaction()
                 .setContractId(lendingPoolId)
