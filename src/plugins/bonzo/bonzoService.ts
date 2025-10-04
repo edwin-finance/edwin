@@ -1,15 +1,7 @@
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 import { HederaWalletClient } from '../../core/wallets/hedera_wallet';
 import edwinLogger from '../../utils/logger';
-import {
-    ContractExecuteTransaction,
-    ContractId,
-    ContractFunctionParameters,
-    Hbar,
-    TokenId,
-    AccountAllowanceApproveTransaction,
-    AccountId,
-} from '@hashgraph/sdk';
+import { ContractExecuteTransaction, ContractId, ContractFunctionParameters, Hbar, AccountId } from '@hashgraph/sdk';
 import {
     BonzoSupplyParameters,
     BonzoWithdrawParameters,
