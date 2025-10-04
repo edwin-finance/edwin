@@ -78,7 +78,10 @@ export class KeypairClient extends BaseHederaWalletClient {
     }
 
     /**
-     * Send a transaction
+     * Send a transaction with optimized performance settings
+     *
+     * Performance: Uses getReceipt() instead of getRecord() for ~3-5s finality
+     * Client is already configured with aggressive timeouts (10s) to fail fast
      */
     async sendTransaction(transaction: Transaction): Promise<string> {
         try {
@@ -87,10 +90,10 @@ export class KeypairClient extends BaseHederaWalletClient {
             // Set the operator for the client (this handles signing and fee payment)
             client.setOperator(this.accountId, this.privateKey);
 
-            // Execute the transaction directly - the SDK will handle freezing and signing
+            // Execute transaction - client timeout (10s) ensures fast failure
             const response = await transaction.execute(client);
 
-            // Get the transaction receipt to ensure it was successful
+            // Get receipt for fast finality (~3-5s) instead of getRecord() which is slower
             const receipt = await response.getReceipt(client);
 
             if (receipt.status.toString() !== 'SUCCESS') {
@@ -106,6 +109,17 @@ export class KeypairClient extends BaseHederaWalletClient {
 
     /**
      * Send a transaction and return full response with record
+     *
+     * ⚠️ Performance Warning: getRecord() is significantly slower than getReceipt()
+     * - getReceipt(): ~3-5s finality
+     * - getRecord(): ~10-15s (requires consensus + mirror node indexing)
+     *
+     * Only use this method when you need detailed transaction data like:
+     * - Contract call results
+     * - Event logs
+     * - Token transfers details
+     *
+     * For most operations, use sendTransaction() instead.
      */
     async sendTransactionWithResponse(
         transaction: Transaction
@@ -116,10 +130,10 @@ export class KeypairClient extends BaseHederaWalletClient {
             // Set the operator for the client (this handles signing and fee payment)
             client.setOperator(this.accountId, this.privateKey);
 
-            // Execute the transaction directly - the SDK will handle freezing and signing
+            // Execute transaction
             const response = await transaction.execute(client);
 
-            // Get the transaction record for detailed results
+            // Get the transaction record (slower than receipt - requires mirror node indexing)
             const record = await response.getRecord(client);
 
             if (record.receipt.status.toString() !== 'SUCCESS') {

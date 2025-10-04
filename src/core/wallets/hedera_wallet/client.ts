@@ -5,6 +5,13 @@ import { Client, Transaction, AccountId, TransactionRecord } from '@hashgraph/sd
  */
 export interface HederaWalletClient {
     /**
+     * Get the Hedera JSON-RPC URL for the specified network
+     * @param network Optional network (testnet, mainnet, previewnet)
+     * @returns RPC URL string
+     */
+    getHederaRpcUrl?(network?: string): string;
+
+    /**
      * The wallet's account ID
      */
     readonly accountId: AccountId;

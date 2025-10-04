@@ -312,7 +312,7 @@ export class HederaWalletService extends EdwinService {
             // The deposit function wraps HBAR by sending it as payable amount
             const wrapTx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromString(whbarContractId))
-                .setGas(500000)
+                .setGas(1000000) // Increased from 500k to handle testnet gas requirements
                 .setFunction('deposit')
                 .setPayableAmount(new Hbar(params.amount));
 
@@ -363,7 +363,7 @@ export class HederaWalletService extends EdwinService {
 
             const unwrapTx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromString(whbarContractId))
-                .setGas(500000) // Increased gas limit
+                .setGas(1000000) // Increased from 500k to handle testnet gas requirements
                 .setFunction('withdraw', withdrawParams);
 
             const txId = await this.wallet.sendTransaction(unwrapTx);
@@ -380,8 +380,22 @@ export class HederaWalletService extends EdwinService {
 
     /**
      * Get the Mirror Node URL for the specified network
+     * Uses custom HEDERA_RPC_URL if available (e.g., Validation Cloud mirror node)
      */
     private getMirrorNodeUrl(network: string): string {
+        // Use the environment variable directly with same logic as BaseHederaWalletClient
+        const customRpcUrl = process.env.HEDERA_RPC_URL;
+        if (customRpcUrl) {
+            const networkPrefix = network === 'mainnet' ? 'mainnet' : network === 'testnet' ? 'testnet' : 'previewnet';
+
+            if (customRpcUrl.includes(networkPrefix)) {
+                // For Validation Cloud, keep the /v1/{apiKey} part as it's needed for authentication
+                edwinLogger.info(`Using custom mirror node for ${network}`);
+                return customRpcUrl;
+            }
+        }
+
+        // Fallback to public Hedera mirror nodes
         switch (network) {
             case 'mainnet':
                 return 'https://mainnet-public.mirrornode.hedera.com';

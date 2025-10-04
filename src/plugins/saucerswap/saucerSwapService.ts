@@ -34,14 +34,14 @@ export class SaucerSwapService extends EdwinService {
             quoterContractId: '0.0.3949424', // SaucerSwapV2QuoterV2
             hbarTokenId: 'HBAR', // Native HBAR
             whbarTokenId: '0.0.1456986', // WHBAR token ID for mainnet
-            hederaJsonRpcUrl: 'https://mainnet.hashio.io/api', // Hedera JSON RPC
+            hederaJsonRpcUrl: '', // Will be set dynamically via wallet client
         },
         testnet: {
             swapRouterContractId: '0.0.1414040', // SaucerSwapV2SwapRouter on testnet
             quoterContractId: '0.0.1390002', // SaucerSwapV2QuoterV2 on testnet
             hbarTokenId: 'HBAR', // Native HBAR
             whbarTokenId: '0.0.15058', // WHBAR token ID for testnet
-            hederaJsonRpcUrl: 'https://testnet.hashio.io/api', // Hedera JSON RPC for testnet
+            hederaJsonRpcUrl: '', // Will be set dynamically via wallet client
         },
     };
 
@@ -72,6 +72,30 @@ export class SaucerSwapService extends EdwinService {
     }
 
     /**
+     * Get Hedera JSON-RPC URL from wallet client
+     */
+    private getHederaRpcUrl(network: 'mainnet' | 'testnet'): string {
+        // Use wallet client's RPC URL method if available
+        if (this.wallet.getHederaRpcUrl) {
+            return this.wallet.getHederaRpcUrl(network);
+        }
+
+        // Fallback to environment variable or HashIO
+        const customRpcUrl = process.env.HEDERA_RPC_URL;
+        if (customRpcUrl) {
+            edwinLogger.info(`Using custom Hedera RPC URL for ${network}`);
+            return customRpcUrl;
+        }
+
+        // Final fallback to HashIO (testing only)
+        edwinLogger.warn(
+            `No HEDERA_RPC_URL found. Using HashIO (rate-limited, testing only). ` +
+                `Get a premium RPC from https://app.validationcloud.io for better performance.`
+        );
+        return `https://${network}.hashio.io/api`;
+    }
+
+    /**
      * Get a quote for swapping tokens using official SaucerSwap V2 quoter with multi-hop routing
      */
     async getQuote(params: SaucerSwapQuoteParameters): Promise<number> {
@@ -85,13 +109,15 @@ export class SaucerSwapService extends EdwinService {
         }
 
         try {
+            const network = params.network === 'testnet' ? 'testnet' : 'mainnet';
             const config =
                 params.network === 'testnet'
                     ? SaucerSwapService.NETWORK_CONFIG.testnet
                     : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             // Set up ethers provider (Ethers v5 syntax)
-            const provider = new ethers.providers.JsonRpcProvider(config.hederaJsonRpcUrl);
+            const rpcUrl = this.getHederaRpcUrl(network);
+            const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
             // Load ABI data containing QuoterV2 functions (per docs)
             const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.QUOTER_ABI);
@@ -253,13 +279,15 @@ export class SaucerSwapService extends EdwinService {
         );
 
         try {
+            const network = params.network === 'testnet' ? 'testnet' : 'mainnet';
             const config =
                 params.network === 'testnet'
                     ? SaucerSwapService.NETWORK_CONFIG.testnet
                     : SaucerSwapService.NETWORK_CONFIG.mainnet;
 
             // Set up ethers provider (Ethers v5 syntax, docs show v6)
-            const provider = new ethers.providers.JsonRpcProvider(config.hederaJsonRpcUrl);
+            const rpcUrl = this.getHederaRpcUrl(network);
+            const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
             // Load ABI data containing QuoterV2 functions (per docs)
             const abiInterfaces = new ethers.utils.Interface(SaucerSwapService.QUOTER_ABI);
