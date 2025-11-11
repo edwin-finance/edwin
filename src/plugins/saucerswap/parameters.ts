@@ -58,7 +58,7 @@ export const SaucerSwapExactInputParametersSchema = createParameterSchema(
         deadline: z
             .number()
             .optional()
-            .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
+            .describe('Unix timestamp deadline for the swap (defaults to 1 hour from now). Must be in the future.'),
         network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
@@ -82,7 +82,7 @@ export const SaucerSwapExactOutputParametersSchema = createParameterSchema(
         deadline: z
             .number()
             .optional()
-            .describe('Unix timestamp deadline for the swap (defaults to 20 minutes from now)'),
+            .describe('Unix timestamp deadline for the swap (defaults to 1 hour from now). Must be in the future.'),
         network: z.enum(['mainnet', 'testnet']).optional().default('mainnet').describe('The Hedera network to use'),
     })
 );
